@@ -56,7 +56,12 @@ lemma X_X_Z_Z_commute : (X ⊗ᵤ X) * (Z ⊗ᵤ Z) = (Z ⊗ᵤ Z) * (X ⊗ᵤ X
   simp [unitary_kron]
 }
 
-lemma X_X_Z_Z_commute_2 : (X ⊗ᵤ X) * (Z ⊗ᵤ Z) = (Z ⊗ᵤ Z) * (X ⊗ᵤ X) := by {
-  matrix_expand [X, Z];
-  sorry --matrix_expand doesn't give anything good here
+lemma X_X_Y_Y_commute : (X ⊗ᵤ X) * (Y ⊗ᵤ Y) = (Y ⊗ᵤ Y) * (X ⊗ᵤ X) := by {
+  simp only [tensor_kron_A_B, X_Y_anticomm]
+  apply Subtype.ext
+  ext i j
+  simp [unitary_kron]
 }
+
+-- TODO: define big tensor prod, prove commutation
+-- for collections of even numbers of Pauli operators
