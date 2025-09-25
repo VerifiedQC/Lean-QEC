@@ -29,12 +29,34 @@ variable {α : Type*} [NonUnitalNonAssocSemiring α] [StarRing α]
 
 variable {α β : Type*} [DecidableEq α] [Fintype α] [DecidableEq β] [Fintype β]
 
+variable (A : 𝐔[α])
+
+variable (B : 𝐔[β])
+
 @[simp]
 theorem unitary_kron_one_one : (1 : 𝐔[α]) ⊗ᵤ (1 : 𝐔[β]) = (1 : 𝐔[α × β]) := by
   simp only [unitary_kron, OneMemClass.coe_one, zero_mul, implies_true, mul_zero, mul_one,
     kroneckerMap_one_one, Submonoid.mk_eq_one]
 
 open scoped Matrix in
-theorem tensor_kron_f_g: (f ⊗ᵤ 1) * (1 ⊗ᵤ g) =  (f ⊗ᵤ g):= by {
-  sorry
+
+theorem tensor_kron_A_B: (A ⊗ᵤ B) * (A' ⊗ᵤ B') = ((A * A') ⊗ᵤ (B * B')) := by {
+  apply Subtype.ext
+  simp [unitary_kron, ←Matrix.mul_kronecker_mul]
+}
+
+lemma X_Z_anticomm : (X * Z) = - (Z * X) := by{
+  simp [Z_X_anticomm]
+}
+
+lemma X_X_Z_Z_commute : (X ⊗ᵤ X) * (Z ⊗ᵤ Z) = (Z ⊗ᵤ Z) * (X ⊗ᵤ X) := by {
+  simp only [tensor_kron_A_B, X_Z_anticomm]
+  apply Subtype.ext
+  ext i j
+  simp [unitary_kron]
+}
+
+lemma X_X_Z_Z_commute_2 : (X ⊗ᵤ X) * (Z ⊗ᵤ Z) = (Z ⊗ᵤ Z) * (X ⊗ᵤ X) := by {
+  matrix_expand [X, Z];
+  sorry --matrix_expand doesn't give anything good here
 }
