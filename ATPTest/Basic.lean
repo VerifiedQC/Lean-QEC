@@ -34,6 +34,20 @@ variable (A : 𝐔[α])
 variable (B : 𝐔[β])
 
 @[simp]
+lemma X_conj : (↑X)ᴴ = (↑X : Matrix Qubit Qubit ℂ) := by
+  matrix_expand [X]
+
+@[simp] lemma Y_conj : (↑Y)ᴴ = (↑Y : Matrix Qubit Qubit ℂ) := by
+  matrix_expand [Y]
+
+@[simp] lemma Z_conj : (↑Z)ᴴ = (↑Z : Matrix Qubit Qubit ℂ) := by
+  matrix_expand [Z]
+
+--@[simp]
+lemma unitary_coe_mul (f g : 𝐔[k]) : (f : Matrix k k ℂ) * (g: Matrix k k ℂ) = ↑(f * g):= by
+  rfl
+
+@[simp]
 theorem unitary_kron_one_one : (1 : 𝐔[α]) ⊗ᵤ (1 : 𝐔[β]) = (1 : 𝐔[α × β]) := by
   simp only [unitary_kron, OneMemClass.coe_one, zero_mul, implies_true, mul_zero, mul_one,
     kroneckerMap_one_one, Submonoid.mk_eq_one]
@@ -81,19 +95,6 @@ noncomputable def kraus_bit_flip (p : ℝ) (i : Qubit): Matrix Qubit Qubit ℂ :
 @[simp] lemma kraus_bit_flip_1 : kraus_bit_flip p 1 = √p • X := by
   rfl
 
-@[simp]
-lemma X_conj : (↑X)ᴴ = (↑X : Matrix Qubit Qubit ℂ) := by
-  matrix_expand [X]
-
-@[simp] lemma Y_conj : (↑Y)ᴴ = (↑Y : Matrix Qubit Qubit ℂ) := by
-  matrix_expand [Y]
-
-@[simp] lemma Z_conj : (↑Z)ᴴ = (↑Z : Matrix Qubit Qubit ℂ) := by
-  matrix_expand [Z]
-
-@[simp] lemma unitary_coe_mul (f g : 𝐔[k]) : (f : Matrix k k ℂ) * (g: Matrix k k ℂ) = ↑(f * g):= by
-  rfl
-
 noncomputable def bit_flip_channel (p : ℝ) (hp1 : 0 ≤ p) (hp2 : 0 ≤ 1 - p) : CPTPMap Qubit Qubit ℂ where
   toLinearMap := MatrixMap.of_kraus (kraus_bit_flip p) (kraus_bit_flip p)
   cp := MatrixMap.IsCompletelyPositive.of_kraus_isCompletelyPositive (kraus_bit_flip p)
@@ -101,5 +102,12 @@ noncomputable def bit_flip_channel (p : ℝ) (hp1 : 0 ≤ p) (hp2 : 0 ≤ 1 - p)
     apply MatrixMap.IsTracePreserving.of_kraus_isTracePreserving (kraus_bit_flip p) (kraus_bit_flip p)
     simp
     rewrite [smul_smul, Real.mul_self_sqrt hp2, smul_smul, Real.mul_self_sqrt hp1]
+    rewrite [unitary_coe_mul, X_sq, OneMemClass.coe_one]
     rewrite [←add_smul, sub_add_cancel, one_smul]
     rfl
+
+
+
+
+def of_kraus_prob_unitary {n : ℕ} (pfun : Fin n → ℝ) (hpfun1 : ∀ i, 0 ≤ pfun i) (hpfun2 : ∀ i, 0 ≤ 1 - pfun i)
+: CPTPMap Qubit Qubit ℂ := sorry
