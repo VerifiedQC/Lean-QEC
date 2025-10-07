@@ -14,6 +14,9 @@ variable {m m' n n' : Type*} (A : Matrix m m' ℂ) (B : Matrix n n' ℂ)
 theorem kronecker_conjTranspose : (A.kronecker B).conjTranspose = (Matrix.kronecker A.conjTranspose B.conjTranspose) := by
   ext; simp
 
+theorem kroneckerMap_conjTranspose : (Matrix.kroneckerMap (fun (x1 x2) => x1 * x2) A B).conjTranspose = (Matrix.kroneckerMap (fun (x1 x2) => x1 * x2) A.conjTranspose B.conjTranspose) := by
+  ext; simp
+
 
 theorem Matrix.finset_sum_kronecker {α : Type u_2} {l : Type u_8} {m : Type u_9}
 {n : Type u_10} {p : Type u_11} [Semiring α] [Fintype l] [Fintype m] [DecidableEq α]  (K : Finset (Matrix l m α)) (B : Matrix n p α) :
@@ -104,9 +107,23 @@ variable [Fintype dO₁] [Fintype dO₂]
 
 lemma conj_tensor_tensor_conj : MatrixMap.kron (star_conj_map M₁) (star_conj_map M₂) =
  star_conj_map (Matrix.kronecker M₁ M₂) := by
-  apply LinearMap.ext
-  intro X
-  sorry
+  apply MatrixMap_tensor_ext
+  intros A B
+  simp [MatrixMap.kron_map_of_kron_state, star_conj_map, kroneckerMap_conjTranspose,
+  Matrix.mul_kronecker_mul]
+
+lemma sum_conj_tensor_sum_conj_eq_sum_tensor_conj {κ₁ κ₂ : Type*} [Fintype κ₁]
+ [DecidableEq κ₁] [Fintype κ₂] [DecidableEq κ₂] (M₁ N₁ : κ₁ → Matrix dO₁ dI₁ ℂ)
+(M₂ N₂: κ₂ → Matrix dO₂ dI₂ ℂ) :
+MatrixMap.kron (MatrixMap.of_kraus M₁ N₁) (MatrixMap.of_kraus M₂ N₂) =
+MatrixMap.of_kraus (fun (i : κ₁ × κ₂) => Matrix.kronecker (M₁ i.1) (M₂ i.2)) (fun (i : κ₁ × κ₂) => Matrix.kronecker (N₁ i.1) (N₂ i.2)) := by
+  apply MatrixMap_tensor_ext
+  intros A B
+  simp only [MatrixMap.of_kraus, Matrix.kronecker, MatrixMap.kron_map_of_kron_state,
+    LinearMap.coeFn_sum, LinearMap.coe_mk, AddHom.coe_mk, Finset.sum_apply,
+    kroneckerMap_conjTranspose, ← Matrix.mul_kronecker_mul]
+  simp_rw [Matrix.sum_kronecker_left, Matrix.sum_kronecker_right, ←Finset.sum_product']
+  simp
 
 
 

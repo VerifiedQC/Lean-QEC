@@ -95,7 +95,13 @@ def prod_kraus_is_kraus_prod {κ₁ κ₂ : Type*} [Fintype κ₁] [DecidableEq 
 (M₂ : κ₂ → Matrix dO₂ dI₂ ℂ) (hM₁ : ∑ k, (M₁ k).conjTranspose * M₁ k = 1) (hM₂ : ∑ k, (M₂ k).conjTranspose * M₂ k = 1) :
 (CPTPMap.of_kraus_CPTPMap M₁ hM₁) ⊗ₖ (CPTPMap.of_kraus_CPTPMap M₂ hM₂) = kraus_prod M₁ M₂ hM₁ hM₂ := by
   apply CPTPMap.toLinearMap_ext
-  simp [kraus_prod, CPTPMap.prod, CPTPMap.of_kraus_CPTPMap, MatrixMap.of_kraus]
+  apply MatrixMap_tensor_ext
+  intros A B
+  simp [CPTPMap.prod, CPTPMap.of_kraus_CPTPMap, MatrixMap.kron_map_of_kron_state, MatrixMap.of_kraus]
+  simp [kraus_prod, CPTPMap.of_kraus_CPTPMap]
+
+
+
   sorry
 
 
