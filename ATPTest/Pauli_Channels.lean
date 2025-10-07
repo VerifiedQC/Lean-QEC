@@ -1,4 +1,4 @@
-import ATPTest.Basic
+import ATPTest.Tensors
 -- Define multi-qubit pauli channels to model errors
 
 -- First define single-qubit bit-flip channel
@@ -76,63 +76,29 @@ pauli_channel (1-p) (p/3) (p/3) (p/3) hp2 (by linarith) (by linarith) (by linari
 
 variable {k : Type*} [Fintype k] [DecidableEq k]
 
-variable (A : Matrix m m' ℂ) (B : Matrix n n' ℂ)
-
-theorem kronecker_conjTranspose : (A.kronecker B).conjTranspose = (Matrix.kronecker A.conjTranspose B.conjTranspose) := by
-  ext; simp
-
-
-theorem Matrix.finset_sum_kronecker {α : Type u_2} {l : Type u_8} {m : Type u_9}
-{n : Type u_10} {p : Type u_11} [Semiring α] [Fintype l] [Fintype m] [DecidableEq α]  (K : Finset (Matrix l m α)) (B : Matrix n p α) :
-kroneckerMap (fun (x1 x2 : α) => x1 * x2) (∑ k ∈ K, k) B = ∑ k ∈ K, kroneckerMap (fun (x1 x2 : α) => x1 * x2) k B  := by
-  refine (Finset.induction_on K ?_ ?_)
-  · simp
-  · intro A M hAM IH
-    rw [Finset.sum_insert hAM, Finset.sum_insert hAM, Matrix.kroneckerMap_add_left, IH]
-    intros c d e
-    rw [right_distrib]
-
-theorem Matrix.sum_kronecker_label_finset_left {α : Type u_2} {l : Type u_8} {m : Type u_9}
-{n : Type u_10} {p : Type u_11} [Semiring α] [Fintype l] [Fintype m] [DecidableEq α] {κ : Type*} [DecidableEq κ] (K : Finset κ) (M : κ → (Matrix l m α)) (B : Matrix n p α) :
-kroneckerMap (fun (x1 x2 : α) => x1 * x2) (∑ k ∈ K, (M k)) B = ∑ k ∈ K, kroneckerMap (fun (x1 x2 : α) => x1 * x2) (M k) B  := by
-  refine (Finset.induction_on K ?_ ?_)
-  · simp
-  · intro A M hAM IH
-    rw [Finset.sum_insert hAM, Finset.sum_insert hAM, Matrix.kroneckerMap_add_left, IH]
-    intros c d e
-    rw [right_distrib]
-
-theorem Matrix.sum_kronecker_label_finset_right {α : Type u_2} {l : Type u_8} {m : Type u_9}
-{n : Type u_10} {p : Type u_11} [Semiring α] [Fintype l] [Fintype m] [DecidableEq α] {κ : Type*} [DecidableEq κ] (K : Finset κ) (M : κ → (Matrix l m α)) (B : Matrix n p α) :
-kroneckerMap (fun (x1 x2 : α) => x1 * x2) B (∑ k ∈ K, (M k)) = ∑ k ∈ K, kroneckerMap (fun (x1 x2 : α) => x1 * x2) B (M k)  := by
-  refine (Finset.induction_on K ?_ ?_)
-  · simp
-  · intro A M hAM IH
-    rw [Finset.sum_insert hAM, Finset.sum_insert hAM, Matrix.kroneckerMap_add_right, IH]
-    intros c d e
-    rw [left_distrib]
-
-
-theorem Matrix.sum_kronecker_left {α : Type u_2} {l : Type u_8} {m : Type u_9}
-{n : Type u_10} {p : Type u_11} [Semiring α] [Fintype l] [Fintype m] [DecidableEq α] {κ : Type*} [DecidableEq κ] [Fintype κ] (M : κ → (Matrix l m α)) (B : Matrix n p α) :
-kroneckerMap (fun (x1 x2 : α) => x1 * x2) (∑ k, M k) B = ∑ k, kroneckerMap (fun (x1 x2 : α) => x1 * x2) (M k) B  := Matrix.sum_kronecker_label_finset_left (Finset.univ) M B
-
-theorem Matrix.sum_kronecker_right {α : Type u_2} {l : Type u_8} {m : Type u_9}
-{n : Type u_10} {p : Type u_11} [Semiring α] [Fintype l] [Fintype m] [DecidableEq α] {κ : Type*} [DecidableEq κ] [Fintype κ] (M : κ → (Matrix l m α)) (B : Matrix n p α) :
-kroneckerMap (fun (x1 x2 : α) => x1 * x2) B (∑ k, M k) = ∑ k, kroneckerMap (fun (x1 x2 : α) => x1 * x2) B (M k)  := Matrix.sum_kronecker_label_finset_right (Finset.univ) M B
-
-
-
-
+variable {m m' n n' : Type*} (A : Matrix m m' ℂ) (B : Matrix n n' ℂ)
 
 
 def kraus_prod {κ₁ κ₂ : Type*} [Fintype κ₁] [DecidableEq κ₁] [Fintype κ₂] [DecidableEq κ₂] (M₁ : κ₁ → Matrix dO₁ dI₁ ℂ)
 (M₂ : κ₂ → Matrix dO₂ dI₂ ℂ) (hM₁ : ∑ k, (M₁ k).conjTranspose * M₁ k = 1) (hM₂ : ∑ k, (M₂ k).conjTranspose * M₂ k = 1) :
 CPTPMap (dI₁ × dI₂) (dO₁ × dO₂) ℂ := CPTPMap.of_kraus_CPTPMap (fun (i : κ₁ × κ₂) => Matrix.kronecker (M₁ i.1) (M₂ i.2)) ( by
   simp [-Matrix.kronecker, kronecker_conjTranspose]
-  simp [←Matrix.mul_kronecker_mul, Fintype.sum_prod_type]
-  simp [←Matrix.sum_kronecker_right, ←Matrix.sum_kronecker_left, hM₁, hM₂]
+  simp [←Matrix.mul_kronecker_mul, Fintype.sum_prod_type, ←Matrix.sum_kronecker_right, ←Matrix.sum_kronecker_left, hM₁, hM₂]
 )
+
+def CPTPMap.toLinearMap_ext {dIn dOut 𝕜} [Fintype dIn] [Fintype dOut] [RCLike 𝕜] [DecidableEq dIn] {Λ₁ Λ₂ : CPTPMap dIn dOut 𝕜} (h : Λ₁.toLinearMap = Λ₂.toLinearMap) : Λ₁ = Λ₂ := by
+  rw [CPTPMap.mk.injEq]
+  exact PTPMap.ext h
+
+
+def prod_kraus_is_kraus_prod {κ₁ κ₂ : Type*} [Fintype κ₁] [DecidableEq κ₁] [Fintype κ₂] [DecidableEq κ₂] (M₁ : κ₁ → Matrix dO₁ dI₁ ℂ)
+(M₂ : κ₂ → Matrix dO₂ dI₂ ℂ) (hM₁ : ∑ k, (M₁ k).conjTranspose * M₁ k = 1) (hM₂ : ∑ k, (M₂ k).conjTranspose * M₂ k = 1) :
+(CPTPMap.of_kraus_CPTPMap M₁ hM₁) ⊗ₖ (CPTPMap.of_kraus_CPTPMap M₂ hM₂) = kraus_prod M₁ M₂ hM₁ hM₂ := by
+  apply CPTPMap.toLinearMap_ext
+  simp [kraus_prod, CPTPMap.prod, CPTPMap.of_kraus_CPTPMap, MatrixMap.of_kraus]
+  sorry
+
+
 
 
 
