@@ -1,6 +1,6 @@
 import ATPTest.Basic
+import Mathlib.Data.Fintype.Basic
 
-variable {dI₁ dI₂ dO₁ dO₂ : Type*} [Fintype dI₁] [Fintype dI₂] [Fintype dO₁] [Fintype dO₂]
 variable [DecidableEq dI₁] [DecidableEq dI₂] [DecidableEq dO₁] [DecidableEq dO₂]
 
 noncomputable section
@@ -55,10 +55,32 @@ theorem Matrix.sum_kronecker_right {α : Type u_2} {l : Type u_8} {m : Type u_9}
 kroneckerMap (fun (x1 x2 : α) => x1 * x2) B (∑ k, M k) = ∑ k, kroneckerMap (fun (x1 x2 : α) => x1 * x2) B (M k)  := Matrix.sum_kronecker_label_finset_right (Finset.univ) M B
 
 
-variable {A B R : Type}
+variable {A B R : Type*}
 
-variable [Semiring R] [SMulCommClass R R R] [CommSemiring R] [Star R] [Fintype A] [DecidableEq A]
+variable [Semiring R] [Fintype A] [DecidableEq A]
 
+variable {dI₁ dI₂ dO₁ dO₂ : Type*} [Fintype dI₁] [Fintype dI₂]
+
+variable [DecidableEq dI₁] [DecidableEq dI₂]
+
+
+lemma MatrixMap_tensor_ext {MM₁ MM₂ : MatrixMap (dI₁ × dI₂) (dO₁ × dO₂) R}
+(h_tx : ∀ (A : Matrix dI₁ dI₁ R) (B : Matrix dI₂ dI₂ R), MM₁ (Matrix.kronecker A B) = MM₂ (Matrix.kronecker A B)) : MM₁ = MM₂ := by
+  apply LinearMap.ext
+  intros X
+  rewrite [Matrix.matrix_eq_sum_single X]
+  simp [map_sum]
+  congr
+  ext1 A
+  congr
+  ext1 B
+  rcases A with ⟨A1, A2⟩
+  rcases B with ⟨B1, B2⟩
+  rewrite [←mul_one (X (A1, A2) (B1, B2)), ←Matrix.single_kronecker_single]
+  apply h_tx
+
+
+variable [SMulCommClass R R R] [CommSemiring R] [Star R]
 
 def star_conj (M : Matrix B A R) (X : Matrix A A R) :=  M * X * M.conjTranspose
 
@@ -68,6 +90,24 @@ def star_conj_map (M : Matrix B A R): MatrixMap A B R := {
     map_add' x y := by rw [Matrix.mul_add, Matrix.add_mul]
     map_smul' r x := by rw [RingHom.id_apply, Matrix.mul_smul, Matrix.smul_mul]
   }
+
+
+variable {M₁ : Matrix dO₁ dI₁ ℂ} {M₂ : Matrix dO₂ dI₂ ℂ}
+
+
+#check Matrix.kronecker M₁ M₂
+
+
+
+
+variable [Fintype dO₁] [Fintype dO₂]
+
+lemma conj_tensor_tensor_conj : MatrixMap.kron (star_conj_map M₁) (star_conj_map M₂) =
+ star_conj_map (Matrix.kronecker M₁ M₂) := by
+  apply LinearMap.ext
+  intro X
+  sorry
+
 
 
 
