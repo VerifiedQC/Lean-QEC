@@ -19,6 +19,7 @@ theorem X_Y_flip: X * Y = I * Z := by {
 }
 
 
+
 variable {k : Type*} [Fintype k] [DecidableEq k]
 
 variable (f g : 𝐔[k])
@@ -33,6 +34,7 @@ variable (A : 𝐔[α])
 
 variable (B : 𝐔[β])
 
+
 lemma X_conj : (↑X)ᴴ = (↑X : Matrix Qubit Qubit ℂ) := by
   matrix_expand [X]
 
@@ -41,6 +43,86 @@ lemma Y_conj : (↑Y)ᴴ = (↑Y : Matrix Qubit Qubit ℂ) := by
 
 lemma Z_conj : (↑Z)ᴴ = (↑Z : Matrix Qubit Qubit ℂ) := by
   matrix_expand [Z]
+
+@[simp]
+lemma X_one_zero : X.val *ᵥ ![1, 0] = ![0, 1] := by
+  unfold X
+  funext i
+  fin_cases i <;> simp
+
+@[simp]
+lemma X_zero_one : X.val *ᵥ ![0, 1] = ![1, 0] := by
+  unfold X
+  funext i
+  fin_cases i <;> simp
+
+def qub_zero : Ket Qubit := {
+  vec := ![1, 0]
+  normalized' := (by simp
+  )
+}
+
+def qub_one : Ket Qubit := {
+  vec := ![0, 1]
+  normalized' := (by simp
+  )
+}
+
+variable (d : Type*) [Fintype d]
+
+
+-- proving this is surprisingly difficult and probably
+-- requires v to live in EuclideanSpace
+
+def unitary_norm_preserve (U : 𝐔[k]) (v: k → ℂ) :
+  ∑ x, ‖(U.1.toLin' v) x‖ ^ 2 = ∑ x, ‖v x‖ ^ 2 := sorry
+
+
+def Ket.uapply (psi : Ket k) (U : 𝐔[k]) : Ket k where
+  vec := U.1.toLin' psi.vec
+  normalized' := by
+    rewrite [unitary_norm_preserve]
+    exact psi.normalized'
+
+example : qub_one.uapply X = qub_zero := by
+  ext x
+  unfold Ket.uapply qub_one qub_zero
+  fin_cases x <;> simp
+
+
+--A PVM is a POVM bundled with the assumption that its matrices are projectors.
+structure PVM (X : Type*) (d : Type*) [Fintype X] [Fintype d] [DecidableEq d] where
+  POVM : POVM X d
+  H_proj: ∀ x, (POVM.mats x).toMat * (POVM.mats x).toMat = (POVM.mats x).toMat
+
+
+def fin_pow_succ_equiv {n : ℕ} : Fin (2^(n + 1)) ≃ Fin 2 × Fin (2^n) :=
+{ toFun := λ i => ⟨⟨i.val / 2^n, sorry⟩, ⟨i.val % 2^n, sorry⟩⟩,
+  invFun := λ ⟨a,b⟩ => ⟨a * 2^n + b, sorry⟩,
+  left_inv := λ i => by
+    apply Fin.ext
+    simp
+    rw [mul_comm, Nat.div_add_mod]
+  ,
+  right_inv := λ ⟨a,b⟩ => by
+    ext
+    · simp [add_comm, Nat.add_mul_div_right]
+    · simp [Nat.mod_eq_of_lt b.isLt]
+}
+
+def unitary_fin_equiv {a b : Type*} [Fintype a] [Fintype b] [DecidableEq a] [DecidableEq b]
+ (h: a ≃ b) :(𝐔[a] ≃ 𝐔[b]) := sorry
+
+
+def unitary_tensor {n : ℕ} (m : Fin n → 𝐔[Fin 2]) : 𝐔[Fin (2^n)] :=
+match n with
+| 0 => 1
+| n0+1 => (unitary_fin_equiv fin_pow_succ_equiv).invFun ((m 0) ⊗ᵤ (unitary_tensor (λ (x : Fin n0) => m ⟨x+1, sorry⟩)))
+
+
+
+
+
 
 --@[simp]
 lemma unitary_coe_mul (f g : 𝐔[k]) : (f : Matrix k k ℂ) * (g: Matrix k k ℂ) = ↑(f * g):= by

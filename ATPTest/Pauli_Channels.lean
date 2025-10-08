@@ -90,28 +90,17 @@ def CPTPMap.toLinearMap_ext {dIn dOut 𝕜} [Fintype dIn] [Fintype dOut] [RCLike
   rw [CPTPMap.mk.injEq]
   exact PTPMap.ext h
 
-
 def prod_kraus_is_kraus_prod {κ₁ κ₂ : Type*} [Fintype κ₁] [DecidableEq κ₁] [Fintype κ₂] [DecidableEq κ₂] (M₁ : κ₁ → Matrix dO₁ dI₁ ℂ)
 (M₂ : κ₂ → Matrix dO₂ dI₂ ℂ) (hM₁ : ∑ k, (M₁ k).conjTranspose * M₁ k = 1) (hM₂ : ∑ k, (M₂ k).conjTranspose * M₂ k = 1) :
 (CPTPMap.of_kraus_CPTPMap M₁ hM₁) ⊗ₖ (CPTPMap.of_kraus_CPTPMap M₂ hM₂) = kraus_prod M₁ M₂ hM₁ hM₂ := by
   apply CPTPMap.toLinearMap_ext
   apply MatrixMap_tensor_ext
   intros A B
-  simp [CPTPMap.prod, CPTPMap.of_kraus_CPTPMap, MatrixMap.kron_map_of_kron_state, MatrixMap.of_kraus]
-  simp [kraus_prod, CPTPMap.of_kraus_CPTPMap]
+  simp [CPTPMap.prod, sum_conj_tensor_sum_conj_eq_sum_tensor_conj M₁ M₁ M₂ M₂,
+  kraus_prod, CPTPMap.of_kraus_CPTPMap]
 
+--def two_qubit_bit_flip (p : ℝ) (hp1 : 0 ≤ p) (hp2 : 0 ≤ 1-p) := (bit_flip_channel p hp1 hp2) ⊗ₖ (bit_flip_channel p hp1 hp2)
 
-
-  sorry
-
-
-
-
-
--- (CPTPMap.of_kraus_CPTPMap M₁ hM₁) ⊗ₖ (CPTPMap.of_kraus_CPTPMap M₂ hM₂) =
-
-
-def two_qubit_bit_flip (p : ℝ) (hp1 : 0 ≤ p) (hp2 : 0 ≤ 1-p) := (bit_flip_channel p hp1 hp2) ⊗ₖ (bit_flip_channel p hp1 hp2)
 
 def of_kraus_prob_unitary {n : ℕ} (pfun : Fin n → ℝ) (hpfun1 : ∀ i, 0 ≤ pfun i) (hpfun2 : ∀ i, 0 ≤ 1 - pfun i)
 : CPTPMap Qubit Qubit ℂ := sorry
