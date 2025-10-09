@@ -132,10 +132,21 @@ match n with
 | 0 => 1
 | n0+1 => (unitary_fin_equiv fin_pow_succ_equiv).toFun ((m 0) ⊗ᵤ (unitary_tensor (λ (x : Fin n0) => m ⟨x.val + 1, by simp [x.isLt]⟩)))
 
+noncomputable def Pauli : Finset (𝐔[Qubit]):= {I, X, Y, Z}
 
+variable {n : ℕ} (m : Fin n → Pauli)
 
+def pauli_tensor : 𝐔[Fin (2^n)] :=
+  unitary_tensor (λ x => (m x))
 
+lemma pauli_tensor_hermitian :
+  Matrix.IsHermitian (pauli_tensor m).1 := sorry
 
+def pauli_tensor_herm : HermitianMat (Fin (2^n)) ℂ :=
+  ⟨(pauli_tensor m).1, pauli_tensor_hermitian m⟩
+
+def has_pauli_eigenvalues {a : Type*} [Fintype a] [DecidableEq a] {A : Matrix a a ℂ} :
+  ∀ μ, Module.End.HasEigenvalue A.toEuclideanLin μ → (μ = -1 ∨ μ = -1) := sorry
 
 --@[simp]
 lemma unitary_coe_mul (f g : 𝐔[k]) : (f : Matrix k k ℂ) * (g: Matrix k k ℂ) = ↑(f * g):= by
