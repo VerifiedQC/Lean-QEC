@@ -33,7 +33,7 @@ example : (Z : Matrix Qubit Qubit ℂ)ᴴ = Z := by
   exact Z_conj
 
 
--- Test case 10: Pauli matrix multiplication properties
+-- Pauli matrix multiplication properties
 example : X * Y = I * Z := by
   exact X_Y_flip
 
