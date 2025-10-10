@@ -1,13 +1,22 @@
-import ATPTest.Basic
+import QuantumInfo
 import Mathlib.Data.Fintype.Basic
 
-variable [DecidableEq dI₁] [DecidableEq dI₂] [DecidableEq dO₁] [DecidableEq dO₂]
+lemma is_herm_of_kron_herm
+  {A B : Type*} [Fintype A] [Fintype B]
+  [CommMagma R] [StarMul R]
+  {M₁ : Matrix A A R} {M₂ : Matrix B B R}
+  (hM₁ : M₁.IsHermitian) (hM₂ : M₂.IsHermitian) :
+  (Matrix.kronecker M₁ M₂).IsHermitian := by
+  simp [Matrix.IsHermitian, Matrix.conjTranspose_kronecker, hM₁.eq, hM₂.eq]
+
+
+variable {dI₁ dI₂ dO₁ dO₂ : Type*} [DecidableEq dI₁] [DecidableEq dI₂] [DecidableEq dO₁] [DecidableEq dO₂]
 
 noncomputable section
 
 variable {k : Type*} [Fintype k] [DecidableEq k]
 
-variable {R : Type*}  [Semiring R] [SMulCommClass R R R] [Star R]
+variable {R : Type*}  [Semiring R] [SMulCommClass R R R] [Star R] [StarMul R]
 
 variable {m m' n n' : Type*} (A : Matrix m m' ℂ) (B : Matrix n n' ℂ)
 
@@ -96,12 +105,6 @@ def star_conj_map (M : Matrix B A R): MatrixMap A B R := {
 
 
 variable {M₁ : Matrix dO₁ dI₁ ℂ} {M₂ : Matrix dO₂ dI₂ ℂ}
-
-
-#check Matrix.kronecker M₁ M₂
-
-
-
 
 variable [Fintype dO₁] [Fintype dO₂]
 
