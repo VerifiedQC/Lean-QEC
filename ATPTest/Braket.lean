@@ -95,10 +95,16 @@ lemma Ket.uapply_kron (U₁ : 𝐔[k₁]) (U₂ : 𝐔[k₂]) (ψ₁ : Ket k₁)
 def ket_fin_equiv {a b : Type*} [Fintype a] [Fintype b] [DecidableEq a] [DecidableEq b]
  (h: a ≃ b) :(Ket a ≃ Ket b) where
   toFun ka := ⟨fun x => ka.1 (h.invFun x), by
-    sorry
+    simp
+    rw [Fintype.sum_equiv h.symm]
+    apply ka.2
+    exact fun x => rfl
     ⟩
   invFun kb := ⟨fun x => kb.1 (h.toFun x), by
-    sorry
+    simp
+    rw [Fintype.sum_equiv h]
+    apply kb.2
+    exact fun x => rfl
     ⟩
   left_inv := by
     intro ka
@@ -111,4 +117,4 @@ def ket_n_tensor {n : ℕ} (hn : 0 < n) (m : Fin n → Ket Qubit) : Ket (Fin (2^
 match n with
 | 0 => (by contradiction)
 | 1 => (m 0)
-| n0+1 => (ket_fin_equiv fin_pow_succ_equiv) (Ket.prod (m 0) (ket_n_tensor (sorry) (λ (x : Fin n0) => m ⟨x.val + 1, by simp [x.isLt]⟩)))
+| n0+2 => (ket_fin_equiv fin_pow_succ_equiv) (Ket.prod (m 0) (ket_n_tensor (by norm_num) (λ (x : Fin (n0+1)) => m ⟨x.val + 1, by simp [x.isLt]⟩)))
