@@ -36,20 +36,23 @@ def fin_pow_succ_equiv {n : ℕ} : (Fin 2 × Fin (2^n)) ≃ Fin (2^(n+1)) := by
   rewrite [Nat.pow_succ']
   exact finProdFinEquiv
 
-def qubit_tensor {n : ℕ} (m : Fin n → 𝐔[Qubit]) : 𝐔[Fin (2^n)] :=
+def unitary_n_tensor {n : ℕ} (hn : 0 < n) (m : Fin n → 𝐔[Qubit]) : 𝐔[Fin (2^n)] :=
 match n with
-| 0 => 1
-| n0+1 => (unitary_fin_equiv fin_pow_succ_equiv).toFun ((m 0) ⊗ᵤ (qubit_tensor (λ (x : Fin n0) => m ⟨x.val + 1, by simp [x.isLt]⟩)))
+| 0 => by contradiction
+| 1 => (m 0)
+| n₀+2 => (unitary_fin_equiv fin_pow_succ_equiv).toFun ((m 0) ⊗ᵤ (unitary_n_tensor (by norm_num) (λ (x : Fin (n₀+1)) => m ⟨x.val + 1, by simp [x.isLt]⟩)))
 
-def herm_of_qubit_tensor_herm {n : ℕ} (m : Fin n → 𝐔[Qubit]) (Hm : ∀ x, Matrix.IsHermitian (m x).1) :
-  Matrix.IsHermitian (qubit_tensor m).1 := by
+def herm_of_qubit_tensor_herm {n : ℕ} (hn : 0 < n) (m : Fin n → 𝐔[Qubit]) (Hm : ∀ x, Matrix.IsHermitian (m x).1) :
+  Matrix.IsHermitian (unitary_n_tensor hn m).1 := by
   induction n with
-  | zero => simp [qubit_tensor]
-  | succ n ih => simp only [qubit_tensor, unitary_fin_equiv, reindex_apply, Equiv.symm_symm,
-    unitary_kron, Equiv.toFun_as_coe, Equiv.coe_fn_mk, isHermitian_submatrix_equiv]
-                 refine is_herm_of_kron_herm (Hm 0) ?_
-                 refine ih ?_ (fun x => ?_)
-                 apply Hm
+  | zero => contradiction
+  | succ n ih => cases n
+                 · simp [unitary_n_tensor, (Hm 0)]
+                 · simp only [unitary_n_tensor, unitary_fin_equiv, reindex_apply, Equiv.symm_symm, unitary_kron, Equiv.toFun_as_coe, Equiv.coe_fn_mk, isHermitian_submatrix_equiv]
+                   refine is_herm_of_kron_herm (Hm 0) ?_
+                   apply ih
+                   intro x
+                   apply Hm
 
 noncomputable def Pauli : Finset (𝐔[Qubit]):= {1, X, Y, Z}
 
@@ -59,21 +62,21 @@ lemma pauli_herm {p : Pauli} : IsHermitian p.1.1 := by
   simp at hx ⊢
   rcases hx with (rfl | rfl | rfl | rfl) <;> matrix_expand [X, Y, Z]
 
-variable {n : ℕ} (m : Fin n → Pauli)
+variable {n : ℕ} (hn : 0 < n) (m : Fin n → Pauli)
 
 def pauli_tensor : 𝐔[Fin (2^n)] :=
-  qubit_tensor (λ x => (m x))
+  unitary_n_tensor hn (λ x => (m x))
 
 
 lemma pauli_tensor_hermitian :
-  Matrix.IsHermitian (pauli_tensor m).1 := by
+  Matrix.IsHermitian (pauli_tensor hn m).1 := by
   apply herm_of_qubit_tensor_herm
   intro x
   simp [pauli_herm]
 
 
 def pauli_tensor_herm : HermitianMat (Fin (2^n)) ℂ :=
-  ⟨(pauli_tensor m).1, pauli_tensor_hermitian m⟩
+  ⟨(pauli_tensor hn m).1, pauli_tensor_hermitian hn m⟩
 
 def has_pauli_eigenvalues {a : Type*} [Fintype a] [DecidableEq a] {A : Matrix a a ℂ} :=
   ∀ μ, Module.End.HasEigenvalue A.toEuclideanLin μ → (μ = -1 ∨ μ = -1)

@@ -113,8 +113,10 @@ def ket_fin_equiv {a b : Type*} [Fintype a] [Fintype b] [DecidableEq a] [Decidab
     intro kb
     simp
 
+--can't define a ket for Fin 0 because normalized' condition doesn't hold
+--would this be different for EuclideanSpace?
 def ket_n_tensor {n : ℕ} (hn : 0 < n) (m : Fin n → Ket Qubit) : Ket (Fin (2^n)) :=
 match n with
 | 0 => (by contradiction)
 | 1 => (m 0)
-| n0+2 => (ket_fin_equiv fin_pow_succ_equiv) (Ket.prod (m 0) (ket_n_tensor (by norm_num) (λ (x : Fin (n0+1)) => m ⟨x.val + 1, by simp [x.isLt]⟩)))
+| n₀+2 => (ket_fin_equiv fin_pow_succ_equiv) (Ket.prod (m 0) (ket_n_tensor (by norm_num) (λ (x : Fin (n₀+1)) => m ⟨x.val + 1, by simp [x.isLt]⟩)))
