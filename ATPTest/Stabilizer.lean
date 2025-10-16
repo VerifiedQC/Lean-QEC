@@ -8,7 +8,7 @@ def stabilizes (U : 𝐔[k]) (ψ : Ket k) := ψ.uapply U = ψ
 lemma stabilizes_apply (U : 𝐔[k]) (ψ : Ket k) (hstab : stabilizes U ψ) : ψ.uapply U = ψ := hstab
 
 @[simp]
-lemma stabilizes_apply' (U : 𝐔[k]) (ψ : Ket k) (hstab : stabilizes U ψ) : Matrix.mulVec U ψ.vec = ψ.vec := by
+lemma stabilizes_apply' {U : 𝐔[k]} {ψ : Ket k} (hstab : stabilizes U ψ) : Matrix.mulVec U ψ.vec = ψ.vec := by
   simp only [stabilizes, Ket.uapply, Matrix.toLin'_apply] at hstab
   rwa [Ket.mk.injEq] at hstab
 
@@ -63,6 +63,26 @@ theorem inv_stab {U : 𝐔[k]} {ψ : Ket k} (hstab : stabilizes U ψ) : stabiliz
   simp [stabilizes, Ket.uapply]
   rw [Ket.mk.injEq]
   nth_rw 2 [←(Matrix.one_mulVec ψ.vec)]
-  rw [←U.2.1, ←Matrix.mulVec_mulVec, stabilizes_apply' _ _ hstab]
+  rw [←U.2.1, ←Matrix.mulVec_mulVec, stabilizes_apply' hstab]
 
---theorem for stabilizing sums
+--theorem for stabilizing sums?
+
+def Ket.sum (ψ₁ ψ₂ : Ket k) (a b : ℂ) (hab: ‖a^2‖+‖b^2‖ = 1) : Ket k where
+  vec := a • ψ₁.vec + b • ψ₂.vec
+  normalized' := sorry
+
+theorem sum_stab {ψ₁ ψ₂ : Ket k} {a b : ℂ} {U : 𝐔[k]} (hab: ‖a^2‖+‖b^2‖ = 1)
+  (hstab1 : stabilizes U ψ₁) (hstab2 : stabilizes U ψ₂) :
+  stabilizes U (ψ₁.sum ψ₂ a b hab) := by
+  simp [stabilizes, Ket.uapply, Ket.sum, Matrix.mulVec_add, Matrix.mulVec_smul,
+  stabilizes_apply' hstab1, stabilizes_apply' hstab2]
+
+
+--think harder about how i want to define this: subtype for pauli tensors?
+def stabilizer_set (ψ : Ket k) :=
+  {U // stabilizes U ψ}
+
+variable {n : ℕ}
+
+def pauli_stabilizer_set (ψ : Ket (Fin (2^n))) :=
+  {U : stabilizer_set ψ // is_pauli_product U}

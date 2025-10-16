@@ -94,3 +94,5 @@ noncomputable def U_phase (U : 𝐔[k]) (z : ℂ) (hp: ‖z‖ = 1) : 𝐔[k] :=
 noncomputable def u_neg (U : 𝐔[k]) : 𝐔[k] := (U_phase U (-1) (by norm_num))
 
 noncomputable def u_im (U : 𝐔[k]) : 𝐔[k] := (U_phase U Complex.I (by norm_num))
+
+def is_pauli_product (U : 𝐔[Fin (2^n)]) : Prop := ∃ (m : Fin n → Pauli), pauli_tensor hn m = U
