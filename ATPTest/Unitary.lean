@@ -81,6 +81,7 @@ def pauli_tensor_herm : HermitianMat (Fin (2^n)) ℂ :=
 def has_pauli_eigenvalues {a : Type*} [Fintype a] [DecidableEq a] {A : Matrix a a ℂ} :=
   ∀ μ, Module.End.HasEigenvalue A.toEuclideanLin μ → (μ = -1 ∨ μ = -1)
 
+
 --define negative and imaginary phase factors on unitary matrices
 
 variable {k : Type*} [Fintype k] [DecidableEq k]
@@ -95,4 +96,4 @@ noncomputable def u_neg (U : 𝐔[k]) : 𝐔[k] := (U_phase U (-1) (by norm_num)
 
 noncomputable def u_im (U : 𝐔[k]) : 𝐔[k] := (U_phase U Complex.I (by norm_num))
 
-def is_pauli_product (U : 𝐔[Fin (2^n)]) : Prop := ∃ (m : Fin n → Pauli), pauli_tensor hn m = U
+def is_pauli_product (U : 𝐔[Fin (2^n)]) := ∃ (m : Fin n → Pauli), pauli_tensor hn m = U

@@ -50,11 +50,17 @@ theorem unitary_norm_preserve {k : Type*} [Fintype k] [DecidableEq k] (U : 𝐔[
   -- Apply the hypothesis `h_norm` to the vector `v`.
   apply h_norm
 
-def Ket.uapply (psi : Ket k) (U : 𝐔[k]) : Ket k where
-  vec := U.1.toLin' psi.vec
+def Ket.uapply (ψ : Ket k) (U : 𝐔[k]) : Ket k where
+  vec := U.1.toLin' ψ.vec
   normalized' := by
     rewrite [unitary_norm_preserve]
-    exact psi.normalized'
+    exact ψ.normalized'
+
+--phase_mul
+def Ket.phase (ψ : Ket k) (z : ℂ) (hp: ‖z‖ = 1) : Ket k where
+  vec := z • ψ.vec
+  normalized' := sorry
+
 
 variable {k₁ k₂ : Type*} [Fintype k₁] [Fintype k₂]
 

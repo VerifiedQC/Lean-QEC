@@ -71,11 +71,13 @@ def Ket.sum (ψ₁ ψ₂ : Ket k) (a b : ℂ) (hab: ‖a^2‖+‖b^2‖ = 1) : K
   vec := a • ψ₁.vec + b • ψ₂.vec
   normalized' := sorry
 
+
 theorem sum_stab {ψ₁ ψ₂ : Ket k} {a b : ℂ} {U : 𝐔[k]} (hab: ‖a^2‖+‖b^2‖ = 1)
   (hstab1 : stabilizes U ψ₁) (hstab2 : stabilizes U ψ₂) :
   stabilizes U (ψ₁.sum ψ₂ a b hab) := by
   simp [stabilizes, Ket.uapply, Ket.sum, Matrix.mulVec_add, Matrix.mulVec_smul,
   stabilizes_apply' hstab1, stabilizes_apply' hstab2]
+
 
 
 --think harder about how i want to define this: subtype for pauli tensors?
@@ -84,5 +86,43 @@ def stabilizer_set (ψ : Ket k) :=
 
 variable {n : ℕ}
 
-def pauli_stabilizer_set (ψ : Ket (Fin (2^n))) :=
-  {U : stabilizer_set ψ // is_pauli_product U}
+open Qubit
+
+variable (ψ : Ket Qubit)
+
+--wait, how do i cX transversally? just controllize 1 ⊗ X?
+--clearly if this is to be easier to work with i have to
+--change how this is done
+def three_qubit_encode : Ket (Qubit × Qubit × Qubit) :=
+  ((Ket.prod ψ (Ket.prod qub_zero qub_zero)).uapply
+   (unitary_fin_equiv (Equiv.prodAssoc _ _ _)
+   (Matrix.unitary_kron C[X] (1 : 𝐔[Qubit])))).uapply --CX(2, 3)
+   C[Matrix.unitary_kron (1 : 𝐔[Qubit]) X] --CX(1, 3)
+
+lemma single_qub_normalized : ‖(ψ.vec 0)^2‖+‖(ψ.vec 1)^2‖ = 1 := by
+  convert ψ.normalized'
+  simp
+
+lemma one_qub_decomp : ψ = qub_zero.sum qub_one (ψ.vec 0) (ψ.vec 1) (single_qub_normalized _) := sorry
+
+lemma three_qubit_encode_correct : three_qubit_encode ψ =
+  (qub_zero ⊗ (qub_zero ⊗ qub_zero)).sum
+  (qub_one ⊗ (qub_one ⊗ qub_one)) (ψ.vec 0) (ψ.vec 1) (single_qub_normalized _)
+  := sorry
+
+structure code (l c : ℕ) where --l is logical qubits, c is code size
+  encoding : Ket (Fin (2^l)) → Ket (Fin (2^c))
+  stabilizers : Finset 𝐔[Fin (2^c)]
+  stab_cond : ∀ ψ, ∀ U ∈ stabilizers, stabilizes U (encoding ψ)
+
+--requires 0 < c as can't call a unitary on 0 qubits a pauli matrix for
+--various ease of use reasons
+structure pauli_code (l c : ℕ) (hc : 0 < c) where
+  code : code l c
+  stab_pauli : ∀ U ∈ code.stabilizers, is_pauli_product hc U
+
+
+
+--maybe ensure that stabilizers are pauli matrices?
+--theorem that says pauli X, Z errors on stabilized vectors result
+--in either U stabilizing or U_neg stabilizing?
