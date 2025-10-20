@@ -86,14 +86,43 @@ def has_pauli_eigenvalues {a : Type*} [Fintype a] [DecidableEq a] {A : Matrix a 
 
 variable {k : Type*} [Fintype k] [DecidableEq k]
 
-noncomputable def U_phase (U : 𝐔[k]) (z : ℂ) (hp: ‖z‖ = 1) : 𝐔[k] := ⟨z • U.val, by
+noncomputable section
+
+structure phase where
+  z : ℂ
+  z_norm : ‖z‖ = 1
+deriving DecidableEq
+
+noncomputable def U_phase (U : 𝐔[k]) (z : phase) : 𝐔[k] := ⟨z.1 • U.val, by
   simp [unitary.mem_iff, smul_smul, mul_comm]
-  rw [mul_comm, ←Complex.normSq_eq_conj_mul_self, Complex.coe_smul, Complex.normSq_eq_norm_sq, hp]
+  rw [mul_comm, ←Complex.normSq_eq_conj_mul_self, Complex.coe_smul, Complex.normSq_eq_norm_sq, z.2]
   simp
 ⟩
 
-noncomputable def u_neg (U : 𝐔[k]) : 𝐔[k] := (U_phase U (-1) (by norm_num))
+noncomputable def u_neg (U : 𝐔[k]) : 𝐔[k] := (U_phase U ⟨-1, by norm_num⟩)
 
-noncomputable def u_im (U : 𝐔[k]) : 𝐔[k] := (U_phase U Complex.I (by norm_num))
+noncomputable def u_im (U : 𝐔[k]) : 𝐔[k] := (U_phase U ⟨Complex.I, by norm_num⟩)
 
 def is_pauli_product (U : 𝐔[Fin (2^n)]) := ∃ (m : Fin n → Pauli), pauli_tensor hn m = U
+
+noncomputable def pgroup_phases : Finset phase := {⟨1, by norm_num⟩, ⟨-1, by norm_num⟩, ⟨Complex.I, by norm_num⟩, ⟨-Complex.I, by norm_num⟩}
+
+--instance : Fintype (Fin n → { x // x ∈ Pauli }) := sorry
+
+noncomputable def pauli_products_n : Finset (𝐔[Fin (2^n)]) := Finset.image (λ m => pauli_tensor hn m) Finset.univ
+
+--see how much i can do with set
+
+--def PauliGroup : Set 𝐔[(Fin (2^n))] := {U_phase (pauli_tensor hn m) z | (m : Fin n → Pauli) (z : phase)}
+
+--def PauliGroup : Finset 𝐔[Fin (2^n)] := Finset.image (λ (x : (pauli_products_n hn) × pgroup_phases) => U_phase x.1 x.2 sorry) (Finset.univ pgroup_phases)
+noncomputable def PauliGroup (hn : 0 < n) : Finset 𝐔[(Fin (2^n))] :=
+  (Finset.univ.product pgroup_phases).image (λ mp =>
+    let m := mp.1
+    let z := mp.2
+    U_phase (pauli_tensor hn m) z)
+
+lemma mem_PauliGroup_iff (U : 𝐔[Fin (2^n)]) (hn : 0 < n) : U ∈ PauliGroup hn ↔ ∃ m, ∃ z ∈ pgroup_phases, U_phase (pauli_tensor hn m) z = U := by
+  unfold PauliGroup
+  rw [Finset.mem_image]
+  simp

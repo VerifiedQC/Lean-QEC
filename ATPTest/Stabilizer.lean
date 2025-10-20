@@ -110,6 +110,7 @@ lemma three_qubit_encode_correct : three_qubit_encode ψ =
   (qub_one ⊗ (qub_one ⊗ qub_one)) (ψ.vec 0) (ψ.vec 1) (single_qub_normalized _)
   := sorry
 
+/-
 structure code (l c : ℕ) where --l is logical qubits, c is code size
   encoding : Ket (Fin (2^l)) → Ket (Fin (2^c))
   stabilizers : Finset 𝐔[Fin (2^c)]
@@ -120,6 +121,30 @@ structure code (l c : ℕ) where --l is logical qubits, c is code size
 structure pauli_code (l c : ℕ) (hc : 0 < c) where
   code : code l c
   stab_pauli : ∀ U ∈ code.stabilizers, is_pauli_product hc U
+-/
+
+
+
+variable {n : ℕ} (hn : 0 < n)
+
+def QCode (k : ℕ) := Ket (Fin (2^k)) → Ket (Fin (2^n))
+
+noncomputable section
+
+def QCode.stabilizers {k : ℕ} (C : QCode k) :=
+  {U | (∀ ψ, stabilizes U (C ψ)) ∧ U ∈ PauliGroup hn}
+
+lemma pauli_commute_with_phase {U₁ U₂ : 𝐔[Fin (2^n)]} (h1 : U₁ ∈ PauliGroup hn)
+  (h2 : U₂ ∈ PauliGroup hn) : ∃ (p : pgroup_phases),  U₁ * U₂ = U_phase (U₂ * U₁) p := sorry
+
+def pauli_pauli_phase {U₁ U₂ : 𝐔[Fin (2^n)]} (h1 : U₁ ∈ PauliGroup hn)
+  (h2 : U₂ ∈ PauliGroup hn) : pgroup_phases := Classical.choose (pauli_commute_with_phase hn h1 h2)
+
+def syndrome {k : ℕ} {E : 𝐔[Fin (2^n)]} (hE : E ∈ PauliGroup hn)
+  (C : QCode k) : C.stabilizers hn → pgroup_phases := fun U => pauli_pauli_phase hn hE U.2.2
+
+lemma pauli_weight {U : 𝐔[Fin (2^n)]} (hU : U ∈ PauliGroup hn) : ℕ := sorry
+
 
 
 
