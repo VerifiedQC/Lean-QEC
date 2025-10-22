@@ -67,14 +67,16 @@ theorem inv_stab {U : 𝐔[k]} {ψ : Ket k} (hstab : stabilizes U ψ) : stabiliz
 
 --theorem for stabilizing sums?
 
-def Ket.sum (ψ₁ ψ₂ : Ket k) (a b : ℂ) (hab: ‖a^2‖+‖b^2‖ = 1) : Ket k where
+open Braket
+
+def Ket.sum (ψ₁ ψ₂ : Ket k) (a b : ℂ) (hab: ‖a^2‖+‖b^2‖ = 1) (h_orth :〈ψ₁‖ψ₂〉= 0) : Ket k where
   vec := a • ψ₁.vec + b • ψ₂.vec
   normalized' := sorry
 
 
-theorem sum_stab {ψ₁ ψ₂ : Ket k} {a b : ℂ} {U : 𝐔[k]} (hab: ‖a^2‖+‖b^2‖ = 1)
+theorem sum_stab {ψ₁ ψ₂ : Ket k} {a b : ℂ} {U : 𝐔[k]} (hab: ‖a^2‖+‖b^2‖ = 1) (h_orth :〈ψ₁‖ψ₂〉= 0)
   (hstab1 : stabilizes U ψ₁) (hstab2 : stabilizes U ψ₂) :
-  stabilizes U (ψ₁.sum ψ₂ a b hab) := by
+  stabilizes U (ψ₁.sum ψ₂ a b hab h_orth) := by
   simp [stabilizes, Ket.uapply, Ket.sum, Matrix.mulVec_add, Matrix.mulVec_smul,
   stabilizes_apply' hstab1, stabilizes_apply' hstab2]
 
@@ -103,11 +105,16 @@ lemma single_qub_normalized : ‖(ψ.vec 0)^2‖+‖(ψ.vec 1)^2‖ = 1 := by
   convert ψ.normalized'
   simp
 
-lemma one_qub_decomp : ψ = qub_zero.sum qub_one (ψ.vec 0) (ψ.vec 1) (single_qub_normalized _) := sorry
+lemma zero_one_orth : 〈qub_zero‖qub_one〉= 0 := sorry
+
+lemma one_qub_decomp : ψ = qub_zero.sum qub_one (ψ.vec 0) (ψ.vec 1) (single_qub_normalized _) (zero_one_orth) := sorry
+
+lemma prod_orth {ψ₁ φ₁ : Ket k₁} {ψ₂ φ₂ : Ket k₂} (ho₁ :〈ψ₁‖φ₁〉= 0) (ho₂ :〈ψ₂‖φ₂〉= 0)
+  :〈(ψ₁ ⊗ ψ₂ : Ket (k₁ × k₂))‖(φ₁ ⊗ φ₂)〉 = 0:= sorry
 
 lemma three_qubit_encode_correct : three_qubit_encode ψ =
   (qub_zero ⊗ (qub_zero ⊗ qub_zero)).sum
-  (qub_one ⊗ (qub_one ⊗ qub_one)) (ψ.vec 0) (ψ.vec 1) (single_qub_normalized _)
+  (qub_one ⊗ (qub_one ⊗ qub_one)) (ψ.vec 0) (ψ.vec 1) (single_qub_normalized _) (prod_orth zero_one_orth (prod_orth zero_one_orth zero_one_orth))
   := sorry
 
 /-
@@ -125,13 +132,16 @@ structure pauli_code (l c : ℕ) (hc : 0 < c) where
 
 
 
-variable {n : ℕ} (hn : 0 < n)
+variable (n : ℕ) (k : ℕ)
 
-def QCode (k : ℕ) := Ket (Fin (2^k)) → Ket (Fin (2^n))
+def QCode := Ket (Fin (2^k)) → Ket (Fin (2^n))
 
 noncomputable section
 
-def QCode.stabilizers {k : ℕ} (C : QCode k) :=
+variable {n : ℕ} {k : ℕ} (hn : 0 < n)
+
+
+def QCode.stabilizers (C : QCode n k) :=
   {U | (∀ ψ, stabilizes U (C ψ)) ∧ U ∈ PauliGroup hn}
 
 lemma pauli_commute_with_phase {U₁ U₂ : 𝐔[Fin (2^n)]} (h1 : U₁ ∈ PauliGroup hn)
@@ -140,10 +150,17 @@ lemma pauli_commute_with_phase {U₁ U₂ : 𝐔[Fin (2^n)]} (h1 : U₁ ∈ Paul
 def pauli_pauli_phase {U₁ U₂ : 𝐔[Fin (2^n)]} (h1 : U₁ ∈ PauliGroup hn)
   (h2 : U₂ ∈ PauliGroup hn) : pgroup_phases := Classical.choose (pauli_commute_with_phase hn h1 h2)
 
-def syndrome {k : ℕ} {E : 𝐔[Fin (2^n)]} (hE : E ∈ PauliGroup hn)
-  (C : QCode k) : C.stabilizers hn → pgroup_phases := fun U => pauli_pauli_phase hn hE U.2.2
+def QCode.syndrome {k : ℕ} (C : QCode n k) {E : 𝐔[Fin (2^n)]} (hE : E ∈ PauliGroup hn)
+   : C.stabilizers hn → pgroup_phases := fun U => pauli_pauli_phase hn hE U.2.2
 
-lemma pauli_weight {U : 𝐔[Fin (2^n)]} (hU : U ∈ PauliGroup hn) : ℕ := sorry
+def QCode.distinguishes (C : QCode n k) {E₁ E₂} (hE₁ : E₁ ∈ PauliGroup hn) (hE₂ : E₂ ∈ PauliGroup hn) := C.syndrome hn hE₁ ≠ C.syndrome hn hE₂
+
+--to detect errors, it suffices to distinguish an error and the I pauli
+def Qcode.detects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ E (hE : E ∈ PauliGroup hn),
+  pauli_weight hn hE ≤ w → C.distinguishes hn hE (mem_PauliGroup_id hn)
+
+def Qcode.corrects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ E₁ (hE₁ : E₁ ∈ PauliGroup hn), ∀ E₂ (hE₂ : E₂ ∈ PauliGroup hn),
+  pauli_weight hn hE₁ ≤ w → pauli_weight hn hE₂ ≤ w → C.distinguishes hn hE₁ hE₂
 
 
 

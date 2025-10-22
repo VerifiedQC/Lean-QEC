@@ -122,7 +122,23 @@ noncomputable def PauliGroup (hn : 0 < n) : Finset 𝐔[(Fin (2^n))] :=
     let z := mp.2
     U_phase (pauli_tensor hn m) z)
 
-lemma mem_PauliGroup_iff (U : 𝐔[Fin (2^n)]) (hn : 0 < n) : U ∈ PauliGroup hn ↔ ∃ m, ∃ z ∈ pgroup_phases, U_phase (pauli_tensor hn m) z = U := by
+lemma mem_PauliGroup_iff (U : 𝐔[Fin (2^n)]) (hn : 0 < n) : U ∈ PauliGroup hn ↔ ∃ m, (∃ z : pgroup_phases, U_phase (pauli_tensor hn m) z = U) := by
   unfold PauliGroup
   rw [Finset.mem_image]
   simp
+
+def PauliGroup.map {U : 𝐔[Fin (2^n)]} (hn : 0 < n)
+(hU : U ∈ PauliGroup hn) : Fin n → Pauli := Classical.choose ((mem_PauliGroup_iff U hn).1 hU)
+
+
+
+def PauliGroup.phase {U : 𝐔[Fin (2^n)]} (hn : 0 < n)
+(hU : U ∈ PauliGroup hn) : pgroup_phases := Classical.choose ((mem_PauliGroup_iff U hn).mp hU).choose_spec
+
+
+
+lemma rep_unique {U : 𝐔[Fin (2^n)]} (m₁ m₂ : Fin n → Pauli)
+(z₁ z₂ : pgroup_phases) (hm₁ : U_phase (pauli_tensor hn m₁) z₁ = U) (hm₂ : U_phase (pauli_tensor hn m₂) z₂ = U)
+ : m₁ = m₂ ∧ z₁ = z₂ := sorry
+
+def pauli_weight {U : 𝐔[Fin (2^n)]} (hU : U ∈ PauliGroup hn) : ℕ := (Finset.univ.filter (fun i => (PauliGroup.map hn hU) i ≠ I)).card
