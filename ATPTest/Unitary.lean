@@ -131,11 +131,10 @@ def PauliGroup.map {U : 𝐔[Fin (2^n)]} (hn : 0 < n)
 (hU : U ∈ PauliGroup hn) : Fin n → Pauli := Classical.choose ((mem_PauliGroup_iff U hn).1 hU)
 
 
-
 def PauliGroup.phase {U : 𝐔[Fin (2^n)]} (hn : 0 < n)
 (hU : U ∈ PauliGroup hn) : pgroup_phases := Classical.choose ((mem_PauliGroup_iff U hn).mp hU).choose_spec
 
-
+lemma mem_PauliGroup_id (hn : 0 < n) : 1 ∈ PauliGroup hn := sorry
 
 lemma rep_unique {U : 𝐔[Fin (2^n)]} (m₁ m₂ : Fin n → Pauli)
 (z₁ z₂ : pgroup_phases) (hm₁ : U_phase (pauli_tensor hn m₁) z₁ = U) (hm₂ : U_phase (pauli_tensor hn m₂) z₂ = U)
