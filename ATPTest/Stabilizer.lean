@@ -95,11 +95,6 @@ variable (ψ : Ket Qubit)
 --wait, how do i cX transversally? just controllize 1 ⊗ X?
 --clearly if this is to be easier to work with i have to
 --change how this is done
-def three_qubit_encode : Ket (Qubit × Qubit × Qubit) :=
-  ((Ket.prod ψ (Ket.prod qub_zero qub_zero)).uapply
-   (unitary_fin_equiv (Equiv.prodAssoc _ _ _)
-   (Matrix.unitary_kron C[X] (1 : 𝐔[Qubit])))).uapply --CX(2, 3)
-   C[Matrix.unitary_kron (1 : 𝐔[Qubit]) X] --CX(1, 3)
 
 lemma single_qub_normalized : ‖(ψ.vec 0)^2‖+‖(ψ.vec 1)^2‖ = 1 := by
   convert ψ.normalized'
@@ -112,10 +107,6 @@ lemma one_qub_decomp : ψ = qub_zero.sum qub_one (ψ.vec 0) (ψ.vec 1) (single_q
 lemma prod_orth {ψ₁ φ₁ : Ket k₁} {ψ₂ φ₂ : Ket k₂} (ho₁ :〈ψ₁‖φ₁〉= 0) (ho₂ :〈ψ₂‖φ₂〉= 0)
   :〈(ψ₁ ⊗ ψ₂ : Ket (k₁ × k₂))‖(φ₁ ⊗ φ₂)〉 = 0:= sorry
 
-lemma three_qubit_encode_correct : three_qubit_encode ψ =
-  (qub_zero ⊗ (qub_zero ⊗ qub_zero)).sum
-  (qub_one ⊗ (qub_one ⊗ qub_one)) (ψ.vec 0) (ψ.vec 1) (single_qub_normalized _) (prod_orth zero_one_orth (prod_orth zero_one_orth zero_one_orth))
-  := sorry
 
 /-
 structure code (l c : ℕ) where --l is logical qubits, c is code size
@@ -160,10 +151,15 @@ def Qcode.detects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ E (hE : E ∈
   pauli_weight hn hE ≤ w → C.distinguishes hn hE (mem_PauliGroup_id hn)
 
 def Qcode.corrects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ E₁ (hE₁ : E₁ ∈ PauliGroup hn), ∀ E₂ (hE₂ : E₂ ∈ PauliGroup hn),
+  (PauliGroup.phase hn hE₁).1 = ⟨1, by norm_num⟩ → (PauliGroup.phase hn hE₂).1 = ⟨1, by norm_num⟩ →
   pauli_weight hn hE₁ ≤ w → pauli_weight hn hE₂ ≤ w → C.distinguishes hn hE₁ hE₂
 
+def Qcode.detects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli):= ∀ E (hE : E ∈ PauliGroup hn),
+  (pauli_only hn hE P) → pauli_weight hn hE ≤ w → C.distinguishes hn hE (mem_PauliGroup_id hn)
 
-
+def Qcode.corrects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli) := ∀ E₁ (hE₁ : E₁ ∈ PauliGroup hn), ∀ E₂ (hE₂ : E₂ ∈ PauliGroup hn),
+  (pauli_only hn hE₁ P) → (pauli_only hn hE₂ P) → (PauliGroup.phase hn hE₁).1 = ⟨1, by norm_num⟩ → (PauliGroup.phase hn hE₂).1 = ⟨1, by norm_num⟩ →
+  pauli_weight hn hE₁ ≤ w → pauli_weight hn hE₂ ≤ w → C.distinguishes hn hE₁ hE₂
 
 --maybe ensure that stabilizers are pauli matrices?
 --theorem that says pauli X, Z errors on stabilized vectors result

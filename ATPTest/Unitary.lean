@@ -141,3 +141,5 @@ lemma rep_unique {U : 𝐔[Fin (2^n)]} (m₁ m₂ : Fin n → Pauli)
  : m₁ = m₂ ∧ z₁ = z₂ := sorry
 
 def pauli_weight {U : 𝐔[Fin (2^n)]} (hU : U ∈ PauliGroup hn) : ℕ := (Finset.univ.filter (fun i => (PauliGroup.map hn hU) i ≠ I)).card
+
+def pauli_only {U : 𝐔[Fin (2^n)]} (hU : U ∈ PauliGroup hn) (P : Pauli) := ∀ x, ((PauliGroup.map hn hU) x = I ∨ (PauliGroup.map hn hU) x = P)
