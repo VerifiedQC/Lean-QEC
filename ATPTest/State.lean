@@ -3,6 +3,23 @@ import Mathlib.Data.Complex.Basic
 import Mathlib.Analysis.SpecialFunctions.Complex.Arg
 import ATPTest.Braket
 
+/-
+an attempt to redefine Ket and Unitary matrices so they are exactly
+specified to our situation: they have a number of qubits, and the fintype
+behind them is exactly Fin n → Qubit (where Abbrev Qubit := Fin 2). This
+represents bitstrings of length n, and ideally gives us a convenient
+representation for tensor products in this form. If State n is a pure
+state on n qubits, then (ψ₁ : State n₁) ⊗ (ψ₂ : State n₂) is a pure state
+on n₁+n₂ qubits, with a (vec : (Fin (n₁ + n₂) → Qubit) → ℂ). Previously,
+our definition of tensor products for kets and unitaries output products
+of the input types, but we want to conveniently redefine them so they just
+output a bitstring of the desired length. The reason for this is that
+if you abstractly have n single-qubit kets, there isn't a good
+lean-theoretic statement for the product of (Fin 2), n times. If there was,
+it would be isomorphic to Fin (2^n), which is how we were writing it when
+we had a specified n for the the number of tensors.
+
+-/
 structure State (n : ℕ) where
   vec : (Fin n → Qubit) → ℂ
   normalized' : ∑ x, ‖vec x‖ ^ 2 = 1
