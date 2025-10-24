@@ -43,7 +43,7 @@ def state_one : State 1 := {
 }
 
 def State.prod {n₁ n₂ : ℕ} (ψ₁ : State n₁) (ψ₂ : State n₂) : State (n₁ + n₂) where
-  vec := fun x =>
+  vec := fun (x: (Fin (n₁ + n₂) → Qubit)) =>
     let x₁ : Fin n₁ → Qubit := fun i => x (Fin.castAdd n₂ i)
     let x₂ : Fin n₂ → Qubit := fun i => x (Fin.natAdd n₁ i)
     ψ₁.vec x₁ * ψ₂.vec x₂
@@ -116,8 +116,15 @@ def n_qubit_unitary.prod {n₁ n₂ : ℕ} (U₁ : n_qubit_unitary n₁) (U₂ :
   n_qubit_unitary (n₁ + n₂) :=
   unitary_fin_equiv bitstring_prod_equiv (Matrix.unitary_kron U₁ U₂)
 
-open Matrix
+-- def Phi {n₁ n₂ : ℕ} : (Fin (n₁ + n₂) -> Fin 2) -> ((Fin n₁ -> Fin 2) *
 
+def State.prod_2 {n₁ n₂ : ℕ} (ψ₁ : State n₁) (ψ₂ : State n₂) : State (n₁ + n₂) where
+  vec :=
+    let p := (Matrix.kronecker ψ₁.vec ψ₂.vec)
+    bitstring_vec_prod_equiv p
+
+
+open Matrix
 
 lemma State.prod_mul_kron {n₁ n₂ : ℕ} (M₁ : Matrix (Fin n₁ → Qubit) (Fin n₁ → Qubit) ℂ) (M₂ : Matrix (Fin n₂ → Qubit) (Fin n₂ → Qubit) ℂ) (ψ₁ : State n₁) (ψ₂ : State n₂):
   (Matrix.kroneckerMap (fun x1 x2 => x1 * x2) M₁ M₂) *ᵥ (bitstring_vec_prod_equiv.invFun (ψ₁.prod ψ₂).vec) = fun (i, j) ↦ ((M₁ *ᵥ ψ₁) i) * ((M₂ *ᵥ ψ₂) j) := by
@@ -125,10 +132,23 @@ lemma State.prod_mul_kron {n₁ n₂ : ℕ} (M₁ : Matrix (Fin n₁ → Qubit) 
   simp only [mulVec, kroneckerMap_apply, DFunLike.coe, prod, bitstring_vec_prod_equiv, bitstring_prod_equiv]
   sorry
 
+def bitstring_vec_prod {n₁ n₂ : ℕ} (v₁ : (Fin n₁ → Qubit) → ℂ) (v₂ : (Fin n₂ → Qubit) → ℂ)
+  : ((Fin n₁ → Qubit) × (Fin n₂ → Qubit)) → ℂ :=
+  fun x => (v₁ x.1) * (v₂ x.2)
+
+lemma bitstring_vec_prod_nice {n₁ n₂ : ℕ} (v₁ : (Fin n₁ → Qubit) → ℂ) (v₂ : (Fin n₂ → Qubit) → ℂ)
+  (U₁ : 𝐔[Fin n₁ → Qubit]) (U₂ : 𝐔[Fin n₂ → Qubit]) : (U₁ ⊗ᵤ U₂) *ᵥ (bitstring_vec_prod v₁ v₂) = (bitstring_vec_prod (U₁ *ᵥ v₁) (U₂ *ᵥ v₂)) := sorry
+
+theorem State.prod_equiv {n₁ n₂ : ℕ} (ψ₁ : State n₁) (ψ₂ : State n₂) :
+  (ψ₁.prod ψ₂).vec = bitstring_vec_prod_equiv (bitstring_vec_prod ψ₁ ψ₂) := sorry
+
+theorem unitary_fin_equiv_apply {a b : Type*} [Fintype a] [DecidableEq a] [DecidableEq b] [Fintype b]
+  {U : 𝐔[a]} (v : a → ℂ) (e₁ : a ≃ b) (e₂ : (a → ℂ) ≃ (b → ℂ)): --plus some other condition relating e₁ e₂
+  ((unitary_fin_equiv e₁) U) *ᵥ (e₂ v) = e₂ (U *ᵥ v) := sorry
 
 theorem State.prod_apply {n₁ n₂ : ℕ} (ψ₁ : State n₁) (ψ₂ : State n₂) (U₁ : n_qubit_unitary n₁)
   (U₂ : n_qubit_unitary n₂) : (ψ₁.prod ψ₂).apply (n_qubit_unitary.prod U₁ U₂) =
   (ψ₁.apply U₁).prod (ψ₂.apply U₂) := by
-  unfold State.apply n_qubit_unitary.prod State.prod
-  rw [State.mk.injEq, Matrix.toLin'_apply]
+  unfold State.apply n_qubit_unitary.prod
+  rw [State.mk.injEq, Matrix.toLin'_apply, State.prod_equiv, unitary_fin_equiv_apply]
   simp
