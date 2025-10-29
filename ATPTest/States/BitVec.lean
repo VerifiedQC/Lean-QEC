@@ -8,7 +8,7 @@ import Mathlib.LinearAlgebra.Matrix.Kronecker
 
 open Matrix
 
-local instance fin_bits (m : ℕ) : Fintype (BitVec m) :=
+instance fin_bits (m : ℕ) : Fintype (BitVec m) :=
   Fintype.ofEquiv (Fin (2 ^ m)) ((BitVec.equivFin (m := m)).symm)
 
 def bits_cat {w₁ w₂} : BitVec w₁ × BitVec w₂ ≃ BitVec (w₁ + w₂) where
