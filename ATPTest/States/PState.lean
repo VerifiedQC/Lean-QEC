@@ -3,6 +3,8 @@ import Mathlib.Data.Complex.Basic
 import Mathlib.Analysis.Complex.Norm
 import ATPTest.Unitary.Basic
 
+section pstate
+
 structure PState (n : ℕ) where
   vec : (BitVec n) → ℂ
   normalized : ∑ x, ‖vec x‖^2 = 1
@@ -33,8 +35,29 @@ theorem unitary_norm_preserve {k : Type*} [Fintype k] [DecidableEq k] (U : 𝐔[
   -- Apply the hypothesis `h_norm` to the vector `v`.
   apply h_norm
 
+@[simp]
 def PState.apply {n : ℕ} (ψ : PState n) (U : 𝐔ₙ[n]) : PState n where
   vec := U.1.toLin' ψ.vec
   normalized := by
     rewrite [unitary_norm_preserve]
     exact ψ.normalized
+
+def PState.kron {n₁ n₂ : ℕ} (ψ₁ : PState n₁) (ψ₂ : PState n₂) : PState (n₁ + n₂) where
+  vec := ket_prod ψ₁.vec ψ₂.vec
+  normalized := by
+    simp [ket_prod, normalized_kron, toMat]
+    have h : ∑ (x : BitVec n₁ × BitVec n₂), (‖ψ₁.vec x.1‖ * ‖ψ₂.vec x.2‖) ^ 2 = 1
+    · rw [Fintype.sum_prod_type]
+      simp_rw [mul_pow, ←Finset.mul_sum, ψ₂.normalized, mul_one, ψ₁.normalized]
+    rw [Fintype.sum_equiv bits_cat.symm]
+    exact h
+    simp
+
+notation a:60 " ⊗ₖ " b:60 => PState.kron a b
+
+open scoped unitary
+
+theorem kron_mul_kron {n₁ n₂ : ℕ} (ψ₁ : PState n₁) (ψ₂ : PState n₂) (U₁ : 𝐔ₙ[n₁]) (U₂ : 𝐔ₙ[n₂]) :
+  (ψ₁ ⊗ₖ ψ₂).apply (U₁ ⊗ₙ U₂) = (ψ₁.apply U₁) ⊗ₖ (ψ₂.apply U₂) := by
+  rw [PState.mk.injEq]
+  simp [PState.kron, unitary_nkron, kron_prod]

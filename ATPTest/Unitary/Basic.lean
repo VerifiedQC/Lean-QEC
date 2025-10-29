@@ -3,6 +3,8 @@ import ATPTest.States.BitVec
 import QuantumInfo.Finite.Qubit.Basic
 open Matrix
 
+section unitary
+
 theorem reindex_unitary {a b : Type*} [Fintype a] [Fintype b] [DecidableEq a] [DecidableEq b]
   (e : a ≃ b) (U : 𝐔[a]) : (reindex e e) U.1 ∈ unitaryGroup b ℂ := by
   have h_mem := U.2
@@ -25,6 +27,11 @@ def unitary_fin_equiv {a b : Type*} [Fintype a] [Fintype b] [DecidableEq a] [Dec
 notation "𝐔ₙ[" n "]" => Matrix.unitaryGroup (BitVec n) ℂ
 
 open Kronecker in
-theorem kron_unitary' {n₁ n₂ : ℕ} (a : 𝐔ₙ[n₁]) (b : 𝐔ₙ[n₂]) : normalized_kron a.val b.val ∈ 𝐔ₙ[n₁ + n₂] := by
+theorem nkron_unitary {n₁ n₂ : ℕ} (a : 𝐔ₙ[n₁]) (b : 𝐔ₙ[n₂]) : normalized_kron a.val b.val ∈ 𝐔ₙ[n₁ + n₂] := by
   rw [normalized_kron, normalize_mat]
   exact reindex_unitary bits_cat ⟨_, kron_unitary a b⟩
+
+open Kronecker in
+def unitary_nkron {n₁ n₂ : ℕ} (a : 𝐔ₙ[n₁]) (b : 𝐔ₙ[n₂]) : 𝐔ₙ[n₁ + n₂] := ⟨_, nkron_unitary a b⟩
+
+notation a:60 " ⊗ₙ " b:60 => unitary_nkron a b
