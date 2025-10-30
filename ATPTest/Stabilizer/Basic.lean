@@ -1,67 +1,45 @@
-import ATPTest.Braket
+import ATPTest.States.PState
 
-variable {k : Type*} [Fintype k] [DecidableEq k]
+variable {n : ℕ}
 
-def stabilizes (U : 𝐔[k]) (ψ : Ket k) := ψ.uapply U = ψ
-
-@[simp]
-lemma stabilizes_apply (U : 𝐔[k]) (ψ : Ket k) (hstab : stabilizes U ψ) : ψ.uapply U = ψ := hstab
+def stabilizes (U : 𝐔ₙ[n]) (ψ : PState n) := ψ.apply U = ψ
 
 @[simp]
-lemma stabilizes_apply' {U : 𝐔[k]} {ψ : Ket k} (hstab : stabilizes U ψ) : Matrix.mulVec U ψ.vec = ψ.vec := by
-  simp only [stabilizes, Ket.uapply, Matrix.toLin'_apply] at hstab
-  rwa [Ket.mk.injEq] at hstab
+lemma stabilizes_apply (U : 𝐔ₙ[n]) (ψ : PState n) (hstab : stabilizes U ψ) : ψ.apply U = ψ := hstab
 
+@[simp]
+lemma stabilizes_apply' {U : 𝐔ₙ[n]} {ψ : PState n} (hstab : stabilizes U ψ) : Matrix.mulVec U ψ.vec = ψ.vec := by
+  simp only [stabilizes, PState.apply, Matrix.toLin'_apply] at hstab
+  rwa [PState.mk.injEq] at hstab
 
+variable {n₁ n₂ : ℕ}
 
---prove:
--- X stabilizes +
--- Z stabilizes 0
--- a product of stabilizers stabilizes
--- n-product of stabilizers stabilizes
-
-open Qubit
-
-theorem X_stab_plus : stabilizes X qub_plus := by
-  unfold stabilizes Ket.uapply qub_plus
-  rw [Ket.mk.injEq, Matrix.toLin'_apply]
-  funext i
-  fin_cases i <;> simp [X]
-
-theorem Z_stab_zero : stabilizes Z qub_zero := by
-  unfold stabilizes Ket.uapply qub_zero
-  rw [Ket.mk.injEq, Matrix.toLin'_apply]
-  funext i
-  fin_cases i <;> simp [Z]
-
-variable {k₁ k₂ : Type*} [Fintype k₁] [DecidableEq k₁] [Fintype k₂] [DecidableEq k₂]
-
-theorem stab_prod {U₁ : 𝐔[k₁]} {U₂ : 𝐔[k₂]} {ψ₁ : Ket k₁} {ψ₂ : Ket k₂}
+theorem stab_prod {U₁ : 𝐔ₙ[n₁]} {U₂ : 𝐔ₙ[n₂]} {ψ₁ : PState n₁} {ψ₂ : PState n₂}
   (hs₁ : stabilizes U₁ ψ₁) (hs₂ : stabilizes U₂ ψ₂) :
-  stabilizes (Matrix.unitary_kron U₁ U₂) (ψ₁ ⊗ ψ₂) := by
+  stabilizes (U₁ ⊗ₙ U₂) (ψ₁ ⊗ₖ ψ₂) := by
   unfold stabilizes
-  rw [Ket.uapply_kron, hs₁, hs₂]
-
+  rw [kron_mul_kron, hs₁, hs₂]
+/-
 theorem stab_of_stab_equiv {U : 𝐔[k₁]} {ψ : Ket k₁} (e : k₁ ≃ k₂) (hstab: stabilizes U ψ) :
   stabilizes (unitary_fin_equiv e U) (ket_fin_equiv e ψ) := sorry
+-/
 
-theorem stab_n_prod {n : ℕ} {um : Fin n → 𝐔[Qubit]} {km : Fin n → Ket Qubit} (hn : 0 < n)
+theorem stab_n_prod {n : ℕ} {um : Fin n → 𝐔ₙ[1]} {km : Fin n → PState 1} (hn : 0 < n)
   (hstab : ∀ x, stabilizes (um x) (km x)) :
-  stabilizes (unitary_n_tensor hn um) (ket_n_tensor hn km) := by
+  stabilizes (unitary_n_nkron hn um) (pstate_n_kron hn km) := by
     induction n with
     | zero => contradiction
     | succ n ih =>
       rcases n
       · exact hstab 0
-      · simp only [unitary_n_tensor, Equiv.toFun_as_coe, ket_n_tensor]
-        apply stab_of_stab_equiv fin_pow_succ_equiv (stab_prod (hstab 0)
-         (ih _ (fun x => (hstab _))))
+      · simp only [unitary_n_nkron, pstate_n_kron]
+        apply stab_prod (ih _ (fun x => (hstab _))) (hstab 0)
 
-theorem one_stab_all (ψ : Ket k) : stabilizes 1 ψ := by simp [stabilizes, Ket.uapply]
+theorem one_stab_all {n : ℕ} (ψ : PState n) : stabilizes 1 ψ := by simp [stabilizes]
 
-theorem inv_stab {U : 𝐔[k]} {ψ : Ket k} (hstab : stabilizes U ψ) : stabilizes U⁻¹ ψ := by
-  simp [stabilizes, Ket.uapply]
-  rw [Ket.mk.injEq]
+theorem inv_stab {n : ℕ} {U : 𝐔ₙ[n]} {ψ : PState n} (hstab : stabilizes U ψ) : stabilizes U⁻¹ ψ := by
+  simp [stabilizes]
+  rw [PState.mk.injEq]
   nth_rw 2 [←(Matrix.one_mulVec ψ.vec)]
   rw [←U.2.1, ←Matrix.mulVec_mulVec, stabilizes_apply' hstab]
 
@@ -69,36 +47,36 @@ theorem inv_stab {U : 𝐔[k]} {ψ : Ket k} (hstab : stabilizes U ψ) : stabiliz
 
 open Braket
 
-def Ket.sum (ψ₁ ψ₂ : Ket k) (a b : ℂ) (hab: ‖a^2‖+‖b^2‖ = 1) (h_orth :〈ψ₁‖ψ₂〉= 0) : Ket k where
+def PState.sum {n : ℕ} (ψ₁ ψ₂ : PState n) (a b : ℂ) (hab: ‖a^2‖+‖b^2‖ = 1) (h_orth : ψ₁.orth ψ₂) : PState n where
   vec := a • ψ₁.vec + b • ψ₂.vec
-  normalized' := sorry
+  normalized := sorry
 
 
-theorem sum_stab {ψ₁ ψ₂ : Ket k} {a b : ℂ} {U : 𝐔[k]} (hab: ‖a^2‖+‖b^2‖ = 1) (h_orth :〈ψ₁‖ψ₂〉= 0)
+theorem sum_stab {n : ℕ} {ψ₁ ψ₂ : PState n} {a b : ℂ} {U : 𝐔ₙ[n]} (hab: ‖a^2‖+‖b^2‖ = 1) (h_orth : ψ₁.orth ψ₂)
   (hstab1 : stabilizes U ψ₁) (hstab2 : stabilizes U ψ₂) :
   stabilizes U (ψ₁.sum ψ₂ a b hab h_orth) := by
-  simp [stabilizes, Ket.uapply, Ket.sum, Matrix.mulVec_add, Matrix.mulVec_smul,
+  simp [stabilizes, PState.sum, Matrix.mulVec_add, Matrix.mulVec_smul,
   stabilizes_apply' hstab1, stabilizes_apply' hstab2]
 
 
 
 --think harder about how i want to define this: subtype for pauli tensors?
-def stabilizer_set (ψ : Ket k) :=
+def stabilizer_set {n : ℕ} (ψ : PState n) :=
   {U // stabilizes U ψ}
 
 variable {n : ℕ}
 
-open Qubit
 
-variable (ψ : Ket Qubit)
+variable (ψ : PState 1)
 
 --wait, how do i cX transversally? just controllize 1 ⊗ X?
 --clearly if this is to be easier to work with i have to
 --change how this is done
 
-lemma single_qub_normalized : ‖(ψ.vec 0)^2‖+‖(ψ.vec 1)^2‖ = 1 := by
-  convert ψ.normalized'
-  simp
+lemma single_qub_normalized : ‖(ψ.vec 0)‖^2+‖(ψ.vec 1)‖^2 = 1 := by
+  convert ψ.normalized
+  sorry
+
 
 lemma zero_one_orth : 〈qub_zero‖qub_one〉= 0 := sorry
 
