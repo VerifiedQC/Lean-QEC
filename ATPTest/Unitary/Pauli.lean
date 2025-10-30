@@ -12,7 +12,8 @@ lemma pauli_herm {p : Pauli} : Matrix.IsHermitian p.1.1 := by
   rcases p with ⟨x, hx⟩
   rw [Pauli] at hx
   simp at hx ⊢
-  rcases hx with (rfl | rfl | rfl | rfl) <;> matrix_expand [X, Y, Z]
+  sorry
+  --rcases hx with (rfl | rfl | rfl | rfl) <;> matrix_expand [X, Y, Z]
 
 variable {n : ℕ} (hn : 0 < n) (m : Fin n → Pauli)
 

@@ -5,10 +5,12 @@ import ATPTest.Unitary.Basic
 
 section pstate
 
+abbrev PState (n : ℕ) := Ket (BitVec n)
+/-
 structure PState (n : ℕ) where
   vec : (BitVec n) → ℂ
   normalized : ∑ x, ‖vec x‖^2 = 1
-
+-/
 variable {n : ℕ}
 
 --thanks aristotle
@@ -40,28 +42,35 @@ theorem unitary_norm_preserve {k : Type*} [Fintype k] [DecidableEq k] (U : 𝐔[
 @[simp]
 def PState.apply (ψ : PState n) (U : 𝐔ₙ[n]) : PState n where
   vec := U.1.toLin' ψ.vec
-  normalized := by
+  normalized' := by
     rewrite [unitary_norm_preserve]
-    exact ψ.normalized
+    exact ψ.normalized'
 
 def PState.kron {n₁ n₂ : ℕ} (ψ₁ : PState n₁) (ψ₂ : PState n₂) : PState (n₁ + n₂) where
   vec := ket_prod ψ₁.vec ψ₂.vec
-  normalized := by
+  normalized' := by
     simp [ket_prod, normalized_kron, toMat]
     have h : ∑ (x : BitVec n₁ × BitVec n₂), (‖ψ₁.vec x.1‖ * ‖ψ₂.vec x.2‖) ^ 2 = 1
     · rw [Fintype.sum_prod_type]
-      simp_rw [mul_pow, ←Finset.mul_sum, ψ₂.normalized, mul_one, ψ₁.normalized]
+      simp_rw [mul_pow, ←Finset.mul_sum, ψ₂.normalized', mul_one, ψ₁.normalized']
     rw [Fintype.sum_equiv bits_cat.symm]
     exact h
     simp
 
-notation a:60 " ⊗ₖ " b:60 => PState.kron a b
+notation a:60 " ⊗ₚ " b:60 => PState.kron a b
 
 open scoped unitary
 
+variable {n₁ n₂ : ℕ} (ψ₁ : PState n₁) (ψ₂ : PState n₂) (U₁ : 𝐔ₙ[n₁]) (U₂ : 𝐔ₙ[n₂])
+
+#check (ψ₁.apply U₁) ⊗ₚ (ψ₁.apply U₁)
+
+theorem kron_mul :
+  (ψ₁.apply U₁) ⊗ₚ (ψ₁.apply U₁) = (ψ₁.apply U₁) ⊗ₚ (ψ₁.apply U₁) := sorry
+
 theorem kron_mul_kron {n₁ n₂ : ℕ} (ψ₁ : PState n₁) (ψ₂ : PState n₂) (U₁ : 𝐔ₙ[n₁]) (U₂ : 𝐔ₙ[n₂]) :
-  (ψ₁ ⊗ₖ ψ₂).apply (U₁ ⊗ₙ U₂) = (ψ₁.apply U₁) ⊗ₖ (ψ₂.apply U₂) := by
-  rw [PState.mk.injEq]
+  (ψ₁ ⊗ₚ ψ₂).apply (U₁ ⊗ₙ U₂) = (ψ₁.apply U₁) ⊗ₚ (ψ₂.apply U₂) := by
+  rw [Ket.mk.injEq]
   simp [PState.kron, unitary_nkron, kron_prod]
 
 def pstate_n_kron {n : ℕ} (hn : 0 < n) (m : Fin n → PState 1) : PState n :=
@@ -69,10 +78,6 @@ match n with
 | 0 => (by contradiction)
 | 1 => (m 0)
 | n₀+2 => ((pstate_n_kron (by norm_num) (λ (x : Fin (n₀+1)) => m ⟨x.val + 1, by simp [x.isLt]⟩)).kron (m 0))
-
-instance instFunLikeKet : FunLike (PState n) (BitVec n) ℂ where
-  coe ψ := ψ.vec
-  coe_injective' _ _ h := by rwa [PState.mk.injEq]
 
 noncomputable section
 
@@ -82,4 +87,4 @@ def PState.orth (ψ₁ ψ₂ : PState n) : Prop := ψ₁.dot ψ₂ = 0
 
 def PState.sum {n : ℕ} (ψ₁ ψ₂ : PState n) (a b : ℂ) (hab: ‖a‖^2+‖b‖^2 = 1) (h_orth : ψ₁.orth ψ₂) : PState n where
   vec := a • ψ₁.vec + b • ψ₂.vec
-  normalized := sorry
+  normalized' := sorry

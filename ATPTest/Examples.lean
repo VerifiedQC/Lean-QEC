@@ -1,9 +1,8 @@
-import ATPTest.Stabilizer
+/-
 
+import ATPTest.Stabilizer.Basic
 
-open Qubit
-
-def three_qubit_encode : QCode 1 3 := fun (ψ : Ket Qubit) =>
+def three_qubit_encode : QCode 1 3 := fun (ψ : PState 1) =>
   (((ψ ⊗ qub_zero) ⊗ qub_zero).uapply
     (Matrix.unitary_kron C[X] (1 : 𝐔[Qubit]))).uapply
       (unitary_fin_equiv (Equiv.prodAssoc _ _ _).symm (C[Matrix.unitary_kron (1 : 𝐔[Qubit]) X]))
@@ -19,3 +18,4 @@ lemma three_qubit_encode_correct (ψ : Ket Qubit) : three_qubit_encode ψ =
   := sorry
 
 theorem three_qub_detects_one_x : three_qubit_encode.detects_P_error_of_weight
+-/

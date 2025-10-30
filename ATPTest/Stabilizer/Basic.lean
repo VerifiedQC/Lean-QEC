@@ -46,7 +46,7 @@ theorem inv_stab {n : ℕ} {U : 𝐔ₙ[n]} {ψ : PState n} (hstab : stabilizes 
 --theorem for stabilizing sums?
 
 
-theorem sum_stab {n : ℕ} {ψ₁ ψ₂ : PState n} {a b : ℂ} {U : 𝐔ₙ[n]} (hab: ‖a^2‖+‖b^2‖ = 1) (h_orth : ψ₁.orth ψ₂)
+theorem sum_stab {n : ℕ} {ψ₁ ψ₂ : PState n} {a b : ℂ} {U : 𝐔ₙ[n]} (hab: ‖a‖^2+‖b‖^2 = 1) (h_orth : ψ₁.orth ψ₂)
   (hstab1 : stabilizes U ψ₁) (hstab2 : stabilizes U ψ₂) :
   stabilizes U (ψ₁.sum ψ₂ a b hab h_orth) := by
   simp [stabilizes, PState.sum, Matrix.mulVec_add, Matrix.mulVec_smul,
@@ -91,7 +91,7 @@ noncomputable section
 
 variable {n : ℕ} {k : ℕ} (hn : 0 < n)
 
-
+/-
 def QCode.stabilizers (C : QCode n k) :=
   {U | (∀ ψ, stabilizes U (C ψ)) ∧ U ∈ PauliGroup hn}
 
@@ -120,6 +120,8 @@ def Qcode.detects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli):= ∀ 
 def Qcode.corrects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli) := ∀ E₁ (hE₁ : E₁ ∈ PauliGroup hn), ∀ E₂ (hE₂ : E₂ ∈ PauliGroup hn),
   (pauli_only hn hE₁ P) → (pauli_only hn hE₂ P) → (PauliGroup.phase hn hE₁).1 = ⟨1, by norm_num⟩ → (PauliGroup.phase hn hE₂).1 = ⟨1, by norm_num⟩ →
   pauli_weight hn hE₁ ≤ w → pauli_weight hn hE₂ ≤ w → C.distinguishes hn hE₁ hE₂
+-/
+
 
 --maybe ensure that stabilizers are pauli matrices?
 --theorem that says pauli X, Z errors on stabilized vectors result
