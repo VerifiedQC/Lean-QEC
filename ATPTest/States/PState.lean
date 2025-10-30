@@ -79,3 +79,7 @@ noncomputable section
 def PState.dot (ψ₁ ψ₂ : PState n) : ℂ := ∑ x, (ψ₁ x) * (ψ₂ x)
 
 def PState.orth (ψ₁ ψ₂ : PState n) : Prop := ψ₁.dot ψ₂ = 0
+
+def PState.sum {n : ℕ} (ψ₁ ψ₂ : PState n) (a b : ℂ) (hab: ‖a‖^2+‖b‖^2 = 1) (h_orth : ψ₁.orth ψ₂) : PState n where
+  vec := a • ψ₁.vec + b • ψ₂.vec
+  normalized := sorry

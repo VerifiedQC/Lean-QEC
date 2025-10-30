@@ -107,3 +107,10 @@ lemma kron_prod {n₁ m₁ n₂ m₂}
   rw [normalize_mul]
   rw [toMat.symm_apply_eq, mulvec_toMat, ket_prod, toMat.apply_symm_apply]
   rfl
+
+@[simp]
+theorem BitVec.sum_univ_one {M : Type u_2} [AddCommMonoid M] (f : BitVec 1 → M) :
+  ∑ i : BitVec 1, f i = f 0 + f 1 := sorry
+
+--what's a better way to do this...
+def beq : Fin 2 ≃ BitVec 1 := (@BitVec.equivFin 1).symm

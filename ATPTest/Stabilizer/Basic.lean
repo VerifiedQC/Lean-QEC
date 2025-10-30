@@ -1,4 +1,4 @@
-import ATPTest.States.PState
+import ATPTest.States.Basic
 
 variable {n : ℕ}
 
@@ -45,12 +45,6 @@ theorem inv_stab {n : ℕ} {U : 𝐔ₙ[n]} {ψ : PState n} (hstab : stabilizes 
 
 --theorem for stabilizing sums?
 
-open Braket
-
-def PState.sum {n : ℕ} (ψ₁ ψ₂ : PState n) (a b : ℂ) (hab: ‖a^2‖+‖b^2‖ = 1) (h_orth : ψ₁.orth ψ₂) : PState n where
-  vec := a • ψ₁.vec + b • ψ₂.vec
-  normalized := sorry
-
 
 theorem sum_stab {n : ℕ} {ψ₁ ψ₂ : PState n} {a b : ℂ} {U : 𝐔ₙ[n]} (hab: ‖a^2‖+‖b^2‖ = 1) (h_orth : ψ₁.orth ψ₂)
   (hstab1 : stabilizes U ψ₁) (hstab2 : stabilizes U ψ₂) :
@@ -67,23 +61,11 @@ def stabilizer_set {n : ℕ} (ψ : PState n) :=
 variable {n : ℕ}
 
 
-variable (ψ : PState 1)
 
 --wait, how do i cX transversally? just controllize 1 ⊗ X?
 --clearly if this is to be easier to work with i have to
 --change how this is done
 
-lemma single_qub_normalized : ‖(ψ.vec 0)‖^2+‖(ψ.vec 1)‖^2 = 1 := by
-  convert ψ.normalized
-  sorry
-
-
-lemma zero_one_orth : 〈qub_zero‖qub_one〉= 0 := sorry
-
-lemma one_qub_decomp : ψ = qub_zero.sum qub_one (ψ.vec 0) (ψ.vec 1) (single_qub_normalized _) (zero_one_orth) := sorry
-
-lemma prod_orth {ψ₁ φ₁ : Ket k₁} {ψ₂ φ₂ : Ket k₂} (ho₁ :〈ψ₁‖φ₁〉= 0) (ho₂ :〈ψ₂‖φ₂〉= 0)
-  :〈(ψ₁ ⊗ ψ₂ : Ket (k₁ × k₂))‖(φ₁ ⊗ φ₂)〉 = 0:= sorry
 
 
 /-
@@ -103,7 +85,7 @@ structure pauli_code (l c : ℕ) (hc : 0 < c) where
 
 variable (n : ℕ) (k : ℕ)
 
-def QCode := Ket (Fin (2^k)) → Ket (Fin (2^n))
+def QCode := PState k → PState n
 
 noncomputable section
 

@@ -1,8 +1,5 @@
 import ATPTest.States.PState
 
---what's a better way to do this...
-def beq : Fin 2 ≃ BitVec 1 := (@BitVec.equivFin 1).symm
-
 def qub_zero : PState 1 := {
   vec := (Equiv.arrowCongr beq (Equiv.refl _)) ![(1 : ℂ), 0]
   normalized := by
@@ -20,3 +17,29 @@ def qub_one : PState 1 := {
     exact h
     simp
 }
+
+@[simp] lemma qub_zero_zero : qub_zero 0#1 = 1 := sorry
+
+@[simp] lemma qub_zero_one : qub_zero 1#1 = 0 := sorry
+
+@[simp] lemma qub_one_zero : qub_one 0#1 = 0 := sorry
+
+@[simp] lemma qub_one_one : qub_one 1#1 = 1 := sorry
+
+
+
+variable (ψ : PState 1)
+
+lemma single_qub_normalized : ‖(ψ.vec 0)‖^2+‖(ψ.vec 1)‖^2 = 1 := by
+  convert ψ.normalized
+  simp
+
+
+lemma zero_one_orth : qub_zero.orth qub_one := by
+  unfold PState.orth PState.dot
+  simp
+
+lemma one_qub_decomp : ψ = qub_zero.sum qub_one (ψ.vec 0) (ψ.vec 1) (single_qub_normalized ψ) (zero_one_orth) := sorry
+
+lemma prod_orth {n₁ n₂} {ψ₁ φ₁ : PState n₁} {ψ₂ φ₂ : PState n₂} (ho₁ : ψ₁.orth φ₁) (ho₂ : ψ₂.orth φ₂)
+  : (ψ₁ ⊗ₖ ψ₂).orth (φ₁ ⊗ₖ φ₂):= sorry

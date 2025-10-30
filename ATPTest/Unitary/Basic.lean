@@ -1,6 +1,7 @@
 import QuantumInfo.Finite.Unitary
 import ATPTest.States.BitVec
 import QuantumInfo.Finite.Qubit.Basic
+import ATPTest.KroneckerLemmas
 open Matrix
 
 section unitary
@@ -41,3 +42,17 @@ match n with
 | 0 => by contradiction
 | 1 => (m 0)
 | n₀+2 => (@unitary_nkron (n₀+1) 1 (unitary_n_nkron (by norm_num) (λ (x : Fin (n₀+1)) => m ⟨x.val + 1, by simp [x.isLt]⟩)) (m 0))
+
+--maybe unitary_nkron should have an underlying version using matrices?
+lemma unitary_herm_of_kron_herm {n₁ n₂ : ℕ} {M₁ : 𝐔ₙ[n₁]} {M₂ : 𝐔ₙ[n₂]} (hM₁ : M₁.val.IsHermitian) (hM₂ : M₂.val.IsHermitian) :
+  Matrix.IsHermitian (M₁ ⊗ₙ M₂).val := sorry
+
+def herm_of_qubit_tensor_herm {n : ℕ} (hn : 0 < n) (m : Fin n → 𝐔ₙ[1]) (Hm : ∀ x, Matrix.IsHermitian (m x).1) :
+  Matrix.IsHermitian (unitary_n_nkron hn m).1 := by
+  induction n with
+  | zero => contradiction
+  | succ n ih => cases n
+                 · simp [unitary_n_nkron, (Hm 0)]
+                 · rw [unitary_n_nkron]
+                   apply unitary_herm_of_kron_herm (ih _ _ _) (Hm 0)
+                   exact fun x => (Hm ⟨x+1, by norm_num⟩)
