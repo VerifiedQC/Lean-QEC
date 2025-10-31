@@ -122,6 +122,5 @@ def Qcode.corrects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli) := �
   pauli_weight hn hE₁ ≤ w → pauli_weight hn hE₂ ≤ w → C.distinguishes hn hE₁ hE₂
 
 
---maybe ensure that stabilizers are pauli matrices?
 --theorem that says pauli X, Z errors on stabilized vectors result
 --in either U stabilizing or U_neg stabilizing?
