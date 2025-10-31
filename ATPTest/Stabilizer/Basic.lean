@@ -1,5 +1,5 @@
 import ATPTest.States.Basic
-
+import ATPTest.Unitary.Pauli
 variable {n : ℕ}
 
 def stabilizes (U : 𝐔ₙ[n]) (ψ : PState n) := ψ.apply U = ψ
@@ -10,13 +10,13 @@ lemma stabilizes_apply (U : 𝐔ₙ[n]) (ψ : PState n) (hstab : stabilizes U ψ
 @[simp]
 lemma stabilizes_apply' {U : 𝐔ₙ[n]} {ψ : PState n} (hstab : stabilizes U ψ) : Matrix.mulVec U ψ.vec = ψ.vec := by
   simp only [stabilizes, PState.apply, Matrix.toLin'_apply] at hstab
-  rwa [PState.mk.injEq] at hstab
+  rwa [Ket.mk.injEq] at hstab
 
 variable {n₁ n₂ : ℕ}
 
 theorem stab_prod {U₁ : 𝐔ₙ[n₁]} {U₂ : 𝐔ₙ[n₂]} {ψ₁ : PState n₁} {ψ₂ : PState n₂}
   (hs₁ : stabilizes U₁ ψ₁) (hs₂ : stabilizes U₂ ψ₂) :
-  stabilizes (U₁ ⊗ₙ U₂) (ψ₁ ⊗ₖ ψ₂) := by
+  stabilizes (U₁ ⊗ₙ U₂) (ψ₁ ⊗ₚ ψ₂) := by
   unfold stabilizes
   rw [kron_mul_kron, hs₁, hs₂]
 /-
@@ -39,7 +39,7 @@ theorem one_stab_all {n : ℕ} (ψ : PState n) : stabilizes 1 ψ := by simp [sta
 
 theorem inv_stab {n : ℕ} {U : 𝐔ₙ[n]} {ψ : PState n} (hstab : stabilizes U ψ) : stabilizes U⁻¹ ψ := by
   simp [stabilizes]
-  rw [PState.mk.injEq]
+  rw [Ket.mk.injEq]
   nth_rw 2 [←(Matrix.one_mulVec ψ.vec)]
   rw [←U.2.1, ←Matrix.mulVec_mulVec, stabilizes_apply' hstab]
 
@@ -91,17 +91,17 @@ noncomputable section
 
 variable {n : ℕ} {k : ℕ} (hn : 0 < n)
 
-/-
+
 def QCode.stabilizers (C : QCode n k) :=
   {U | (∀ ψ, stabilizes U (C ψ)) ∧ U ∈ PauliGroup hn}
 
-lemma pauli_commute_with_phase {U₁ U₂ : 𝐔[Fin (2^n)]} (h1 : U₁ ∈ PauliGroup hn)
+lemma pauli_commute_with_phase {U₁ U₂ : 𝐔ₙ[n]} (h1 : U₁ ∈ PauliGroup hn)
   (h2 : U₂ ∈ PauliGroup hn) : ∃ (p : pgroup_phases),  U₁ * U₂ = U_phase (U₂ * U₁) p := sorry
 
-def pauli_pauli_phase {U₁ U₂ : 𝐔[Fin (2^n)]} (h1 : U₁ ∈ PauliGroup hn)
+def pauli_pauli_phase {U₁ U₂ : 𝐔ₙ[n]} (h1 : U₁ ∈ PauliGroup hn)
   (h2 : U₂ ∈ PauliGroup hn) : pgroup_phases := Classical.choose (pauli_commute_with_phase hn h1 h2)
 
-def QCode.syndrome {k : ℕ} (C : QCode n k) {E : 𝐔[Fin (2^n)]} (hE : E ∈ PauliGroup hn)
+def QCode.syndrome {k : ℕ} (C : QCode n k) {E : 𝐔ₙ[n]} (hE : E ∈ PauliGroup hn)
    : C.stabilizers hn → pgroup_phases := fun U => pauli_pauli_phase hn hE U.2.2
 
 def QCode.distinguishes (C : QCode n k) {E₁ E₂} (hE₁ : E₁ ∈ PauliGroup hn) (hE₂ : E₂ ∈ PauliGroup hn) := C.syndrome hn hE₁ ≠ C.syndrome hn hE₂
@@ -120,7 +120,6 @@ def Qcode.detects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli):= ∀ 
 def Qcode.corrects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli) := ∀ E₁ (hE₁ : E₁ ∈ PauliGroup hn), ∀ E₂ (hE₂ : E₂ ∈ PauliGroup hn),
   (pauli_only hn hE₁ P) → (pauli_only hn hE₂ P) → (PauliGroup.phase hn hE₁).1 = ⟨1, by norm_num⟩ → (PauliGroup.phase hn hE₂).1 = ⟨1, by norm_num⟩ →
   pauli_weight hn hE₁ ≤ w → pauli_weight hn hE₂ ≤ w → C.distinguishes hn hE₁ hE₂
--/
 
 
 --maybe ensure that stabilizers are pauli matrices?
