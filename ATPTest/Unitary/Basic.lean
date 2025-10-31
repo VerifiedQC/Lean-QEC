@@ -73,3 +73,9 @@ def U_phase {n : ℕ} (U : 𝐔ₙ[n]) (z : phase) : 𝐔ₙ[n] := ⟨z.1 • U.
 def u_neg {n : ℕ} (U : 𝐔ₙ[n]) : 𝐔ₙ[n] := (U_phase U ⟨-1, by norm_num⟩)
 
 def u_im {n : ℕ} (U : 𝐔ₙ[n]) : 𝐔ₙ[n] := (U_phase U ⟨Complex.I, by norm_num⟩)
+
+def fin2prodbitvec_equiv {n : ℕ} : (Fin 2 × BitVec n) ≃ BitVec (1+n) := (beq.prodCongr (Equiv.refl _)).trans bits_cat
+
+def n_controllize {n : ℕ} (U : 𝐔ₙ[n]) : 𝐔ₙ[1+n] := unitary_fin_equiv fin2prodbitvec_equiv (Qubit.controllize U)
+
+notation "Cₙ[" g "]" => n_controllize g
