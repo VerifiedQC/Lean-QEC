@@ -56,3 +56,20 @@ def herm_of_qubit_tensor_herm {n : ℕ} (hn : 0 < n) (m : Fin n → 𝐔ₙ[1]) 
                  · rw [unitary_n_nkron]
                    apply unitary_herm_of_kron_herm (ih _ _ _) (Hm 0)
                    exact fun x => (Hm ⟨x+1, by norm_num⟩)
+
+noncomputable section
+
+structure phase where
+  z : ℂ
+  z_norm : ‖z‖ = 1
+deriving DecidableEq
+
+def U_phase {n : ℕ} (U : 𝐔ₙ[n]) (z : phase) : 𝐔ₙ[n] := ⟨z.1 • U.val, by
+  simp [unitary.mem_iff, smul_smul, mul_comm]
+  rw [mul_comm, ←Complex.normSq_eq_conj_mul_self, Complex.coe_smul, Complex.normSq_eq_norm_sq, z.2]
+  simp
+⟩
+
+def u_neg {n : ℕ} (U : 𝐔ₙ[n]) : 𝐔ₙ[n] := (U_phase U ⟨-1, by norm_num⟩)
+
+def u_im {n : ℕ} (U : 𝐔ₙ[n]) : 𝐔ₙ[n] := (U_phase U ⟨Complex.I, by norm_num⟩)
