@@ -3,8 +3,8 @@ import ATPTest.Stabilizer.Basic
 
 def three_qubit_encode : QCode 3 1:= fun (ψ : PState 1) =>
   (((ψ ⊗ₚ qub_zero) ⊗ₚ qub_zero).apply
-    (Cₙ[pX] ⊗ₙ (1 : 𝐔ₙ[1]))).apply
-    (Cₙ[(1 : 𝐔ₙ[1]) ⊗ₙ pX])
+    (Cₙ[pX] ⊗ₙ p1)).apply
+    (Cₙ[p1 ⊗ₙ pX])
 
 
 
@@ -14,18 +14,63 @@ lemma three_qubit_encode_correct (ψ : PState 1) : three_qubit_encode ψ =
   (prod_orth zero_one_orth (prod_orth zero_one_orth zero_one_orth))
   := sorry
 
+lemma IZZ_in_stab : 1 ⊗ₙ pZ ⊗ₙ pZ ∈ QCode.stabilizers (by norm_num) three_qubit_encode := sorry
+lemma ZIZ_in_stab : pZ ⊗ₙ p1 ⊗ₙ pZ ∈ QCode.stabilizers (by norm_num) three_qubit_encode := sorry
+lemma ZZI_in_stab : pZ ⊗ₙ pZ ⊗ₙ p1 ∈ QCode.stabilizers (by norm_num) three_qubit_encode := sorry
+
+lemma IXI_pg : p1 ⊗ₙ pX ⊗ₙ p1 ∈ PauliGroup (by norm_num) := by
+  apply (kron_mem_PauliGroup_iff (by norm_num) (by norm_num)).2 ⟨pg1.2, _⟩
+  apply (kron_mem_PauliGroup_iff zero_lt_one zero_lt_one).2 ⟨pgX.2, pg1.2⟩
+
+lemma XII_pg : pX ⊗ₙ p1 ⊗ₙ p1 ∈ PauliGroup (by norm_num) := by
+  apply (kron_mem_PauliGroup_iff (by norm_num) (by norm_num)).2 ⟨pgX.2, _⟩
+  apply (kron_mem_PauliGroup_iff zero_lt_one zero_lt_one).2 ⟨pg1.2, pg1.2⟩
+
+lemma IZZ_pg : p1 ⊗ₙ pZ ⊗ₙ pZ ∈ PauliGroup (by norm_num) := by
+  apply (kron_mem_PauliGroup_iff (by norm_num) (by norm_num)).2 ⟨pg1.2, _⟩
+  apply (kron_mem_PauliGroup_iff zero_lt_one zero_lt_one).2 ⟨pgZ.2, pgZ.2⟩
+
+lemma pphase_IXI_IZZ : pauli_pauli_phase (by norm_num) IXI_pg IZZ_pg = pgphase_n1 := by
+  rw [pauli_pauli_phase_kron (by norm_num) (by norm_num), pauli_pauli_phase_kron (by norm_num) (by norm_num)]
+  · rw [pauli_pauli_phase_self (by norm_num), pphase_XZ, pphase_id_right]
+    simp [pgphase_1, pgphase_n1]
+  all_goals try exact pgX.2
+  all_goals try exact pgZ.2
+  all_goals try exact pg1.2
+  all_goals try rw [kron_mem_PauliGroup_iff zero_lt_one zero_lt_one]
+  exact ⟨pgX.2, pg1.2⟩
+  exact ⟨pgZ.2, pgZ.2⟩
+
+lemma pphase_XII_IZZ : pauli_pauli_phase (by norm_num) XII_pg IZZ_pg = pgphase_1 := by
+  rw [pauli_pauli_phase_kron (by norm_num) (by norm_num), pauli_pauli_phase_kron (by norm_num) (by norm_num)]
+  · rw [pphase_id_right, pphase_id_left]
+    simp [pgphase_1]
+  all_goals try exact pgX.2
+  all_goals try exact pgZ.2
+  all_goals try exact pg1.2
+  all_goals try rw [kron_mem_PauliGroup_iff zero_lt_one zero_lt_one]
+  exact ⟨pg1.2, pg1.2⟩
+  exact ⟨pgZ.2, pgZ.2⟩
+
+
+
+
+
+
+
+
 theorem three_qub_detects_one_x : Qcode.corrects_P_error_of_weight (by norm_num) three_qubit_encode 1
- ⟨pX, by simp[Pauli]⟩ := sorry
-
-   /-
-   ((unitary_fin_equiv (Equiv.prodAssoc _ _ _)
-   (Matrix.unitary_kron C[X] (1 : 𝐔[Qubit])))).uapply --CX(2, 3)
-   C[Matrix.unitary_kron (1 : 𝐔[Qubit]) X] --CX(1, 3)
-
-lemma three_qubit_encode_correct (ψ : Ket Qubit) : three_qubit_encode ψ =
-  (qub_zero ⊗ (qub_zero ⊗ qub_zero)).sum
-  (qub_one ⊗ (qub_one ⊗ qub_one)) (ψ.vec 0) (ψ.vec 1) (single_qub_normalized _) (prod_orth zero_one_orth (prod_orth zero_one_orth zero_one_orth))
-  := sorry
-
-theorem three_qub_detects_one_x : three_qubit_encode.detects_P_error_of_weight
--/
+ ⟨pX, by simp[Pauli]⟩ := by
+  intros E₁ hE₁ E₂ hE₂ hE₁' hE₂' hE₁'' hE₂'' hW₁ hW₂ hne
+  have h_or : ∀ E : 𝐔ₙ[3], (hE : E ∈ PauliGroup (by norm_num)) → pauli_only (by norm_num) hE ⟨pX, by simp[Pauli]⟩
+   → (PauliGroup.phase (by norm_num) hE).1 = ⟨1, by norm_num⟩  → pauli_weight (by norm_num) hE ≤ 1 →
+   E = pX ⊗ₙ (1 : 𝐔ₙ[1]) ⊗ₙ (1 : 𝐔ₙ[1]) ∨ E = (1 : 𝐔ₙ[1]) ⊗ₙ pX ⊗ₙ (1 : 𝐔ₙ[1]) ∨ E = (1 : 𝐔ₙ[1]) ⊗ₙ (1 : 𝐔ₙ[1]) ⊗ₙ pX
+  · intros E hE hE' hE'' hW
+    sorry
+  rcases h_or E₁ hE₁ hE₁' hE₁'' hW₁ with rfl | rfl | rfl; all_goals rcases h_or E₂ hE₂ hE₂' hE₂'' hW₂ with rfl | rfl | rfl
+  all_goals rw [QCode.distinguishes_of_exists_dist_stab]
+  · contradiction
+  · refine ⟨⟨p1 ⊗ₙ pZ ⊗ₙ pZ, IZZ_in_stab⟩, ?_⟩
+    simp [pphase_XII_IZZ, pphase_IXI_IZZ, pgphase_1, pgphase_n1]
+    norm_num
+  all_goals sorry

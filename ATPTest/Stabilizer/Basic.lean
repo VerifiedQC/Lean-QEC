@@ -95,12 +95,6 @@ variable {n : ℕ} {k : ℕ} (hn : 0 < n)
 def QCode.stabilizers (C : QCode n k) :=
   {U | (∀ ψ, stabilizes U (C ψ)) ∧ U ∈ PauliGroup hn}
 
-lemma pauli_commute_with_phase {U₁ U₂ : 𝐔ₙ[n]} (h1 : U₁ ∈ PauliGroup hn)
-  (h2 : U₂ ∈ PauliGroup hn) : ∃ (p : pgroup_phases),  U₁ * U₂ = U_phase (U₂ * U₁) p := sorry
-
-def pauli_pauli_phase {U₁ U₂ : 𝐔ₙ[n]} (h1 : U₁ ∈ PauliGroup hn)
-  (h2 : U₂ ∈ PauliGroup hn) : pgroup_phases := Classical.choose (pauli_commute_with_phase hn h1 h2)
-
 def QCode.syndrome {k : ℕ} (C : QCode n k) {E : 𝐔ₙ[n]} (hE : E ∈ PauliGroup hn)
    : C.stabilizers hn → pgroup_phases := fun U => pauli_pauli_phase hn hE U.2.2
 
@@ -108,19 +102,27 @@ def QCode.distinguishes (C : QCode n k) {E₁ E₂} (hE₁ : E₁ ∈ PauliGroup
 
 --to detect errors, it suffices to distinguish an error and the I pauli
 def Qcode.detects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ E (hE : E ∈ PauliGroup hn),
-  pauli_weight hn hE ≤ w → C.distinguishes hn hE (mem_PauliGroup_id hn)
+  pauli_weight hn hE ≤ w → E ≠ 1 → C.distinguishes hn hE (mem_PauliGroup_id hn)
 
 def Qcode.corrects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ E₁ (hE₁ : E₁ ∈ PauliGroup hn), ∀ E₂ (hE₂ : E₂ ∈ PauliGroup hn),
   (PauliGroup.phase hn hE₁).1 = ⟨1, by norm_num⟩ → (PauliGroup.phase hn hE₂).1 = ⟨1, by norm_num⟩ →
-  pauli_weight hn hE₁ ≤ w → pauli_weight hn hE₂ ≤ w → C.distinguishes hn hE₁ hE₂
+  pauli_weight hn hE₁ ≤ w → pauli_weight hn hE₂ ≤ w → E₁ ≠ E₂ → C.distinguishes hn hE₁ hE₂
 
 def Qcode.detects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli):= ∀ E (hE : E ∈ PauliGroup hn),
-  (pauli_only hn hE P) → pauli_weight hn hE ≤ w → C.distinguishes hn hE (mem_PauliGroup_id hn)
+  (pauli_only hn hE P) → pauli_weight hn hE ≤ w → E ≠ 1 → C.distinguishes hn hE (mem_PauliGroup_id hn)
 
 def Qcode.corrects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli) := ∀ E₁ (hE₁ : E₁ ∈ PauliGroup hn), ∀ E₂ (hE₂ : E₂ ∈ PauliGroup hn),
   (pauli_only hn hE₁ P) → (pauli_only hn hE₂ P) → (PauliGroup.phase hn hE₁).1 = ⟨1, by norm_num⟩ → (PauliGroup.phase hn hE₂).1 = ⟨1, by norm_num⟩ →
-  pauli_weight hn hE₁ ≤ w → pauli_weight hn hE₂ ≤ w → C.distinguishes hn hE₁ hE₂
+  pauli_weight hn hE₁ ≤ w → pauli_weight hn hE₂ ≤ w → E₁ ≠ E₂ → C.distinguishes hn hE₁ hE₂
 
+theorem QCode.distinguishes_of_exists_dist_stab {k : ℕ} (C : QCode n k) {E₁ E₂} (hE₁ : E₁ ∈ PauliGroup hn) (hE₂ : E₂ ∈ PauliGroup hn) :
+  C.distinguishes hn hE₁ hE₂ ↔ ∃ S : C.stabilizers hn, pauli_pauli_phase hn hE₁ S.2.2 ≠ pauli_pauli_phase hn hE₂ S.2.2 := by
+  constructor
+  · intro hD
+    rcases (Function.ne_iff.1 hD) with ⟨S, hS⟩
+    refine ⟨S, hS⟩
+  rintro ⟨S, hS⟩
+  apply Function.ne_iff.2 ⟨S, hS⟩
 
 --theorem that says pauli X, Z errors on stabilized vectors result
 --in either U stabilizing or U_neg stabilizing?

@@ -64,6 +64,31 @@ structure phase where
   z_norm : ‖z‖ = 1
 deriving DecidableEq
 
+instance : Coe phase ℂ where
+  coe p := p.z
+
+namespace Phase
+
+def mul (p q : phase) : phase :=
+  {
+    z := p * q
+    z_norm := by simp [p.z_norm, q.z_norm]
+  }
+
+instance : Mul phase where
+  mul := mul
+
+def phase_star (p : phase) : phase :=
+  {
+    z := star p
+    z_norm := by simp [p.2]
+  }
+
+@[simp]
+lemma phase_mul_eq {p q : phase} : p * q = ⟨p.1 * q.1, by simp [p.z_norm, q.z_norm]⟩ := by rfl
+
+end Phase
+
 def U_phase {n : ℕ} (U : 𝐔ₙ[n]) (z : phase) : 𝐔ₙ[n] := ⟨z.1 • U.val, by
   simp [unitary.mem_iff, smul_smul, mul_comm]
   rw [mul_comm, ←Complex.normSq_eq_conj_mul_self, Complex.coe_smul, Complex.normSq_eq_norm_sq, z.2]

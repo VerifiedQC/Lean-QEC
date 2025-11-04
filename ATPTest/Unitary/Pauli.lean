@@ -5,9 +5,15 @@ open Qubit
 def pX := (unitary_fin_equiv beq) X
 def pY := (unitary_fin_equiv beq) Y
 def pZ := (unitary_fin_equiv beq) Z
+def p1 : 𝐔ₙ[1] := 1
 
 
 noncomputable def Pauli : Finset (𝐔ₙ[1]):= {1, pX, pY, pZ}
+
+def Pauli_X : Pauli := ⟨pX, by simp [Pauli]⟩
+def Pauli_Y : Pauli := ⟨pY, by simp [Pauli]⟩
+def Pauli_Z : Pauli := ⟨pZ, by simp [Pauli]⟩
+def Pauli_I : Pauli := ⟨1, by simp [Pauli]⟩
 
 lemma pauli_herm {p : Pauli} : Matrix.IsHermitian p.1.1 := by
   rcases p with ⟨x, hx⟩
@@ -38,6 +44,31 @@ def is_pauli_product (U : 𝐔ₙ[n]) := ∃ (m : Fin n → Pauli), pauli_tensor
 
 noncomputable def pgroup_phases : Finset phase := {⟨1, by norm_num⟩, ⟨-1, by norm_num⟩, ⟨Complex.I, by norm_num⟩, ⟨-Complex.I, by norm_num⟩}
 
+def pgphase_1 : pgroup_phases := ⟨⟨1, by norm_num⟩, by simp [pgroup_phases]⟩
+
+def pgphase_n1 : pgroup_phases := ⟨⟨-1, by norm_num⟩, by simp [pgroup_phases]⟩
+
+lemma pgroup_phases_closed_under_mul : ∀ a b : pgroup_phases, a.1 * b.1 ∈ pgroup_phases := sorry
+
+def pgroup_phases.gmul (a b : pgroup_phases) : pgroup_phases := ⟨_, pgroup_phases_closed_under_mul a b⟩
+
+lemma pgroup_phases_closed_under_inv : ∀ a : pgroup_phases, (Phase.phase_star a.1) ∈ pgroup_phases := sorry
+
+def pgroup_phases.inv (a : pgroup_phases) : pgroup_phases := ⟨_, pgroup_phases_closed_under_inv a⟩
+
+instance : Group pgroup_phases where
+  mul := pgroup_phases.gmul
+  mul_assoc := sorry
+  one := pgphase_1
+  one_mul := sorry
+  mul_one := sorry
+  inv := pgroup_phases.inv
+  inv_mul_cancel := sorry
+
+@[simp]
+lemma pgp_mul_eq (p1 : pgroup_phases) (p2 : pgroup_phases) : p1 * p2 = ⟨p1.1 * p2.1, pgroup_phases_closed_under_mul _ _⟩ := by
+  rfl
+
 --instance : Fintype (Fin n → { x // x ∈ Pauli }) := sorry
 
 noncomputable def pauli_products_n : Finset (𝐔ₙ[n]) := Finset.image (λ m => pauli_tensor hn m) Finset.univ
@@ -61,6 +92,8 @@ lemma mem_PauliGroup_iff (U : 𝐔ₙ[n]) : U ∈ PauliGroup hn ↔ ∃ m, (∃ 
 noncomputable def PauliGroup.map {U : 𝐔ₙ[n]}
 (hU : U ∈ PauliGroup hn) : Fin n → Pauli := Classical.choose ((mem_PauliGroup_iff hn U).1 hU)
 
+theorem kron_mem_PauliGroup_iff {n₁ n₂ : ℕ} (hn₁ : 0 < n₁) (hn₂ : 0 < n₂)
+  {U₁ : 𝐔ₙ[n₁]} {U₂ : 𝐔ₙ[n₂]} : U₁ ⊗ₙ U₂ ∈ PauliGroup (Nat.add_pos_left hn₁ n₂) ↔ (U₁ ∈ PauliGroup hn₁ ∧ U₂ ∈ PauliGroup hn₂) := sorry
 
 noncomputable def PauliGroup.phase {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn)
 : pgroup_phases := Classical.choose ((mem_PauliGroup_iff hn U).mp hU).choose_spec
@@ -74,3 +107,51 @@ lemma rep_unique {U : 𝐔ₙ[n]} (m₁ m₂ : Fin n → Pauli)
 noncomputable def pauli_weight {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn) : ℕ := (Finset.univ.filter (fun i => (PauliGroup.map hn hU) i ≠ (1 : 𝐔ₙ[1]))).card
 
 def pauli_only {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn) (P : Pauli) := ∀ x, ((PauliGroup.map hn hU) x = (1 : 𝐔ₙ[1]) ∨ (PauliGroup.map hn hU) x = P)
+
+lemma pauli_commute_with_phase {U₁ U₂ : 𝐔ₙ[n]} (h1 : U₁ ∈ PauliGroup hn)
+  (h2 : U₂ ∈ PauliGroup hn) : ∃ (p : pgroup_phases),  U₁ * U₂ = U_phase (U₂ * U₁) p := sorry
+
+noncomputable def pauli_pauli_phase {U₁ U₂ : 𝐔ₙ[n]} (h1 : U₁ ∈ PauliGroup hn)
+  (h2 : U₂ ∈ PauliGroup hn) : pgroup_phases := Classical.choose (pauli_commute_with_phase hn h1 h2)
+
+lemma pauli_pauli_phase_kron {n₁ n₂ : ℕ} {U₁ U₁' : 𝐔ₙ[n₁]} {U₂ U₂' : 𝐔ₙ[n₂]} (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
+  (hU₁ : U₁ ∈ PauliGroup hn₁) (hU₁' : U₁' ∈ PauliGroup hn₁) (hU₂ : U₂ ∈ PauliGroup hn₂) (hU₂' : U₂' ∈ PauliGroup hn₂)
+  : pauli_pauli_phase (Nat.add_pos_left hn₁ n₂) ((kron_mem_PauliGroup_iff hn₁ hn₂).2 ⟨hU₁, hU₂⟩) ((kron_mem_PauliGroup_iff hn₁ hn₂).2 ⟨hU₁', hU₂'⟩) =
+  (pauli_pauli_phase hn₁ hU₁ hU₁') * (pauli_pauli_phase hn₂ hU₂ hU₂') := sorry
+
+lemma pauli_pauli_phase_comm {U₁ U₂ : 𝐔ₙ[n]} (h1 : U₁ ∈ PauliGroup hn)
+  (h2 : U₂ ∈ PauliGroup hn) : pauli_pauli_phase hn h1 h2 = pauli_pauli_phase hn h2 h1 := sorry
+
+lemma pauli_pauli_phase_self {U : 𝐔ₙ[n]} (h : U ∈ PauliGroup hn) : pauli_pauli_phase hn h h  = pgphase_1 := sorry
+
+def pgX : PauliGroup zero_lt_one := ⟨pX, by
+  apply (mem_PauliGroup_iff (zero_lt_one) pX).2
+  refine ⟨fun _ => Pauli_X, ⟨pgphase_1, ?_⟩⟩
+  simp [pauli_tensor, unitary_n_nkron, U_phase, pgphase_1, Pauli_X]⟩
+
+def pgY : PauliGroup zero_lt_one := ⟨pY, by
+  apply (mem_PauliGroup_iff (zero_lt_one) pY).2
+  refine ⟨fun _ => Pauli_Y, ⟨pgphase_1, ?_⟩⟩
+  simp [pauli_tensor, unitary_n_nkron, U_phase, pgphase_1, Pauli_Y]⟩
+
+def pgZ : PauliGroup zero_lt_one := ⟨pZ, by
+  apply (mem_PauliGroup_iff (zero_lt_one) pZ).2
+  refine ⟨fun _ => Pauli_Z, ⟨pgphase_1, ?_⟩⟩
+  simp [pauli_tensor, unitary_n_nkron, U_phase, pgphase_1, Pauli_Z]⟩
+
+def pg1 : PauliGroup zero_lt_one := ⟨1, by
+  apply (mem_PauliGroup_iff (zero_lt_one) 1).2
+  refine ⟨fun _ => Pauli_I, ⟨pgphase_1, ?_⟩⟩
+  simp [pauli_tensor, unitary_n_nkron, U_phase, pgphase_1, Pauli_I]⟩
+
+lemma pphase_XZ : pauli_pauli_phase zero_lt_one pgX.2 pgZ.2 = pgphase_n1 := sorry
+
+lemma pphase_XY : pauli_pauli_phase zero_lt_one pgX.2 pgY.2 = pgphase_n1 := sorry
+
+lemma pphase_YZ : pauli_pauli_phase zero_lt_one pgY.2 pgZ.2 = pgphase_n1 := sorry
+
+lemma pphase_id_right {U : 𝐔ₙ[1]} {hU : U ∈ PauliGroup zero_lt_one}: pauli_pauli_phase zero_lt_one pg1.2 hU = pgphase_1 := sorry
+
+lemma pphase_id_left {U : 𝐔ₙ[1]} {hU : U ∈ PauliGroup zero_lt_one}: pauli_pauli_phase zero_lt_one hU pg1.2 = pgphase_1 := by
+  rw [pauli_pauli_phase_comm]
+  exact pphase_id_right
