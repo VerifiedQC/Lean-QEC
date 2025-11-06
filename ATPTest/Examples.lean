@@ -59,7 +59,7 @@ lemma pphase_XII_IZZ : pauli_pauli_phase (by norm_num) XII_pg IZZ_pg = pgphase_1
 
 
 
-theorem three_qub_detects_one_x : Qcode.corrects_P_error_of_weight (by norm_num) three_qubit_encode 1
+theorem three_qub_corrects_one_x : Qcode.corrects_P_error_of_weight (by norm_num) three_qubit_encode 1
  ⟨pX, by simp[Pauli]⟩ := by
   intros E₁ hE₁ E₂ hE₂ hE₁' hE₂' hE₁'' hE₂'' hW₁ hW₂ hne
   have h_or : ∀ E : 𝐔ₙ[3], (hE : E ∈ PauliGroup (by norm_num)) → pauli_only (by norm_num) hE ⟨pX, by simp[Pauli]⟩

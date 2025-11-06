@@ -44,26 +44,61 @@ def is_pauli_product (U : 𝐔ₙ[n]) := ∃ (m : Fin n → Pauli), pauli_tensor
 
 noncomputable def pgroup_phases : Finset phase := {⟨1, by norm_num⟩, ⟨-1, by norm_num⟩, ⟨Complex.I, by norm_num⟩, ⟨-Complex.I, by norm_num⟩}
 
+lemma pgphase_cases (a : pgroup_phases) : a.1 = ⟨1, by norm_num⟩ ∨ a.1 = ⟨-1, by norm_num⟩ ∨
+  a.1 = ⟨Complex.I, by norm_num⟩ ∨ a.1 = ⟨-Complex.I, by norm_num⟩ := by
+  have:= a.2
+  simp [pgroup_phases, -Finset.coe_mem] at this
+  exact this
+
+@[simp]
 def pgphase_1 : pgroup_phases := ⟨⟨1, by norm_num⟩, by simp [pgroup_phases]⟩
 
+@[simp]
 def pgphase_n1 : pgroup_phases := ⟨⟨-1, by norm_num⟩, by simp [pgroup_phases]⟩
 
-lemma pgroup_phases_closed_under_mul : ∀ a b : pgroup_phases, a.1 * b.1 ∈ pgroup_phases := sorry
+lemma pgroup_phases_closed_under_mul : ∀ a b : pgroup_phases, a.1 * b.1 ∈ pgroup_phases := by
+  intros a b
+  rcases (pgphase_cases a) with ha | ha | ha |ha; all_goals rcases (pgphase_cases b) with hb | hb | hb | hb
+  all_goals simp [ha, hb, pgroup_phases]
 
 def pgroup_phases.gmul (a b : pgroup_phases) : pgroup_phases := ⟨_, pgroup_phases_closed_under_mul a b⟩
 
-lemma pgroup_phases_closed_under_inv : ∀ a : pgroup_phases, (Phase.phase_star a.1) ∈ pgroup_phases := sorry
+lemma pgroup_phases_closed_under_inv : ∀ a : pgroup_phases, (Phase.phase_star a.1) ∈ pgroup_phases := by
+  intros a
+  rcases (pgphase_cases a) with ha | ha | ha | ha
+  all_goals simp [ha, Phase.phase_star, pgroup_phases]
 
 def pgroup_phases.inv (a : pgroup_phases) : pgroup_phases := ⟨_, pgroup_phases_closed_under_inv a⟩
 
 instance : Group pgroup_phases where
   mul := pgroup_phases.gmul
-  mul_assoc := sorry
+  mul_assoc := by
+    intros a b c
+    suffices : (⟨a.1 * b.1 * c.1, pgroup_phases_closed_under_mul ⟨_,
+     (pgroup_phases_closed_under_mul _ _)⟩ _⟩ : pgroup_phases) = ⟨a.1 * (b.1 * c.1),
+      pgroup_phases_closed_under_mul _ (⟨_, pgroup_phases_closed_under_mul _ _⟩)⟩
+    exact this
+    simp [mul_assoc]
   one := pgphase_1
-  one_mul := sorry
-  mul_one := sorry
+  one_mul := by
+    intros a
+    suffices: ⟨pgphase_1.1 * a.1, pgroup_phases_closed_under_mul _ _⟩ = a
+    exact this
+    simp
+  mul_one := by
+    intros a
+    suffices: ⟨a.1 * pgphase_1.1, pgroup_phases_closed_under_mul _ _⟩ = a
+    exact this
+    simp
   inv := pgroup_phases.inv
-  inv_mul_cancel := sorry
+  inv_mul_cancel := by
+    intros a
+    rw [pgroup_phases.inv]
+    suffices: ⟨Phase.phase_star a.1 * a.1, pgroup_phases_closed_under_mul ⟨_, (pgroup_phases_closed_under_inv _)⟩ _⟩ = pgphase_1
+    exact this
+    simp [Phase.phase_star]
+    rcases (pgphase_cases a) with ha | ha | ha | ha
+    all_goals simp [ha]
 
 @[simp]
 lemma pgp_mul_eq (p1 : pgroup_phases) (p2 : pgroup_phases) : p1 * p2 = ⟨p1.1 * p2.1, pgroup_phases_closed_under_mul _ _⟩ := by
