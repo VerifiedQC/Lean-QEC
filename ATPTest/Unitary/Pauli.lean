@@ -44,8 +44,10 @@ def is_pauli_product (U : 𝐔ₙ[n]) := ∃ (m : Fin n → Pauli), pauli_tensor
 
 noncomputable def pgroup_phases : Finset phase := {⟨1, by norm_num⟩, ⟨-1, by norm_num⟩, ⟨Complex.I, by norm_num⟩, ⟨-Complex.I, by norm_num⟩}
 
+@[simp]
 def pgphase_1 : pgroup_phases := ⟨⟨1, by norm_num⟩, by simp [pgroup_phases]⟩
 
+@[simp]
 def pgphase_n1 : pgroup_phases := ⟨⟨-1, by norm_num⟩, by simp [pgroup_phases]⟩
 
 lemma pgroup_phases_closed_under_mul : ∀ a b : pgroup_phases, a.1 * b.1 ∈ pgroup_phases := sorry
@@ -119,7 +121,7 @@ lemma pauli_pauli_phase_kron {n₁ n₂ : ℕ} {U₁ U₁' : 𝐔ₙ[n₁]} {U�
   : pauli_pauli_phase (Nat.add_pos_left hn₁ n₂) ((kron_mem_PauliGroup_iff hn₁ hn₂).2 ⟨hU₁, hU₂⟩) ((kron_mem_PauliGroup_iff hn₁ hn₂).2 ⟨hU₁', hU₂'⟩) =
   (pauli_pauli_phase hn₁ hU₁ hU₁') * (pauli_pauli_phase hn₂ hU₂ hU₂') := sorry
 
-lemma pauli_pauli_phase_comm {U₁ U₂ : 𝐔ₙ[n]} (h1 : U₁ ∈ PauliGroup hn)
+lemma pauli_pauli_phase_symm {U₁ U₂ : 𝐔ₙ[n]} (h1 : U₁ ∈ PauliGroup hn)
   (h2 : U₂ ∈ PauliGroup hn) : pauli_pauli_phase hn h1 h2 = pauli_pauli_phase hn h2 h1 := sorry
 
 lemma pauli_pauli_phase_self {U : 𝐔ₙ[n]} (h : U ∈ PauliGroup hn) : pauli_pauli_phase hn h h  = pgphase_1 := sorry
@@ -144,14 +146,34 @@ def pg1 : PauliGroup zero_lt_one := ⟨1, by
   refine ⟨fun _ => Pauli_I, ⟨pgphase_1, ?_⟩⟩
   simp [pauli_tensor, unitary_n_nkron, U_phase, pgphase_1, Pauli_I]⟩
 
+@[simp]
 lemma pphase_XZ : pauli_pauli_phase zero_lt_one pgX.2 pgZ.2 = pgphase_n1 := sorry
 
+@[simp]
+lemma pphase_ZX : pauli_pauli_phase zero_lt_one pgZ.2 pgX.2 = pgphase_n1 := by
+  rw [pauli_pauli_phase_symm]
+  exact pphase_XZ
+
+@[simp]
 lemma pphase_XY : pauli_pauli_phase zero_lt_one pgX.2 pgY.2 = pgphase_n1 := sorry
 
+@[simp]
+lemma pphase_YX : pauli_pauli_phase zero_lt_one pgY.2 pgX.2 = pgphase_n1 := by
+  rw [pauli_pauli_phase_symm]
+  exact pphase_XY
+
+@[simp]
 lemma pphase_YZ : pauli_pauli_phase zero_lt_one pgY.2 pgZ.2 = pgphase_n1 := sorry
 
+@[simp]
+lemma pphase_ZY : pauli_pauli_phase zero_lt_one pgZ.2 pgY.2 = pgphase_n1 := by
+  rw [pauli_pauli_phase_symm]
+  exact pphase_YZ
+
+@[simp]
 lemma pphase_id_right {U : 𝐔ₙ[1]} {hU : U ∈ PauliGroup zero_lt_one}: pauli_pauli_phase zero_lt_one pg1.2 hU = pgphase_1 := sorry
 
+@[simp]
 lemma pphase_id_left {U : 𝐔ₙ[1]} {hU : U ∈ PauliGroup zero_lt_one}: pauli_pauli_phase zero_lt_one hU pg1.2 = pgphase_1 := by
-  rw [pauli_pauli_phase_comm]
+  rw [pauli_pauli_phase_symm]
   exact pphase_id_right

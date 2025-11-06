@@ -26,14 +26,22 @@ lemma XII_pg : pX ⊗ₙ p1 ⊗ₙ p1 ∈ PauliGroup (by norm_num) := by
   apply (kron_mem_PauliGroup_iff (by norm_num) (by norm_num)).2 ⟨pgX.2, _⟩
   apply (kron_mem_PauliGroup_iff zero_lt_one zero_lt_one).2 ⟨pg1.2, pg1.2⟩
 
+lemma IIX_pg : p1 ⊗ₙ p1 ⊗ₙ pX ∈ PauliGroup (by norm_num) := by
+  apply (kron_mem_PauliGroup_iff (by norm_num) (by norm_num)).2 ⟨pg1.2, _⟩
+  apply (kron_mem_PauliGroup_iff zero_lt_one zero_lt_one).2 ⟨pg1.2, pgX.2⟩
+
 lemma IZZ_pg : p1 ⊗ₙ pZ ⊗ₙ pZ ∈ PauliGroup (by norm_num) := by
   apply (kron_mem_PauliGroup_iff (by norm_num) (by norm_num)).2 ⟨pg1.2, _⟩
   apply (kron_mem_PauliGroup_iff zero_lt_one zero_lt_one).2 ⟨pgZ.2, pgZ.2⟩
 
+lemma ZZI_pg : pZ ⊗ₙ pZ ⊗ₙ p1 ∈ PauliGroup (by norm_num) := by
+  apply (kron_mem_PauliGroup_iff (by norm_num) (by norm_num)).2 ⟨pgZ.2, _⟩
+  apply (kron_mem_PauliGroup_iff zero_lt_one zero_lt_one).2 ⟨pgZ.2, pg1.2⟩
+
 lemma pphase_IXI_IZZ : pauli_pauli_phase (by norm_num) IXI_pg IZZ_pg = pgphase_n1 := by
   rw [pauli_pauli_phase_kron (by norm_num) (by norm_num), pauli_pauli_phase_kron (by norm_num) (by norm_num)]
   · rw [pauli_pauli_phase_self (by norm_num), pphase_XZ, pphase_id_right]
-    simp [pgphase_1, pgphase_n1]
+    simp
   all_goals try exact pgX.2
   all_goals try exact pgZ.2
   all_goals try exact pg1.2
@@ -44,7 +52,7 @@ lemma pphase_IXI_IZZ : pauli_pauli_phase (by norm_num) IXI_pg IZZ_pg = pgphase_n
 lemma pphase_XII_IZZ : pauli_pauli_phase (by norm_num) XII_pg IZZ_pg = pgphase_1 := by
   rw [pauli_pauli_phase_kron (by norm_num) (by norm_num), pauli_pauli_phase_kron (by norm_num) (by norm_num)]
   · rw [pphase_id_right, pphase_id_left]
-    simp [pgphase_1]
+    simp
   all_goals try exact pgX.2
   all_goals try exact pgZ.2
   all_goals try exact pg1.2
@@ -52,8 +60,38 @@ lemma pphase_XII_IZZ : pauli_pauli_phase (by norm_num) XII_pg IZZ_pg = pgphase_1
   exact ⟨pg1.2, pg1.2⟩
   exact ⟨pgZ.2, pgZ.2⟩
 
+lemma pphase_IIX_IZZ : pauli_pauli_phase (by norm_num) IIX_pg IZZ_pg = pgphase_n1 := by
+  rw [pauli_pauli_phase_kron (by norm_num) (by norm_num), pauli_pauli_phase_kron (by norm_num) (by norm_num)]
+  · rw [pphase_id_right, pphase_XZ, pphase_id_right]
+    simp
+  all_goals try exact pgX.2
+  all_goals try exact pgZ.2
+  all_goals try exact pg1.2
+  all_goals try rw [kron_mem_PauliGroup_iff zero_lt_one zero_lt_one]
+  exact ⟨pg1.2, pgX.2⟩
+  exact ⟨pgZ.2, pgZ.2⟩
 
+lemma pphase_IIX_ZZI : pauli_pauli_phase (by norm_num) IIX_pg ZZI_pg = pgphase_1 := by
+  rw [pauli_pauli_phase_kron (by norm_num) (by norm_num), pauli_pauli_phase_kron (by norm_num) (by norm_num)]
+  · rw [pphase_id_right, pphase_id_left]
+    simp
+  all_goals try exact pgX.2
+  all_goals try exact pgZ.2
+  all_goals try exact pg1.2
+  all_goals try rw [kron_mem_PauliGroup_iff zero_lt_one zero_lt_one]
+  exact ⟨pg1.2, pgX.2⟩
+  exact ⟨pgZ.2, pg1.2⟩
 
+lemma pphase_IXI_ZZI : pauli_pauli_phase (by norm_num) IXI_pg ZZI_pg = pgphase_n1 := by
+  rw [pauli_pauli_phase_kron (by norm_num) (by norm_num), pauli_pauli_phase_kron (by norm_num) (by norm_num)]
+  · rw [pphase_id_right, pphase_id_left]
+    simp
+  all_goals try exact pgX.2
+  all_goals try exact pgZ.2
+  all_goals try exact pg1.2
+  all_goals try rw [kron_mem_PauliGroup_iff zero_lt_one zero_lt_one]
+  exact ⟨pgX.2, pg1.2⟩
+  exact ⟨pgZ.2, pg1.2⟩
 
 
 
@@ -69,8 +107,24 @@ theorem three_qub_detects_one_x : Qcode.corrects_P_error_of_weight (by norm_num)
     sorry
   rcases h_or E₁ hE₁ hE₁' hE₁'' hW₁ with rfl | rfl | rfl; all_goals rcases h_or E₂ hE₂ hE₂' hE₂'' hW₂ with rfl | rfl | rfl
   all_goals rw [QCode.distinguishes_of_exists_dist_stab]
-  · contradiction
+  · contradiction --case where errors are identical
   · refine ⟨⟨p1 ⊗ₙ pZ ⊗ₙ pZ, IZZ_in_stab⟩, ?_⟩
-    simp [pphase_XII_IZZ, pphase_IXI_IZZ, pgphase_1, pgphase_n1]
+    simp [pphase_XII_IZZ, pphase_IXI_IZZ]
     norm_num
-  all_goals sorry
+  · refine ⟨⟨p1 ⊗ₙ pZ ⊗ₙ pZ, IZZ_in_stab⟩, ?_⟩
+    simp [pphase_XII_IZZ, pphase_IIX_IZZ]
+    norm_num
+  · refine ⟨⟨p1 ⊗ₙ pZ ⊗ₙ pZ, IZZ_in_stab⟩, ?_⟩
+    simp [pphase_IXI_IZZ, pphase_XII_IZZ]
+    norm_num
+  · contradiction
+  · refine ⟨⟨pZ ⊗ₙ pZ ⊗ₙ p1, ZZI_in_stab⟩, ?_⟩
+    simp [pphase_IXI_ZZI, pphase_IIX_ZZI]
+    norm_num
+  · refine ⟨⟨p1 ⊗ₙ pZ ⊗ₙ pZ, IZZ_in_stab⟩, ?_⟩
+    simp [pphase_IIX_IZZ, pphase_XII_IZZ]
+    norm_num
+  · refine ⟨⟨pZ ⊗ₙ pZ ⊗ₙ p1, ZZI_in_stab⟩, ?_⟩
+    simp [pphase_IXI_ZZI, pphase_IIX_ZZI]
+    norm_num
+  · contradiction
