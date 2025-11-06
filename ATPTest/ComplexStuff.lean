@@ -44,12 +44,35 @@ instance μ₄_grp : Group μ₄ := (subgroup_by_test sg_test_μ₄).toGroup
 
 -- Now, if we must use this funny phase thing...
 
--- TODO
-def addPhase_toFun (ζ : μ₄) : pgroup_phases := ⟨⟨1, by norm_num⟩, by sorry⟩
-def addPhase_invFun (p : pgroup_phases) : μ₄ := ⟨1, by sorry⟩
+/-
+def pgphase_1 : pgroup_phases := ⟨⟨1, by norm_num⟩, by simp [pgroup_phases]⟩
+def pgphase_n1 : pgroup_phases := ⟨⟨-1, by norm_num⟩, by simp [pgroup_phases]⟩
+-/
+def pgphase_i : pgroup_phases := ⟨⟨Complex.I, by norm_num⟩, by simp [pgroup_phases]⟩
+def pgphase_ni : pgroup_phases := ⟨⟨-Complex.I, by norm_num⟩, by simp [pgroup_phases]⟩
 
-lemma addPhase_leftInv x : addPhase_invFun (addPhase_toFun x) = x := by sorry
-lemma addPhase_rightInv x : addPhase_toFun (addPhase_invFun x) = x := by sorry
+def μ₄_1 : μ₄ := ⟨1, by rw [μ₄]; simp⟩
+def μ₄_n1 : μ₄ := ⟨-1, by rw [μ₄]; simp⟩
+def μ₄_i : μ₄ := ⟨iu, by rw [μ₄]; simp⟩
+def μ₄_ni : μ₄ := ⟨-iu, by rw [μ₄]; simp⟩
+
+def addPhase_toFun (ζ : μ₄) : pgroup_phases :=
+  if ζ = μ₄_1 then pgphase_1
+  else if ζ = μ₄_n1 then pgphase_n1
+  else if ζ = μ₄_i then pgphase_i
+  else pgphase_ni
+
+def addPhase_invFun (p : pgroup_phases) : μ₄ :=
+  let v := p.1.1
+  if v = 1 then μ₄_1
+  else if v = -1 then μ₄_n1
+  else if v = Complex.I then μ₄_i
+  else μ₄_ni
+
+lemma addPhase_leftInv x : addPhase_invFun (addPhase_toFun x) = x := by
+  sorry
+lemma addPhase_rightInv x : addPhase_toFun (addPhase_invFun x) = x := by
+  sorry
 
 def addPhase [Group μ₄] : μ₄ ≃ pgroup_phases where
   toFun := addPhase_toFun
@@ -57,14 +80,32 @@ def addPhase [Group μ₄] : μ₄ ≃ pgroup_phases where
   left_inv := by apply addPhase_leftInv
   right_inv := by apply addPhase_rightInv
 
-def phases_grp [Group μ₄] : Group pgroup_phases where
-  mul := (fun (x y : pgroup_phases) => addPhase ((addPhase.symm x) * (addPhase.symm x) ))
-  mul_assoc := sorry
-  one := addPhase 1
-  one_mul := sorry
-  mul_one := sorry
+def phases_mul [Group μ₄] (x y : pgroup_phases) :=
+  addPhase ((addPhase.symm x) * (addPhase.symm y))
+
+def mul_ph : Mul pgroup_phases where
+  mul := phases_mul
+
+def inv_ph : Inv pgroup_phases where
   inv := (fun (x : pgroup_phases) => addPhase ((addPhase.symm x)⁻¹))
-  inv_mul_cancel := by
-    sorry
-  div_eq_mul_inv := by
-    sorry
+
+def one_ph : One pgroup_phases where
+  one := addPhase 1
+
+local instance : Mul pgroup_phases := mul_ph
+local instance : Inv pgroup_phases := inv_ph
+local instance : One pgroup_phases := one_ph
+
+lemma phases_grp_mul_assoc [Mul pgroup_phases] (x y z : pgroup_phases) :
+  x * y * z = x * (y * z) := by sorry
+
+lemma phases_grp_one_mul [Mul pgroup_phases] [One pgroup_phases]
+  (a : pgroup_phases) : 1 * a = a := by sorry
+
+lemma phases_grp_left_inv
+  [Mul pgroup_phases] [Inv pgroup_phases] [One pgroup_phases]
+  (a : pgroup_phases) :
+  a⁻¹ * a = 1 := by sorry
+
+def phases_grp' [Group μ₄] : Group pgroup_phases := Group.ofLeftAxioms
+  phases_grp_mul_assoc phases_grp_one_mul phases_grp_left_inv
