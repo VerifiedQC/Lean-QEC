@@ -1,3 +1,5 @@
 /build
 /lake-packages/*
 /.lake/*
+.venv
+.env

@@ -110,7 +110,14 @@ lemma kron_prod {n₁ m₁ n₂ m₂}
 
 @[simp]
 theorem BitVec.sum_univ_one {M : Type u_2} [AddCommMonoid M] (f : BitVec 1 → M) :
-  ∑ i : BitVec 1, f i = f 0 + f 1 := sorry
+  ∑ i : BitVec 1, f i = f 0 + f 1 := by
+  rw [Finset.sum]
+  have: Finset.univ.val = {0#1, 1#1} := by rfl
+  simp [this]
 
 --what's a better way to do this...
 def beq : Fin 2 ≃ BitVec 1 := (@BitVec.equivFin 1).symm
+
+-- aristotle
+lemma BitVec1_cases (i : BitVec 1) : i = 0#1 ∨ i = 1#1 := by
+  rcases i with ⟨ _ | _ | i, hi ⟩ <;> tauto

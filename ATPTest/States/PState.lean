@@ -63,10 +63,7 @@ open scoped unitary
 
 variable {n₁ n₂ : ℕ} (ψ₁ : PState n₁) (ψ₂ : PState n₂) (U₁ : 𝐔ₙ[n₁]) (U₂ : 𝐔ₙ[n₂])
 
-#check (ψ₁.apply U₁) ⊗ₚ (ψ₁.apply U₁)
-
-theorem kron_mul :
-  (ψ₁.apply U₁) ⊗ₚ (ψ₁.apply U₁) = (ψ₁.apply U₁) ⊗ₚ (ψ₁.apply U₁) := sorry
+-- #check (ψ₁.apply U₁) ⊗ₚ (ψ₁.apply U₁)
 
 theorem kron_mul_kron {n₁ n₂ : ℕ} (ψ₁ : PState n₁) (ψ₂ : PState n₂) (U₁ : 𝐔ₙ[n₁]) (U₂ : 𝐔ₙ[n₂]) :
   (ψ₁ ⊗ₚ ψ₂).apply (U₁ ⊗ₙ U₂) = (ψ₁.apply U₁) ⊗ₚ (ψ₂.apply U₂) := by
