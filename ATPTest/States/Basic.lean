@@ -104,9 +104,6 @@ lemma dot_kron {n₁ n₂} (ψ₁ φ₁ : BitVec n₁ → ℂ) (ψ₂ φ₂ : Bi
   · -- what is this nonsense?
     simp; group; simp
 
-lemma dotE {n} {ψ φ : PState n} :
-  ψ.dot φ = ψ.1 ⬝ᵥ φ.1 := by rfl
-
 def orth_base {n} (ψ φ : BitVec n → ℂ) := ψ ⬝ᵥ φ = 0
 
 lemma prod_orth_base {n₁ n₂} {ψ₁ φ₁ : BitVec n₁ → ℂ} {ψ₂ φ₂ : BitVec n₂ → ℂ}
