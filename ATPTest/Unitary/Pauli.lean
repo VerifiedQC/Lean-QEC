@@ -17,7 +17,7 @@ def Pauli_I : Pauli := ⟨1, by simp [Pauli]⟩
 lemma fin2Cast0E :
   Nat.cast (0 : ℕ) = (0 : Fin 2) := by rfl
 
-lemma XIsHermitian : Matrix.IsHermitian pX.1 := by
+lemma isHermitian_X : Matrix.IsHermitian pX.1 := by
   rw [Matrix.IsHermitian, pX]
   apply Matrix.ext; intros i j
   rw [Matrix.conjTranspose_apply]
@@ -27,7 +27,7 @@ lemma XIsHermitian : Matrix.IsHermitian pX.1 := by
   all_goals rcases (BitVec1_cases j) with rfl | rfl
   all_goals simp [X, fin2Cast0E]
 
-lemma YIsHermitian : Matrix.IsHermitian pY.1 := by
+lemma isHermitian_Y : Matrix.IsHermitian pY.1 := by
   rw [Matrix.IsHermitian, pY]
   apply Matrix.ext; intros i j
   rw [Matrix.conjTranspose_apply]
@@ -37,7 +37,7 @@ lemma YIsHermitian : Matrix.IsHermitian pY.1 := by
   all_goals rcases (BitVec1_cases j) with rfl | rfl
   all_goals simp [Y, fin2Cast0E]
 
-lemma ZIsHermitian : Matrix.IsHermitian pZ.1 := by
+lemma isHermitian_Z : Matrix.IsHermitian pZ.1 := by
   rw [Matrix.IsHermitian, pZ]
   apply Matrix.ext; intros i j
   rw [Matrix.conjTranspose_apply]
@@ -53,9 +53,9 @@ lemma pauli_herm {p : Pauli} : Matrix.IsHermitian p.1.1 := by
   simp at hx ⊢
   rcases hx with (rfl | rfl | rfl | rfl)
   · simp
-  · apply XIsHermitian
-  · apply YIsHermitian
-  · apply ZIsHermitian
+  · apply isHermitian_X
+  · apply isHermitian_Y
+  · apply isHermitian_Z
 
 variable {n : ℕ} (hn : 0 < n) (m : Fin n → Pauli)
 
