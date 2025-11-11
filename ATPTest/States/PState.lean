@@ -2,6 +2,7 @@ import ATPTest.States.BitVec
 import Mathlib.Data.Complex.Basic
 import Mathlib.Analysis.Complex.Norm
 import ATPTest.Unitary.Basic
+import ATPTest.Braket
 
 section pstate
 
@@ -77,26 +78,75 @@ match n with
 | n₀+2 => ((pstate_n_kron (by norm_num) (λ (x : Fin (n₀+1)) => m ⟨x.val + 1, by simp [x.isLt]⟩)).kron (m 0))
 
 noncomputable section
+open ComplexConjugate
+
+lemma Complex.normSq_eq_mul_self_conj_re {z : ℂ} : (normSq z : ℝ) = (z * (starRingEnd ℂ z)).re := by
+  simp [Complex.normSq]
 
 @[simp]
-def PState.dot (ψ₁ ψ₂ : PState n) : ℂ := ∑ x, (ψ₁ x) * (starRingEnd ℂ (ψ₂ x))
+def Ket.dot {k : Type*} [Fintype k] (ψ₁ ψ₂ : Ket k) : ℂ := ψ₁ ⬝ᵥ (conj ψ₂)
+
+lemma Ket.dot_star_symm {k : Type*} [Fintype k] (ψ₁ ψ₂ : Ket k) : ψ₁.dot ψ₂ = conj (ψ₂.dot ψ₁) := by
+  unfold Ket.dot dotProduct
+  simp_rw [starRingEnd_apply, star_sum, star_mul]
+  simp
+
+lemma dot_self_real {k : Type*} [Fintype k] (ψ₁ : Ket k) : (ψ₁.dot ψ₁).im = 0 := by
+  unfold Ket.dot dotProduct
+  show (∑ i, ψ₁ i * (starRingEnd (ℂ) (⇑ψ₁ i))).im = 0
+  rw [Complex.im_sum]
+  apply Finset.sum_eq_zero (fun x  hx => ?_)
+  rw [Complex.im_eq_zero_iff_isSelfAdjoint]
+  unfold IsSelfAdjoint
+  simp [mul_comm]
+
+
+
+lemma Ket.dot_self {k : Type*} [Fintype k] (ψ₁ : Ket k) : ψ₁.dot ψ₁ = 1 := by
+  have:= ψ₁.normalized'
+  simp_rw [Complex.sq_norm, Complex.normSq_eq_mul_self_conj_re, ←Complex.re_sum] at this
+  apply Complex.ext
+  · rw [Complex.one_re]
+    exact this
+  rw [Complex.one_im]
+  exact (dot_self_real ψ₁)
 
 @[simp]
-def PState.orth (ψ₁ ψ₂ : PState n) : Prop := ψ₁.dot ψ₂ = 0
+lemma Ket.dot_self' {k : Type*} [Fintype k] (ψ₁ : Ket k) : ψ₁ ⬝ᵥ starRingEnd (k → ℂ) ψ₁ = 1 := Ket.dot_self ψ₁
+
+@[simp]
+lemma starRingEnd_smul {R : Type u} [CommSemiring R] [StarRing R]
+  {A : Type v} [CommSemiring A] [StarRing A] [SMul R A] [StarModule R A] (x : R) (y : A)
+   : (starRingEnd A) (x • y) = ((starRingEnd R) x) • ((starRingEnd A) y) := by
+  rw [starRingEnd_apply, star_smul, ←starRingEnd_apply, ←starRingEnd_apply]
+
+@[simp]
+def Ket.orth {k : Type*} [Fintype k] (ψ₁ ψ₂ : Ket k) : Prop := ψ₁.dot ψ₂ = 0
+
+lemma Ket.orth_symm {k : Type*} [Fintype k] {ψ₁ ψ₂ : Ket k} :
+  ψ₁.orth ψ₂ ↔ ψ₂.orth ψ₁ := by
+  unfold Ket.orth
+  rw [Ket.dot_star_symm]
+  simp
+
+
+@[simp]
+lemma Ket.dot_orth1 {k : Type*} [Fintype k] {ψ₁ ψ₂ : Ket k} (h_orth : ψ₁.orth ψ₂) :
+  ψ₁ ⬝ᵥ starRingEnd (k → ℂ) ψ₂ = 0 := h_orth
+
+@[simp]
+lemma Ket.dot_orth2 {k : Type*} [Fintype k] {ψ₁ ψ₂ : Ket k} (h_orth : ψ₁.orth ψ₂) :
+  ψ₂ ⬝ᵥ starRingEnd (k → ℂ) ψ₁ = 0 := Ket.orth_symm.1 h_orth
 
 
 def PState.sum {n : ℕ} (ψ₁ ψ₂ : PState n) (a b : ℂ) (hab: ‖a‖^2+‖b‖^2 = 1) (h_orth : ψ₁.orth ψ₂) : PState n where
-  vec := a • ψ₁.vec + b • ψ₂.vec
+  vec := a • ψ₁ + b • ψ₂
   normalized' := by
-    simp [Complex.sq_norm]
-    simp_rw [Complex.normSq_add, Finset.sum_add_distrib,
-    ←Complex.sq_norm, Complex.norm_mul, mul_pow, ←Finset.mul_sum,
-    ψ₁.normalized', ψ₂.normalized', mul_one, hab]
-    have h : 2 * ∑ i, (a * ψ₁.vec i * (starRingEnd ℂ) (b * ψ₂.vec i)).re = 0
-    · simp_rw [←Complex.re_sum, mul_assoc, ←Finset.mul_sum,
-      starRingEnd_apply, star_mul, ←mul_assoc, ←Finset.sum_mul, ←starRingEnd_apply]
-      have h_orth2 : (∑ x, ψ₁.vec x * (starRingEnd ℂ) (ψ₂.vec x)) = 0
-      · exact h_orth
-      rw [h_orth2]
-      simp
-    rw [h, add_zero]
+    simp_rw [Complex.sq_norm, Complex.normSq_eq_mul_self_conj_re, ←Complex.re_sum]
+    change ((a • ⇑ψ₁ + b • ⇑ψ₂) ⬝ᵥ (conj (a • ⇑ψ₁ + b • ⇑ψ₂))).re = 1
+    simp only [map_add, dotProduct_add, add_dotProduct,
+    smul_dotProduct, starRingEnd_smul, dotProduct_smul, Ket.dot_self',
+    Ket.dot_orth1 h_orth, Ket.dot_orth2 h_orth]
+    simp [ -Complex.add_re, -Complex.mul_re, ←Complex.normSq_eq_conj_mul_self, ←Complex.sq_norm, sq,
+    -Complex.ofReal_mul, ←Complex.ofReal_add]
+    simp [←sq, hab]
