@@ -18,8 +18,6 @@ def qub_one : PState 1 := {
     simp
 }
 
-local instance : NatCast (Fin 2) := Fin.NatCast.instNatCast 2
-
 @[simp] lemma qub_zero_zero : qub_zero 0#1 = 1 := by
   simp [qub_zero, Ket.apply, beq]
   simp [BitVec.equivFin]

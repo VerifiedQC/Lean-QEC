@@ -14,7 +14,12 @@ lemma three_qubit_encode_correct (ψ : PState 1) : three_qubit_encode ψ =
   (prod_orth zero_one_orth (prod_orth zero_one_orth zero_one_orth))
   := sorry
 
-lemma IZZ_in_stab : 1 ⊗ₙ pZ ⊗ₙ pZ ∈ QCode.stabilizers (by norm_num) three_qubit_encode := sorry
+lemma IZZ_in_stab : 1 ⊗ₙ pZ ⊗ₙ pZ ∈ QCode.stabilizers (by norm_num) three_qubit_encode := by
+  refine' ⟨fun ψ => _, _⟩
+  · rewrite [three_qubit_encode_correct]
+    sorry
+  rw [mem_PauliGroup_iff]
+  sorry
 lemma ZIZ_in_stab : pZ ⊗ₙ p1 ⊗ₙ pZ ∈ QCode.stabilizers (by norm_num) three_qubit_encode := sorry
 lemma ZZI_in_stab : pZ ⊗ₙ pZ ⊗ₙ p1 ∈ QCode.stabilizers (by norm_num) three_qubit_encode := sorry
 
