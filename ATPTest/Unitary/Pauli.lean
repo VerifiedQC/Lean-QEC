@@ -7,7 +7,6 @@ def pY := (unitary_fin_equiv beq) Y
 def pZ := (unitary_fin_equiv beq) Z
 def p1 : 𝐔ₙ[1] := 1
 
-
 noncomputable def Pauli : Finset (𝐔ₙ[1]):= {1, pX, pY, pZ}
 
 def Pauli_X : Pauli := ⟨pX, by simp [Pauli]⟩
@@ -15,12 +14,50 @@ def Pauli_Y : Pauli := ⟨pY, by simp [Pauli]⟩
 def Pauli_Z : Pauli := ⟨pZ, by simp [Pauli]⟩
 def Pauli_I : Pauli := ⟨1, by simp [Pauli]⟩
 
+local instance : NatCast (Fin 2) := Fin.NatCast.instNatCast 2
+
+lemma fin2Cast0E :
+  Nat.cast (0 : ℕ) = (0 : Fin 2) := by rfl
+
+lemma XIsHermitian : Matrix.IsHermitian pX.1 := by
+  rw [Matrix.IsHermitian, pX]
+  apply Matrix.ext; intros i j
+  rw [Matrix.conjTranspose_apply]
+  simp [unitary_fin_equiv, beq]
+  simp [BitVec.equivFin]
+  rcases (BitVec1_cases i) with rfl | rfl
+  all_goals rcases (BitVec1_cases j) with rfl | rfl
+  all_goals simp [X, fin2Cast0E]
+
+lemma YIsHermitian : Matrix.IsHermitian pY.1 := by
+  rw [Matrix.IsHermitian, pY]
+  apply Matrix.ext; intros i j
+  rw [Matrix.conjTranspose_apply]
+  simp [unitary_fin_equiv, beq]
+  simp [BitVec.equivFin]
+  rcases (BitVec1_cases i) with rfl | rfl
+  all_goals rcases (BitVec1_cases j) with rfl | rfl
+  all_goals simp [Y, fin2Cast0E]
+
+lemma ZIsHermitian : Matrix.IsHermitian pZ.1 := by
+  rw [Matrix.IsHermitian, pZ]
+  apply Matrix.ext; intros i j
+  rw [Matrix.conjTranspose_apply]
+  simp [unitary_fin_equiv, beq]
+  simp [BitVec.equivFin]
+  rcases (BitVec1_cases i) with rfl | rfl
+  all_goals rcases (BitVec1_cases j) with rfl | rfl
+  all_goals simp [Z, fin2Cast0E]
+
 lemma pauli_herm {p : Pauli} : Matrix.IsHermitian p.1.1 := by
   rcases p with ⟨x, hx⟩
   rw [Pauli] at hx
   simp at hx ⊢
-  sorry
-  --rcases hx with (rfl | rfl | rfl | rfl) <;> matrix_expand [X, Y, Z]
+  rcases hx with (rfl | rfl | rfl | rfl)
+  · simp
+  · apply XIsHermitian
+  · apply YIsHermitian
+  · apply ZIsHermitian
 
 variable {n : ℕ} (hn : 0 < n) (m : Fin n → Pauli)
 
@@ -53,7 +90,6 @@ lemma pgphase_cases (a : pgroup_phases) : a.1 = ⟨1, by norm_num⟩ ∨ a.1 = �
 @[simp]
 def pgphase_1 : pgroup_phases := ⟨⟨1, by norm_num⟩, by simp [pgroup_phases]⟩
 
-@[simp]
 @[simp]
 def pgphase_n1 : pgroup_phases := ⟨⟨-1, by norm_num⟩, by simp [pgroup_phases]⟩
 

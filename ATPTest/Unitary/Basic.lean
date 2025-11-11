@@ -43,9 +43,19 @@ match n with
 | 1 => (m 0)
 | n₀+2 => (@unitary_nkron (n₀+1) 1 (unitary_n_nkron (by norm_num) (λ (x : Fin (n₀+1)) => m ⟨x.val + 1, by simp [x.isLt]⟩)) (m 0))
 
+lemma normalize_dagger {a₁ b₁ a₂ b₂}
+  (m : Matrix (BitVec a₁ × BitVec b₁) (BitVec a₂ × BitVec b₂) ℂ):
+  (normalize_mat m)ᴴ = normalize_mat mᴴ := by
+  rw [normalize_mat, normalize_mat]
+  rw [conjTranspose_reindex]
+
 --maybe unitary_nkron should have an underlying version using matrices?
 lemma unitary_herm_of_kron_herm {n₁ n₂ : ℕ} {M₁ : 𝐔ₙ[n₁]} {M₂ : 𝐔ₙ[n₂]} (hM₁ : M₁.val.IsHermitian) (hM₂ : M₂.val.IsHermitian) :
-  Matrix.IsHermitian (M₁ ⊗ₙ M₂).val := sorry
+  Matrix.IsHermitian (M₁ ⊗ₙ M₂).val := by
+  simp [IsHermitian, unitary_nkron]
+  rw [normalized_kron, kronecker, normalize_dagger]
+  rw [Matrix.conjTranspose_kronecker]
+  rw [hM₁, hM₂]
 
 def herm_of_qubit_tensor_herm {n : ℕ} (hn : 0 < n) (m : Fin n → 𝐔ₙ[1]) (Hm : ∀ x, Matrix.IsHermitian (m x).1) :
   Matrix.IsHermitian (unitary_n_nkron hn m).1 := by
