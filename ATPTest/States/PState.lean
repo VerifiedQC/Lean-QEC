@@ -78,10 +78,25 @@ match n with
 
 noncomputable section
 
-def PState.dot (ψ₁ ψ₂ : PState n) : ℂ := ∑ x, (ψ₁ x) * (ψ₂ x)
+@[simp]
+def PState.dot (ψ₁ ψ₂ : PState n) : ℂ := ∑ x, (ψ₁ x) * (starRingEnd ℂ (ψ₂ x))
 
+@[simp]
 def PState.orth (ψ₁ ψ₂ : PState n) : Prop := ψ₁.dot ψ₂ = 0
+
 
 def PState.sum {n : ℕ} (ψ₁ ψ₂ : PState n) (a b : ℂ) (hab: ‖a‖^2+‖b‖^2 = 1) (h_orth : ψ₁.orth ψ₂) : PState n where
   vec := a • ψ₁.vec + b • ψ₂.vec
-  normalized' := sorry
+  normalized' := by
+    simp [Complex.sq_norm]
+    simp_rw [Complex.normSq_add, Finset.sum_add_distrib,
+    ←Complex.sq_norm, Complex.norm_mul, mul_pow, ←Finset.mul_sum,
+    ψ₁.normalized', ψ₂.normalized', mul_one, hab]
+    have h : 2 * ∑ i, (a * ψ₁.vec i * (starRingEnd ℂ) (b * ψ₂.vec i)).re = 0
+    · simp_rw [←Complex.re_sum, mul_assoc, ←Finset.mul_sum,
+      starRingEnd_apply, star_mul, ←mul_assoc, ←Finset.sum_mul, ←starRingEnd_apply]
+      have h_orth2 : (∑ x, ψ₁.vec x * (starRingEnd ℂ) (ψ₂.vec x)) = 0
+      · exact h_orth
+      rw [h_orth2]
+      simp
+    rw [h, add_zero]
