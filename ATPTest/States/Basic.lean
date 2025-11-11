@@ -64,15 +64,9 @@ lemma zero_one_orth : qub_zero.orth qub_one := by
   unfold PState.orth PState.dot
   simp
 
-lemma pstate_eqE {n} (v w : PState n) :
-  v.vec = w.vec -> v = w := by
-  intro H
-  ext x
-  rw [Ket.apply, Ket.apply, H]
-
 lemma one_qub_decomp : ψ = qub_zero.sum qub_one (ψ.vec 0) (ψ.vec 1) (single_qub_normalized ψ) (zero_one_orth) := by
   rw [PState.sum]
-  apply pstate_eqE; simp
+  rw [Ket.mk.injEq]; simp
   ext i
   rcases (BitVec1_cases i) with H0 | H1
   · simp
