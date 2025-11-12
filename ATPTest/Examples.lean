@@ -28,12 +28,28 @@ lemma PState.apply_orth {n : ℕ} {ψ φ : PState n} (h_orth : ψ.orth φ) {U : 
 lemma PState.sum_apply {n : ℕ} {ψ φ : PState n} {a b : ℂ} (hab : ‖a‖^2 + ‖b‖^2 = 1) (h_orth : ψ.orth φ) (U : 𝐔ₙ[n]) :
   (PState.sum ψ φ a b hab h_orth).apply U = PState.sum (ψ.apply U) (φ.apply U) a b hab (PState.apply_orth h_orth) := sorry
 
+@[simp]
+lemma Pstate.apply_id {n : ℕ} {ψ : PState n} : ψ.apply 1 = ψ := by simp
+
+@[simp]
+lemma qub_zero_Z : qub_zero.apply pZ = qub_zero := sorry
+
+@[simp]
+lemma qub_one_Z : qub_one.apply pZ = Ket.phase_mul qub_one ⟨-1, by simp⟩ := sorry
+
 lemma IZZ_in_stab : 1 ⊗ₙ pZ ⊗ₙ pZ ∈ QCode.stabilizers (by norm_num) three_qubit_encode := by
   refine' ⟨fun ψ => _, _⟩
   · rewrite [three_qubit_encode_correct]
     unfold stabilizes
     rw [PState.sum_apply]
-    sorry
+    have hz: ((qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero).apply (1 ⊗ₙ pZ ⊗ₙ pZ) : PState 3) = ((qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero) : PState 3)
+    · rw [kron_mul_kron, kron_mul_kron]
+      sorry
+    have ho: (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply (1 ⊗ₙ pZ ⊗ₙ pZ) = ((qub_one ⊗ₚ qub_one ⊗ₚ qub_one) : PState 3)
+    · sorry
+    simp_rw [hz, ho]
+
+
   rw [mem_PauliGroup_iff]
   refine' ⟨![Pauli_Z, Pauli_Z, Pauli_I],⟨pgphase_1, _⟩⟩
   simp [-phase_id, pauli_tensor, unitary_n_nkron, Pauli_I, Pauli_Z]

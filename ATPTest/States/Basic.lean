@@ -137,3 +137,7 @@ lemma prod_orth_right {n₁ n₂} {ψ₁ φ₁ : PState n₁} {ψ₂ φ₂ : PSt
   : (ψ₁ ⊗ₚ ψ₂).orth (φ₁ ⊗ₚ φ₂) := by
   unfold Ket.orth at ⊢ ho
   rw [PState.prod_dot_prod, ho, mul_zero]
+
+lemma PState.phase_prod_phase {n₁ n₂} (ψ₁ : PState n₁) (ψ₂ : PState n₂) {p₁ p₂ : phase} :
+  (ψ₁.phase_mul p₁) ⊗ₚ (ψ₂.phase_mul p₂) = (ψ₁ ⊗ₚ ψ₂).phase_mul (p₁ * p₂) := by
+  sorry
