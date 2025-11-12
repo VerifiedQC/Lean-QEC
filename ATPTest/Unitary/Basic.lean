@@ -94,6 +94,7 @@ def phase_star (p : phase) : phase :=
     z_norm := by simp [p.2]
   }
 
+
 @[simp]
 lemma phase_mul_eq {p q : phase} : p * q = ⟨p.1 * q.1, by simp [p.z_norm, q.z_norm]⟩ := by rfl
 
@@ -104,6 +105,18 @@ def U_phase {n : ℕ} (U : 𝐔ₙ[n]) (z : phase) : 𝐔ₙ[n] := ⟨z.1 • U.
   rw [mul_comm, ←Complex.normSq_eq_conj_mul_self, Complex.coe_smul, Complex.normSq_eq_norm_sq, z.2]
   simp
 ⟩
+
+@[simp]
+def phase_id : phase :=
+  {
+    z := 1
+    z_norm := by norm_num
+  }
+
+@[simp]
+lemma U_phase_id {n : ℕ} {U : 𝐔ₙ[n]} : U_phase U phase_id = U := by
+  simp [U_phase, phase_id]
+
 
 def u_neg {n : ℕ} (U : 𝐔ₙ[n]) : 𝐔ₙ[n] := (U_phase U ⟨-1, by norm_num⟩)
 

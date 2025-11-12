@@ -49,8 +49,9 @@ theorem inv_stab {n : ℕ} {U : 𝐔ₙ[n]} {ψ : PState n} (hstab : stabilizes 
 theorem sum_stab {n : ℕ} {ψ₁ ψ₂ : PState n} {a b : ℂ} {U : 𝐔ₙ[n]} (hab: ‖a‖^2+‖b‖^2 = 1) (h_orth : ψ₁.orth ψ₂)
   (hstab1 : stabilizes U ψ₁) (hstab2 : stabilizes U ψ₂) :
   stabilizes U (ψ₁.sum ψ₂ a b hab h_orth) := by
-  simp [stabilizes, PState.sum, Matrix.mulVec_add, Matrix.mulVec_smul,
-  stabilizes_apply' hstab1, stabilizes_apply' hstab2]
+  simp [stabilizes, PState.sum, Matrix.mulVec_add, Matrix.mulVec_smul]
+  simp [DFunLike.coe, stabilizes_apply' hstab1, stabilizes_apply' hstab2]
+
 
 
 

@@ -86,7 +86,7 @@ lemma pgphase_cases (a : pgroup_phases) : a.1 = ⟨1, by norm_num⟩ ∨ a.1 = �
   exact this
 
 @[simp]
-def pgphase_1 : pgroup_phases := ⟨⟨1, by norm_num⟩, by simp [pgroup_phases]⟩
+def pgphase_1 : pgroup_phases := ⟨phase_id, by simp [pgroup_phases]⟩
 
 @[simp]
 def pgphase_n1 : pgroup_phases := ⟨⟨-1, by norm_num⟩, by simp [pgroup_phases]⟩
