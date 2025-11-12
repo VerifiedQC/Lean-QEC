@@ -50,6 +50,13 @@ lemma qub_one_vec_zero : qub_one.vec 0#1 = 0 := by
 lemma qub_one_vec_one : qub_one.vec 1#1 = 1 := by
   rw [<- Ket.apply, qub_one_one]
 
+
+def Ket.star {k : Type*} [Fintype k] (ψ : Ket k) : Ket k where
+  vec := starRingEnd (k → ℂ) ψ
+  normalized' := by
+    simp only [Pi.conj_apply, RCLike.norm_conj]
+    simp [DFunLike.coe, ψ.normalized']
+
 variable (ψ : PState 1)
 
 lemma single_qub_normalized : ‖(ψ 0)‖^2+‖(ψ 1)‖^2 = 1 := by
@@ -59,8 +66,8 @@ lemma single_qub_normalized : ‖(ψ 0)‖^2+‖(ψ 1)‖^2 = 1 := by
 
 
 lemma zero_one_orth : qub_zero.orth qub_one := by
-  unfold PState.orth PState.dot
-  simp
+  unfold Ket.orth Ket.dot
+  simp [dotProduct, BitVec.sum_univ_one]
 
 lemma one_qub_decomp : ψ = qub_zero.sum qub_one (ψ.vec 0) (ψ.vec 1) (single_qub_normalized ψ) (zero_one_orth) := by
   rw [PState.sum]
@@ -69,10 +76,10 @@ lemma one_qub_decomp : ψ = qub_zero.sum qub_one (ψ.vec 0) (ψ.vec 1) (single_q
   rcases (BitVec1_cases i) with H0 | H1
   · simp
     rw [H0]
-    simp [qub_zero_vec_zero, qub_one_vec_zero]
+    simp
   · simp
     rw [H1]
-    simp [qub_zero_vec_one, qub_one_vec_one]
+    simp
 
 -- less painful than expected
 lemma ket_prodE {n₁ n₂} (ψ₁ : BitVec n₁ → ℂ) (ψ₂ : BitVec n₂ → ℂ) :
@@ -89,7 +96,7 @@ lemma sum_prod_bitvecs {n₁ n₂} (f : _ -> ℂ) :
   simp [<- Finset.sum_product]
 
 lemma dot_kron {n₁ n₂} (ψ₁ φ₁ : BitVec n₁ → ℂ) (ψ₂ φ₂ : BitVec n₂ → ℂ) :
-  ket_prod ψ₁ ψ₂ ⬝ᵥ ket_prod φ₁ φ₂ =
+  ket_prod ψ₁ ψ₂ ⬝ᵥ (ket_prod φ₁ φ₂) =
   (ψ₁ ⬝ᵥ φ₁) * (ψ₂ ⬝ᵥ φ₂) := by
   simp [ket_prodE]
   simp [dotProduct]
@@ -102,28 +109,31 @@ lemma dot_kron {n₁ n₂} (ψ₁ φ₁ : BitVec n₁ → ℂ) (ψ₂ φ₂ : Bi
   · -- what is this nonsense?
     simp; group; simp
 
-def orth_base {n} (ψ φ : BitVec n → ℂ) := ψ ⬝ᵥ φ = 0
 
-lemma prod_orth_base {n₁ n₂} {ψ₁ φ₁ : BitVec n₁ → ℂ} {ψ₂ φ₂ : BitVec n₂ → ℂ}
-  (h : orth_base ψ₁ φ₁ ∨ orth_base ψ₂ φ₂)
-  : orth_base (ket_prod ψ₁ ψ₂) (ket_prod φ₁ φ₂) := by
-  rw [orth_base] at ⊢ h h
-  rw [dot_kron]
-  rcases h with h1 | h2
-  · simp [h1]
-  · simp [h2]
+lemma PState.star_prod {n₁ n₂ : ℕ} (ψ₁ : PState n₁) (ψ₂ : PState n₂) :
+  starRingEnd (BitVec (n₁ + n₂) → ℂ) (ψ₁ ⊗ₚ ψ₂) = (ψ₁.star ⊗ₚ ψ₂.star) := by
+  unfold PState.kron Ket.star
+  nth_rw 2 [DFunLike.coe]
+  unfold Braket.instFunLikeKet
+  ext x
+  simp [Pi.conj_apply, ket_prodE]
 
-lemma orthE {n} (ψ φ : PState n) :
-  ψ.orth φ = orth_base ψ.1 φ.1 := by rfl
+lemma PState.prod_dot_prod' {n₁ n₂} {ψ₁ φ₁ : PState n₁} {ψ₂ φ₂ : PState n₂} :
+  (ψ₁ ⊗ₚ ψ₂) ⬝ᵥ (φ₁ ⊗ₚ φ₂) = (ψ₁ ⬝ᵥ φ₁) * (ψ₂ ⬝ᵥ φ₂) := by apply dot_kron
 
-lemma prod_orth' {n₁ n₂} {ψ₁ φ₁ : PState n₁} {ψ₂ φ₂ : PState n₂} (h : ψ₁.orth φ₁ ∨ ψ₂.orth φ₂)
+lemma PState.prod_dot_prod {n₁ n₂} {ψ₁ φ₁ : PState n₁} {ψ₂ φ₂ : PState n₂} :
+  (ψ₁ ⊗ₚ ψ₂).dot (φ₁ ⊗ₚ φ₂) = (ψ₁.dot φ₁) * (ψ₂.dot φ₂) := by
+  unfold Ket.dot
+  rw [PState.star_prod]
+  rw [PState.prod_dot_prod', Ket.star]
+  rfl
+
+lemma prod_orth_left {n₁ n₂} {ψ₁ φ₁ : PState n₁} {ψ₂ φ₂ : PState n₂} (ho : ψ₁.orth φ₁)
   : (ψ₁ ⊗ₚ ψ₂).orth (φ₁ ⊗ₚ φ₂) := by
-  rw [orthE] at h h ⊢
-  apply prod_orth_base
-  tauto
+  unfold Ket.orth at ⊢ ho
+  rw [PState.prod_dot_prod, ho, zero_mul]
 
--- You actually only need ho₁ OR ho₂; stronger version above
-lemma prod_orth {n₁ n₂} {ψ₁ φ₁ : PState n₁} {ψ₂ φ₂ : PState n₂} (ho₁ : ψ₁.orth φ₁) (ho₂ : ψ₂.orth φ₂)
+lemma prod_orth_right {n₁ n₂} {ψ₁ φ₁ : PState n₁} {ψ₂ φ₂ : PState n₂} (ho : ψ₂.orth φ₂)
   : (ψ₁ ⊗ₚ ψ₂).orth (φ₁ ⊗ₚ φ₂) := by
-  apply prod_orth'
-  tauto
+  unfold Ket.orth at ⊢ ho
+  rw [PState.prod_dot_prod, ho, mul_zero]

@@ -19,7 +19,9 @@ lemma IZZ_in_stab : 1 ⊗ₙ pZ ⊗ₙ pZ ∈ QCode.stabilizers (by norm_num) th
   · rewrite [three_qubit_encode_correct]
     sorry
   rw [mem_PauliGroup_iff]
+  refine' ⟨pgp1, ⟨![pg1, pgZ, pgZ], _⟩⟩
   sorry
+
 lemma ZIZ_in_stab : pZ ⊗ₙ p1 ⊗ₙ pZ ∈ QCode.stabilizers (by norm_num) three_qubit_encode := sorry
 lemma ZZI_in_stab : pZ ⊗ₙ pZ ⊗ₙ p1 ∈ QCode.stabilizers (by norm_num) three_qubit_encode := sorry
 
