@@ -18,11 +18,10 @@ def qub_one : PState 1 := {
     simp
 }
 
+open Fin.NatCast in
 @[simp] lemma qub_zero_zero : qub_zero 0#1 = 1 := by
   simp [qub_zero, Ket.apply, beq]
   simp [BitVec.equivFin]
-  have: (Nat.cast (0 : ℕ)) = (0 : Fin 2) := by rfl
-  rw [this, Matrix.cons_val_zero]
 
 lemma qub_zero_vec_zero : qub_zero.vec 0#1 = 1 := by
   rw [<- Ket.apply, qub_zero_zero]
@@ -34,11 +33,10 @@ lemma qub_zero_vec_zero : qub_zero.vec 0#1 = 1 := by
 lemma qub_zero_vec_one : qub_zero.vec 1#1 = 0 := by
   rw [<- Ket.apply, qub_zero_one]
 
+open Fin.NatCast in
 @[simp] lemma qub_one_zero : qub_one 0#1 = 0 := by
   simp [qub_one, Ket.apply, beq]
   simp [BitVec.equivFin]
-  have: (Nat.cast (0 : ℕ)) = (0 : Fin 2) := by rfl
-  rw [this, Matrix.cons_val_zero]
 
 lemma qub_one_vec_zero : qub_one.vec 0#1 = 0 := by
   rw [<- Ket.apply, qub_one_zero]
@@ -60,8 +58,8 @@ def Ket.star {k : Type*} [Fintype k] (ψ : Ket k) : Ket k where
 variable (ψ : PState 1)
 
 lemma single_qub_normalized : ‖(ψ 0)‖^2+‖(ψ 1)‖^2 = 1 := by
-  convert ψ.normalized
-  simp [Complex.normSq_eq_norm_sq]
+  convert ψ.normalized''
+  simp
 
 
 
@@ -140,4 +138,7 @@ lemma prod_orth_right {n₁ n₂} {ψ₁ φ₁ : PState n₁} {ψ₂ φ₂ : PSt
 
 lemma PState.phase_prod_phase {n₁ n₂} (ψ₁ : PState n₁) (ψ₂ : PState n₂) {p₁ p₂ : phase} :
   (ψ₁.phase_mul p₁) ⊗ₚ (ψ₂.phase_mul p₂) = (ψ₁ ⊗ₚ ψ₂).phase_mul (p₁ * p₂) := by
-  sorry
+  unfold PState.kron Ket.phase_mul
+  ext x
+  simp_rw [ket_prodE, DFunLike.coe, Pi.smul_apply, smul_mul_smul]
+  congr

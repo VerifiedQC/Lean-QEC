@@ -21,7 +21,7 @@ theorem stab_prod {U₁ : 𝐔ₙ[n₁]} {U₂ : 𝐔ₙ[n₂]} {ψ₁ : PState 
   rw [kron_mul_kron, hs₁, hs₂]
 /-
 theorem stab_of_stab_equiv {U : 𝐔[k₁]} {ψ : Ket k₁} (e : k₁ ≃ k₂) (hstab: stabilizes U ψ) :
-  stabilizes (unitary_fin_equiv e U) (ket_fin_equiv e ψ) := sorry
+  stabilizes (unitary_fin_equiv e U) (ket_fin_equiv e ψ) := by admit
 -/
 
 theorem stab_n_prod {n : ℕ} {um : Fin n → 𝐔ₙ[1]} {km : Fin n → PState 1} (hn : 0 < n)

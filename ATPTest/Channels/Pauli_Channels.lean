@@ -103,4 +103,4 @@ def prod_kraus_is_kraus_prod {κ₁ κ₂ : Type*} [Fintype κ₁] [DecidableEq 
 
 
 def of_kraus_prob_unitary {n : ℕ} (pfun : Fin n → ℝ) (hpfun1 : ∀ i, 0 ≤ pfun i) (hpfun2 : ∀ i, 0 ≤ 1 - pfun i)
-: CPTPMap Qubit Qubit ℂ := sorry
+: CPTPMap Qubit Qubit ℂ := by admit

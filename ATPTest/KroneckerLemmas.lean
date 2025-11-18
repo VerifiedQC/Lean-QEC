@@ -76,5 +76,5 @@ lemma sum_conj_tensor_sum_conj_eq_sum_tensor_conj {κ₁ κ₂ : Type*} [Fintype
 (M₂ : κ₂ → Matrix dO₂ dI₂ ℂ) :
   Matrix.kronecker (fun (X : Matrix dI₁ dI₁ ℂ) => ∑ k : κ₁, star_conj (M₁ k) X) (fun (X : Matrix dI₂ dI₂ ℂ) => ∑ k : κ₂, star_conj (M₂ k) X) =
   fun (X : Matrix (dI₁ × dI₂) (dI₁ × dI₂) ℂ) => (∑ (k : κ₁ × κ₂), star_conj (Matrix.kronecker (M₁ k.1) (M₂ k.2)) X)
- := sorry
+ := by admit
 -/

@@ -121,5 +121,3 @@ def beq : Fin 2 ≃ BitVec 1 := (@BitVec.equivFin 1).symm
 -- aristotle
 lemma BitVec1_cases (i : BitVec 1) : i = 0#1 ∨ i = 1#1 := by
   rcases i with ⟨ _ | _ | i, hi ⟩ <;> tauto
-
-instance : NatCast (Fin 2) := Fin.NatCast.instNatCast 2

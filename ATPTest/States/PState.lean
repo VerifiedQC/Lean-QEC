@@ -51,8 +51,8 @@ def PState.kron {n₁ n₂ : ℕ} (ψ₁ : PState n₁) (ψ₂ : PState n₂) : 
   vec := ket_prod ψ₁.vec ψ₂.vec
   normalized' := by
     simp [ket_prod, normalized_kron, toMat]
-    have h : ∑ (x : BitVec n₁ × BitVec n₂), (‖ψ₁.vec x.1‖ * ‖ψ₂.vec x.2‖) ^ 2 = 1
-    · rw [Fintype.sum_prod_type]
+    have h : ∑ (x : BitVec n₁ × BitVec n₂), (‖ψ₁.vec x.1‖ * ‖ψ₂.vec x.2‖) ^ 2 = 1 := by
+      rw [Fintype.sum_prod_type]
       simp_rw [mul_pow, ←Finset.mul_sum, ψ₂.normalized', mul_one, ψ₁.normalized']
     rw [Fintype.sum_equiv bits_cat.symm]
     exact h

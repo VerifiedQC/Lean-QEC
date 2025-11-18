@@ -1,6 +1,8 @@
-import QuantumInfo.Finite.Unitary
+--import QuantumInfo.Finite.Unitary
+--import QuantumInfo.Finite.Qubit.Basic
+import ATPTest.QuantumInfoSkeleton
+
 import ATPTest.States.BitVec
-import QuantumInfo.Finite.Qubit.Basic
 import ATPTest.KroneckerLemmas
 import ATPTest.States.Phase
 open Matrix
@@ -70,8 +72,6 @@ def herm_of_qubit_tensor_herm {n : ℕ} (hn : 0 < n) (m : Fin n → 𝐔ₙ[1]) 
 
 noncomputable section
 
-#check phase
-
 def U_phase {k : Type*} [Fintype k] [DecidableEq k] (U : 𝐔[k]) (z : phase) : 𝐔[k] := ⟨z.1 • U.val, by
   simp [unitary.mem_iff, smul_smul, mul_comm]
   rw [mul_comm, ←Complex.normSq_eq_conj_mul_self, Complex.coe_smul, Complex.normSq_eq_norm_sq, z.2]
@@ -86,7 +86,7 @@ lemma U_phase_id {k : Type*} [Fintype k] [DecidableEq k] {U : 𝐔[k]} : U_phase
 def phase.unitary_of (z : phase) (n : ℕ) : 𝐔ₙ[n] := U_phase 1 z
 
 lemma phase_tensor_mul  (z₁ z₂ : phase) {n₁ n₂ : ℕ} : z₁.unitary_of n₁ ⊗ₙ z₂.unitary_of n₂ = (z₁ * z₂).unitary_of (n₁+n₂) := by
-  sorry
+  admit
 
 def u_neg {n : ℕ} (U : 𝐔ₙ[n]) : 𝐔ₙ[n] := (U_phase U ⟨-1, by norm_num⟩)
 

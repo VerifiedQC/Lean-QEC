@@ -1,4 +1,5 @@
-import QuantumInfo.Finite.Braket
+--import QuantumInfo.Finite.Braket
+import ATPTest.QuantumInfoSkeleton
 import ATPTest.States.Phase
 
 variable {k : Type*} [Fintype k]
