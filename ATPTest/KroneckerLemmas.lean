@@ -1,7 +1,4 @@
-import Mathlib.Data.Fintype.Basic
-import Mathlib.LinearAlgebra.Matrix.Hermitian
-import Mathlib.LinearAlgebra.Matrix.Kronecker
-
+import Mathlib
 
 lemma is_herm_of_kron_herm
   {A B : Type*} [Fintype A] [Fintype B]

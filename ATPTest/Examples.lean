@@ -19,7 +19,12 @@ lemma unitary_kron_assoc {n₁ n₂ n₃ : ℕ} {U₁ : 𝐔ₙ[n₁]} {U₂ : �
 -/
 
 lemma unitary_kron_assoc {U₁ U₂ U₃ : 𝐔ₙ[1]}  :
-  (U₁ ⊗ₙ U₂) ⊗ₙ U₃ = U₁ ⊗ₙ (U₂ ⊗ₙ U₃) := by admit
+  (U₁ ⊗ₙ U₂) ⊗ₙ U₃ = U₁ ⊗ₙ (U₂ ⊗ₙ U₃) := by
+  ext i j;
+  simp [ unitary_nkron, normalized_kron ];
+  ring_nf
+  fin_cases i <;> fin_cases j <;> rfl
+
 
 lemma PState.apply_orth {n : ℕ} {ψ φ : PState n} (h_orth : ψ.orth φ) {U : 𝐔ₙ[n]} :
   (ψ.apply U).orth (φ.apply U) := by

@@ -1,5 +1,7 @@
 import ATPTest.States.PState
 
+noncomputable section
+
 def qub_zero : PState 1 := {
   vec := (Equiv.arrowCongr beq (Equiv.refl _)) ![(1 : ℂ), 0]
   normalized' := by
@@ -18,10 +20,10 @@ def qub_one : PState 1 := {
     simp
 }
 
-open Fin.NatCast in
 @[simp] lemma qub_zero_zero : qub_zero 0#1 = 1 := by
   simp [qub_zero, Ket.apply, beq]
   simp [BitVec.equivFin]
+  rfl
 
 lemma qub_zero_vec_zero : qub_zero.vec 0#1 = 1 := by
   rw [<- Ket.apply, qub_zero_zero]
@@ -33,10 +35,10 @@ lemma qub_zero_vec_zero : qub_zero.vec 0#1 = 1 := by
 lemma qub_zero_vec_one : qub_zero.vec 1#1 = 0 := by
   rw [<- Ket.apply, qub_zero_one]
 
-open Fin.NatCast in
 @[simp] lemma qub_one_zero : qub_one 0#1 = 0 := by
   simp [qub_one, Ket.apply, beq]
   simp [BitVec.equivFin]
+  rfl
 
 lemma qub_one_vec_zero : qub_one.vec 0#1 = 0 := by
   rw [<- Ket.apply, qub_one_zero]

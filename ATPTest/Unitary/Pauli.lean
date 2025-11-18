@@ -14,38 +14,37 @@ def Pauli_Y : Pauli := ⟨pY, by simp [Pauli]⟩
 def Pauli_Z : Pauli := ⟨pZ, by simp [Pauli]⟩
 def Pauli_I : Pauli := ⟨1, by simp [Pauli]⟩
 
-open Fin.NatCast in
 lemma isHermitian_X : Matrix.IsHermitian pX.1 := by
   rw [Matrix.IsHermitian, pX]
   apply Matrix.ext; intros i j
   rw [Matrix.conjTranspose_apply]
   simp [unitary_fin_equiv, beq]
   simp [BitVec.equivFin]
-  rcases (BitVec1_cases i) with rfl | rfl
-  all_goals rcases (BitVec1_cases j) with rfl | rfl
-  all_goals simp [X]
+  rcases i with ⟨ _ | _, _ ⟩ <;> rcases j with ⟨ _ | _, _ ⟩ <;> norm_num [ Qubit.X ]
 
-open Fin.NatCast in
+
+  --rcases (BitVec1_cases i) with rfl | rfl
+  --all_goals rcases (BitVec1_cases j) with rfl | rfl
+  --all_goals simp [X]
+
+
 lemma isHermitian_Y : Matrix.IsHermitian pY.1 := by
   rw [Matrix.IsHermitian, pY]
   apply Matrix.ext; intros i j
   rw [Matrix.conjTranspose_apply]
   simp [unitary_fin_equiv, beq]
   simp [BitVec.equivFin]
-  rcases (BitVec1_cases i) with rfl | rfl
-  all_goals rcases (BitVec1_cases j) with rfl | rfl
-  all_goals simp [Y]
+  rcases i with ⟨ _ | _, _ ⟩ <;> rcases j with ⟨ _ | _, _ ⟩ <;> norm_num [ Qubit.Y ]
 
-open Fin.NatCast in
+
 lemma isHermitian_Z : Matrix.IsHermitian pZ.1 := by
   rw [Matrix.IsHermitian, pZ]
   apply Matrix.ext; intros i j
   rw [Matrix.conjTranspose_apply]
   simp [unitary_fin_equiv, beq]
   simp [BitVec.equivFin]
-  rcases (BitVec1_cases i) with rfl | rfl
-  all_goals rcases (BitVec1_cases j) with rfl | rfl
-  all_goals simp [Z]
+  rcases i with ⟨ _ | _, _ ⟩ <;> rcases j with ⟨ _ | _, _ ⟩ <;> norm_num [ Qubit.Z ]
+
 
 lemma pauli_herm {p : Pauli} : Matrix.IsHermitian p.1.1 := by
   rcases p with ⟨x, hx⟩
@@ -59,7 +58,7 @@ lemma pauli_herm {p : Pauli} : Matrix.IsHermitian p.1.1 := by
 
 variable {n : ℕ} (hn : 0 < n) (m : Fin n → Pauli)
 
-def pauli_tensor : 𝐔ₙ[n] :=
+noncomputable def pauli_tensor : 𝐔ₙ[n] :=
   unitary_n_nkron hn (λ x => (m x))
 
 
@@ -69,7 +68,7 @@ lemma pauli_tensor_hermitian :
   intro x
   simp [pauli_herm]
 
---Depend on LeanQuantumInfo imports, shelved for the moment
+--Depend on LeanQuantumInfo i m p o r t s, shelved for the moment
 /-
 def pauli_tensor_herm : HermitianMat (BitVec n) ℂ :=
   ⟨_, pauli_tensor_hermitian hn m⟩
@@ -184,7 +183,7 @@ lemma rep_unique {U : 𝐔ₙ[n]} (m₁ m₂ : Fin n → Pauli)
 
 -/
 
-noncomputable def pauli_weight {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn) : ℕ := (Finset.univ.filter (fun i => (PauliGroup.map hn hU) i ≠ (1 : 𝐔ₙ[1]))).card
+noncomputable def pauli_weight {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn) : ℕ := (Finset.univ.filter (fun i => (PauliGroup.map hn hU) i ≠ Pauli_I)).card
 
 def pauli_only {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn) (P : Pauli) := ∀ x, ((PauliGroup.map hn hU) x = (1 : 𝐔ₙ[1]) ∨ (PauliGroup.map hn hU) x = P)
 

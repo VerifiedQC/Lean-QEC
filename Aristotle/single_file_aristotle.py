@@ -7,10 +7,10 @@ with open("Aristotle/apikey.txt", "r", encoding="utf-8") as file:
 
 aristotlelib.set_api_key(api_key)
 
-target_id = "Pauli.lean"
+target_id = "PState.lean"
 context = []
 
-target_path = f'ATPTest/Unitary{target_id}'
+target_path = f'Aristotle/Targets/{target_id}'
 solution_path = f'Aristotle/Solutions/{target_id}'
 
 async def main():

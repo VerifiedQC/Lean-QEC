@@ -1,6 +1,4 @@
 import ATPTest.States.BitVec
-import Mathlib.Data.Complex.Basic
-import Mathlib.Analysis.Complex.Norm
 import ATPTest.Unitary.Basic
 import ATPTest.Braket
 
@@ -71,7 +69,7 @@ theorem kron_mul_kron {n₁ n₂ : ℕ} (ψ₁ : PState n₁) (ψ₂ : PState n�
   rw [Ket.mk.injEq]
   simp [PState.kron, unitary_nkron, kron_prod]
 
-def pstate_n_kron {n : ℕ} (hn : 0 < n) (m : Fin n → PState 1) : PState n :=
+noncomputable def pstate_n_kron {n : ℕ} (hn : 0 < n) (m : Fin n → PState 1) : PState n :=
 match n with
 | 0 => (by contradiction)
 | 1 => (m 0)

@@ -1,5 +1,5 @@
---import QuantumInfo.Finite.Unitary
---import QuantumInfo.Finite.Qubit.Basic
+--i m p o r t QuantumInfo.Finite.Unitary
+--i m p o r t QuantumInfo.Finite.Qubit.Basic
 import ATPTest.QuantumInfoSkeleton
 
 import ATPTest.States.BitVec
@@ -40,7 +40,7 @@ def unitary_nkron {n₁ n₂ : ℕ} (a : 𝐔ₙ[n₁]) (b : 𝐔ₙ[n₂]) : �
 
 notation a:60 " ⊗ₙ " b:60 => unitary_nkron a b
 
-def unitary_n_nkron {n : ℕ} (hn : 0 < n) (m : Fin n → 𝐔ₙ[1]) : 𝐔ₙ[n] :=
+noncomputable def unitary_n_nkron {n : ℕ} (hn : 0 < n) (m : Fin n → 𝐔ₙ[1]) : 𝐔ₙ[n] :=
 match n with
 | 0 => by contradiction
 | 1 => (m 0)

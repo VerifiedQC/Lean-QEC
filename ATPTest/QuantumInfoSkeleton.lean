@@ -1,13 +1,7 @@
 --Aristotle seems unable to resolve an i m p o r t of a non-mathlib
 --file. Thankfully, we can fit most of what we need from LeanQuantumInfo in here.
 
-import Mathlib.LinearAlgebra.UnitaryGroup
-import Mathlib.Data.Complex.Basic
-import Mathlib.Analysis.Complex.Norm
-import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.ExpLog
-import Mathlib.Analysis.SpecialFunctions.ContinuousFunctionalCalculus.Rpow.Basic
-import Mathlib.LinearAlgebra.Matrix.HermitianFunctionalCalculus
-import Mathlib.Analysis.Matrix
+import Mathlib
 
 noncomputable section
 
