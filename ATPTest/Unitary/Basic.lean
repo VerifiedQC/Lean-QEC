@@ -46,6 +46,13 @@ match n with
 | 1 => (m 0)
 | n₀+2 => (@unitary_nkron (n₀+1) 1 (unitary_n_nkron (by norm_num) (λ (x : Fin (n₀+1)) => m ⟨x.val + 1, by simp [x.isLt]⟩)) (m 0))
 
+def unitaries_cat {l₁ l₂ n : ℕ} (m₁ : Fin l₁ → 𝐔ₙ[n]) (m₂ : Fin l₂ → 𝐔ₙ[n]) : Fin (l₁ + l₂) → 𝐔ₙ[n] :=
+  fun x => if hle : x < l₁ then (m₁ ⟨x.1, hle⟩)
+  else (m₂ ⟨x.1 - l₁, by push_neg at hle; apply Nat.sub_lt_right_of_lt_add hle; simp_rw [add_comm]; exact x.2⟩)
+
+theorem unitaries_cat_nkron {l₁ l₂} (hl₁ : 0 < l₁) (hl₂ : 0 < l₂) (m₁ : Fin l₁ → 𝐔ₙ[1]) (m₂ : Fin l₂ → 𝐔ₙ[1]) :
+  (unitary_n_nkron hl₁ m₁) ⊗ₙ (unitary_n_nkron hl₂ m₂) = unitary_n_nkron (Nat.add_pos_left hl₁ _) (unitaries_cat m₁ m₂) := sorry
+
 lemma normalize_dagger {a₁ b₁ a₂ b₂}
   (m : Matrix (BitVec a₁ × BitVec b₁) (BitVec a₂ × BitVec b₂) ℂ):
   (normalize_mat m)ᴴ = normalize_mat mᴴ := by
@@ -87,6 +94,8 @@ def phase.unitary_of (z : phase) (n : ℕ) : 𝐔ₙ[n] := U_phase 1 z
 
 lemma phase_tensor_mul  (z₁ z₂ : phase) {n₁ n₂ : ℕ} : z₁.unitary_of n₁ ⊗ₙ z₂.unitary_of n₂ = (z₁ * z₂).unitary_of (n₁+n₂) := by
   admit
+
+lemma U_phase_tensor {n₁ n₂ : ℕ} (U₁ : 𝐔ₙ[n₁]) (U₂ : 𝐔ₙ[n₂]) (z₁ z₂ : phase) : (U_phase U₁ z₁) ⊗ₙ (U_phase U₂ z₂) = U_phase (U₁ ⊗ₙ U₂) (z₁ * z₂) := sorry
 
 def u_neg {n : ℕ} (U : 𝐔ₙ[n]) : 𝐔ₙ[n] := (U_phase U ⟨-1, by norm_num⟩)
 

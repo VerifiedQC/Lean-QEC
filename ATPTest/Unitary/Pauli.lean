@@ -169,7 +169,14 @@ noncomputable def PauliGroup.map {U : 𝐔ₙ[n]}
 theorem kron_mem_PauliGroup_iff {n₁ n₂ : ℕ} (hn₁ : 0 < n₁) (hn₂ : 0 < n₂)
   {U₁ : 𝐔ₙ[n₁]} {U₂ : 𝐔ₙ[n₂]} : U₁ ⊗ₙ U₂ ∈ PauliGroup (Nat.add_pos_left hn₁ n₂) ↔ (U₁ ∈ PauliGroup hn₁ ∧ U₂ ∈ PauliGroup hn₂) := by
   rw [mem_PauliGroup_iff, mem_PauliGroup_iff, mem_PauliGroup_iff]
-  admit
+  constructor
+  · sorry
+  rintro ⟨⟨m₁, z₁, hU₁⟩, ⟨m₂, z₂, hU₂⟩⟩
+  let m_cat := fun (x : Fin (n₁ + n₂)) => if hle : x < n₁ then (m₁ ⟨x.1, hle⟩)
+  else (m₂ ⟨x.1 - n₁, by push_neg at hle; apply Nat.sub_lt_right_of_lt_add hle; simp_rw [add_comm]; exact x.2⟩)
+  refine ⟨m_cat, z₁ * z₂, ?_⟩
+  rw [←hU₁, ←hU₂, U_phase_tensor]
+
 
 noncomputable def PauliGroup.phase {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn)
 : pgroup_phases := Classical.choose ((mem_PauliGroup_iff hn U).mp hU).choose_spec
@@ -204,6 +211,7 @@ noncomputable def pauli_weight {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn) : ℕ
 
 def pauli_only {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn) (P : Pauli) := ∀ x, ((PauliGroup.map hn hU) x = (1 : 𝐔ₙ[1]) ∨ (PauliGroup.map hn hU) x = P)
 
+--rewrite this for
 lemma pauli_commute_with_phase {U₁ U₂ : 𝐔ₙ[n]} (h1 : U₁ ∈ PauliGroup hn)
   (h2 : U₂ ∈ PauliGroup hn) : ∃ (p : pgroup_phases),  U₁ * U₂ = U_phase (U₂ * U₁) p := by sorry
 
