@@ -169,12 +169,29 @@ noncomputable def PauliGroup.map {U : 𝐔ₙ[n]}
 theorem kron_mem_PauliGroup_iff {n₁ n₂ : ℕ} (hn₁ : 0 < n₁) (hn₂ : 0 < n₂)
   {U₁ : 𝐔ₙ[n₁]} {U₂ : 𝐔ₙ[n₂]} : U₁ ⊗ₙ U₂ ∈ PauliGroup (Nat.add_pos_left hn₁ n₂) ↔ (U₁ ∈ PauliGroup hn₁ ∧ U₂ ∈ PauliGroup hn₂) := by
   rw [mem_PauliGroup_iff, mem_PauliGroup_iff, mem_PauliGroup_iff]
-  sorry
+  admit
 
 noncomputable def PauliGroup.phase {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn)
 : pgroup_phases := Classical.choose ((mem_PauliGroup_iff hn U).mp hU).choose_spec
 
-lemma mem_PauliGroup_id : 1 ∈ PauliGroup hn := by admit
+lemma mem_PauliGroup_id : 1 ∈ PauliGroup hn := by
+  -- The identity matrix is in the Pauli group by definition.
+  apply Finset.mem_image.mpr;
+  use (fun _ => ⟨1, by
+    exact Finset.mem_insert_self _ _⟩, pgphase_1);
+  simp [Finset.mem_product, U_phase];
+  -- The identity matrix is in the Pauli group by definition.
+  simp [pgroup_phases];
+  -- Apply the lemma that states the tensor product of identity matrices is the identity matrix.
+  have h_tensor_id : ∀ (n : ℕ) (hn : 0 < n), unitary_n_nkron hn (fun _ => 1) = 1 := by
+    -- We proceed by induction on $n$.
+    intro n hn
+    induction' n with n ih;
+    · contradiction;
+    · cases n <;> simp_all +decide [ unitary_n_nkron ];
+      simp +decide [ unitary_nkron, normalized_kron ];
+  -- Apply the hypothesis h_tensor_id with the specific n and hn from the goal.
+  apply h_tensor_id n hn
 
 /-
 lemma rep_unique {U : 𝐔ₙ[n]} (m₁ m₂ : Fin n → Pauli)
@@ -188,7 +205,7 @@ noncomputable def pauli_weight {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn) : ℕ
 def pauli_only {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn) (P : Pauli) := ∀ x, ((PauliGroup.map hn hU) x = (1 : 𝐔ₙ[1]) ∨ (PauliGroup.map hn hU) x = P)
 
 lemma pauli_commute_with_phase {U₁ U₂ : 𝐔ₙ[n]} (h1 : U₁ ∈ PauliGroup hn)
-  (h2 : U₂ ∈ PauliGroup hn) : ∃ (p : pgroup_phases),  U₁ * U₂ = U_phase (U₂ * U₁) p := by admit
+  (h2 : U₂ ∈ PauliGroup hn) : ∃ (p : pgroup_phases),  U₁ * U₂ = U_phase (U₂ * U₁) p := by sorry
 
 noncomputable def pauli_pauli_phase {U₁ U₂ : 𝐔ₙ[n]} (h1 : U₁ ∈ PauliGroup hn)
   (h2 : U₂ ∈ PauliGroup hn) : pgroup_phases := Classical.choose (pauli_commute_with_phase hn h1 h2)
@@ -196,7 +213,7 @@ noncomputable def pauli_pauli_phase {U₁ U₂ : 𝐔ₙ[n]} (h1 : U₁ ∈ Paul
 lemma pauli_pauli_phase_kron {n₁ n₂ : ℕ} {U₁ U₁' : 𝐔ₙ[n₁]} {U₂ U₂' : 𝐔ₙ[n₂]} (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
   (hU₁ : U₁ ∈ PauliGroup hn₁) (hU₁' : U₁' ∈ PauliGroup hn₁) (hU₂ : U₂ ∈ PauliGroup hn₂) (hU₂' : U₂' ∈ PauliGroup hn₂)
   : pauli_pauli_phase (Nat.add_pos_left hn₁ n₂) ((kron_mem_PauliGroup_iff hn₁ hn₂).2 ⟨hU₁, hU₂⟩) ((kron_mem_PauliGroup_iff hn₁ hn₂).2 ⟨hU₁', hU₂'⟩) =
-  (pauli_pauli_phase hn₁ hU₁ hU₁') * (pauli_pauli_phase hn₂ hU₂ hU₂') := by admit
+  (pauli_pauli_phase hn₁ hU₁ hU₁') * (pauli_pauli_phase hn₂ hU₂ hU₂') := by sorry
 
 lemma pauli_pauli_phase_symm {U₁ U₂ : 𝐔ₙ[n]} (h1 : U₁ ∈ PauliGroup hn)
   (h2 : U₂ ∈ PauliGroup hn) : pauli_pauli_phase hn h1 h2 = pauli_pauli_phase hn h2 h1 := by admit
