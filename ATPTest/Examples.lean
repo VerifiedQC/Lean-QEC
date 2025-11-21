@@ -53,11 +53,9 @@ lemma IZZ_in_stab : 1 ⊗ₙ pZ ⊗ₙ pZ ∈ QCode.stabilizers (by norm_num) th
     have ho: (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply (1 ⊗ₙ pZ ⊗ₙ pZ) = ((qub_one ⊗ₚ qub_one ⊗ₚ qub_one) : PState 3) := by
       admit
     simp_rw [hz, ho]
-
-
   rw [mem_PauliGroup_iff]
   refine' ⟨![Pauli_Z, Pauli_Z, Pauli_I],⟨pgphase_1, _⟩⟩
-  simp [-phase_id, pauli_tensor, unitary_n_nkron, Pauli_I, Pauli_Z]
+  simp [-phase_id, unitary_n_nkron, Pauli_I, Pauli_Z]
   rw [unitary_kron_assoc]
 
 
