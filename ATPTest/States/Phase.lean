@@ -1,4 +1,5 @@
 import Mathlib
+import ATPTest.AI_Generated.TediousLinearAlgebra
 
 noncomputable section
 
@@ -39,3 +40,25 @@ def phase_id : phase :=
     z := 1
     z_norm := by norm_num
   }
+
+lemma ne0_phase (z : phase) : z.1 ≠ 0 := by
+  by_contra H
+  rcases z with ⟨zval, normed_z⟩
+  simp at H; subst H
+  simp at normed_z
+
+lemma phase_ext (z z' : phase) (eq_z : z.1 = z'.1) : z = z' := by
+  cases z; aesop
+
+lemma phase_star_move (a b c : phase) :
+  a * Phase.phase_star b = c <-> a = b * c := by
+  cases a with | mk aval norm_a
+  cases b with | mk bval norm_b
+  cases c with | mk cval norm_c
+  simp [Phase.phase_star]
+  apply raw_phase_star_move <;> aesop
+
+lemma phase_id_1 (a : phase) :
+  a * phase_id = a := by
+  cases a with | mk aval norm_a
+  simp [phase_id]
