@@ -7,7 +7,7 @@ with open("Aristotle/apikey.txt", "r", encoding="utf-8") as file:
 
 aristotlelib.set_api_key(api_key)
 
-target_id = "KronNonsense.lean"
+target_id = "TediousLinearAlgebra.lean"
 context = []
 
 target_path = f'Aristotle/Targets/{target_id}'

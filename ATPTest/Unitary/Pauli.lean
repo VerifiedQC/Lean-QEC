@@ -1,12 +1,17 @@
 import ATPTest.Unitary.Basic
-import ATPTest.KronNonsense
-import ATPTest.PauliBruteForce
 import ATPTest.States.Phase
+import ATPTest.AI_Generated.ne0_unitary
+import ATPTest.AI_Generated.scalar_mat_is_one
+import ATPTest.AI_Generated.KronNonsense
+import ATPTest.AI_Generated.PauliBruteForce
+import ATPTest.AI_Generated.TediousLinearAlgebra
 
 open Qubit
 open Function
 
 noncomputable section
+
+lemma unitary_ext {n} {U U' : 𝐔ₙ[n]} (vals_eq: U.1 = U'.1) : U = U' := by aesop
 
 def pX := (unitary_fin_equiv beq) X
 def pY := (unitary_fin_equiv beq) Y
@@ -20,22 +25,35 @@ def Pauli_Y : Pauli := ⟨pY, by simp [Pauli]⟩
 def Pauli_Z : Pauli := ⟨pZ, by simp [Pauli]⟩
 def Pauli_I : Pauli := ⟨1, by simp [Pauli]⟩
 
+lemma Pauli_cases (a : Pauli) :
+  a = Pauli_X ∨ a = Pauli_Y ∨ a = Pauli_Z ∨ a = Pauli_I := by
+  rcases a with ⟨u, hu⟩
+  have: u = 1 ∨ u = pX ∨ u = pY ∨ u = pZ := by
+    simpa [Pauli, Finset.mem_insert, Finset.mem_singleton] using hu
+  aesop
+
 lemma mem_raw_paulis (u : Pauli) :
   (Matrix.reindex beq.symm beq.symm) u ∈ raw_Paulis := by
-  sorry
+  have H := Pauli_cases u
+  rcases H with HX | HY | HZ | HI
+  · subst HX
+    simp [Pauli_X, pX, unitary_fin_equiv, X, raw_Paulis]; tauto
+  · subst HY
+    simp [Pauli_Y, pY, unitary_fin_equiv, Y, raw_Paulis]; tauto
+  · subst HZ
+    simp [Pauli_Z, pZ, unitary_fin_equiv, Z, raw_Paulis]; tauto
+  · subst HI
+    simp [Pauli_I, raw_Paulis]; tauto
 
-lemma paulis_distinct {p p' : Pauli} (z : phase) (H: p ≠ p') :
-  (U_phase p.val z) ≠ p' := by
-  suffices: z.1 • p.val.1 ≠ p'.val.1
-  · rw [U_phase]
-    aesop
-  let rawP : raw_Paulis := ⟨Matrix.reindex beq.symm beq.symm p.val.1, ?g⟩
+lemma paulis_distinct_aux {p p' : Pauli} (z : ℂ) (H: p ≠ p') :
+  z • p.val.1 ≠ p'.val.1 := by
+  let rawP : raw_Paulis := ⟨Matrix.reindex beq.symm beq.symm p.val.1, ?_⟩
   swap
   · apply mem_raw_paulis
-  let rawP' : raw_Paulis := ⟨Matrix.reindex beq.symm beq.symm p'.val.1, ?g'⟩
+  let rawP' : raw_Paulis := ⟨Matrix.reindex beq.symm beq.symm p'.val.1, ?_⟩
   swap
   · apply mem_raw_paulis
-  suffices: z.1 • rawP.1 ≠ rawP'.1
+  suffices: z • rawP.1 ≠ rawP'.1
   · by_contra H'
     apply (congrArg (Matrix.reindex beq beq).symm) at H'
     tauto
@@ -47,16 +65,80 @@ lemma paulis_distinct {p p' : Pauli} (z : phase) (H: p ≠ p') :
   apply (congrArg (Matrix.reindex beq beq)) at H'
   aesop
 
+lemma paulis_distinct {p p' : Pauli} (z : phase) (H: p ≠ p') :
+  (U_phase p.val z) ≠ p' := by
+  suffices: z.1 • p.val.1 ≠ p'.val.1
+  · rw [U_phase]
+    aesop
+  apply paulis_distinct_aux
+  assumption
+
+lemma ne0_phase (z : phase) : z.1 ≠ 0 := by
+  by_contra H
+  rcases z with ⟨zval, normed_z⟩
+  simp at H
+  subst H
+  simp at normed_z
+
+lemma uphase_div {n} (z z' : phase) (u u' : 𝐔ₙ[n])
+  (eq : U_phase u z = U_phase u' z') :
+  let r := z * Phase.phase_star z'
+  U_phase u r = u' := by
+  apply unitary_ext
+  simp [U_phase, Phase.phase_star] at ⊢ eq
+  apply raw_uphase_div
+  · apply ne0_phase
+  assumption
+
+lemma phase_ext (z z' : phase) (eq_z : z.1 = z'.1) :
+  z = z' := by cases z; aesop
+
+lemma u_phase_eq_is_1 {n} {z : phase} {u : 𝐔ₙ[n]}
+  (eq : U_phase u z = u) :
+  z = phase_id := by
+  cases z with | mk zval z_norm
+  rw [U_phase] at eq
+  cases u with | mk uval unitary_u
+  simp_all
+  apply raw_uphase_eq_is_1 at eq
+  · assumption
+  apply ne0_unitary
+  aesop
+
+lemma phase_star_move (a b c : phase) :
+  a * Phase.phase_star b = c <-> a = b * c := by
+  cases a with | mk aval norm_a
+  cases b with | mk bval norm_b
+  cases c with | mk cval norm_c
+  rw [Phase.phase_star]
+  simp
+  apply raw_phase_star_move
+  aesop
+
+lemma phase_id_1 (a : phase) :
+  a * phase_id = a := by
+  cases a with | mk aval norm_a
+  simp [phase_id]
+
 lemma paulis_distinct' (z z' : phase) (p p' : Pauli)
   (eq: U_phase p.val z = U_phase p'.val z') :
   z = z' /\ p = p' := by
   let r := z * Phase.phase_star z'
   have eq' : U_phase p.val r = p'.val
-  · sorry
+  · apply uphase_div
+    assumption
   suffices: (p = p' -> z = z') /\ p = p'
   · tauto
   constructor
-  · sorry
+  · intro H'
+    subst H'
+    suffices this: r = phase_id
+    · rw [this] at eq'
+      rw [phase_star_move] at this
+      rw [phase_id_1] at this
+      assumption
+    apply u_phase_eq_is_1 at eq'
+    assumption
   by_contra H
   let H' := paulis_distinct r H
   tauto
@@ -224,8 +306,6 @@ lemma normalize_mat_ext {n₁ n₂ m₁ m₂}
     apply (congrArg normalize_mat.symm) at H
     aesop
 
-lemma unitary_ext {n} {U U' : 𝐔ₙ[n]} (vals_eq: U.1 = U'.1) : U = U' := by aesop
-
 lemma uphase_eqE {n} (s s' : phase) (U U' : 𝐔ₙ[n])
   (eq: U_phase U s = U_phase U' s') :
   s.1 • U.val = s'.1 • U'.val := by
@@ -243,13 +323,42 @@ lemma tuple_eqE_by_cons {n} {u : Type}
 def fold_pauli (z : phase) (m : Fin n -> Pauli) :=
   U_phase (unitary_n_nkron hn m) z
 
+lemma uphase_of_kron {n₁ n₂} (z : phase) (m1 : 𝐔ₙ[n₁]) (m2 : 𝐔ₙ[n₂]) :
+  U_phase m1 z ⊗ₙ m2 = U_phase (m1 ⊗ₙ m2) z := by
+  apply unitary_ext
+  simp [U_phase, unitary_nkron]
+  simp [normalized_kron]
+  simp [Matrix.smul_kronecker, Matrix.submatrix_smul]
+
 lemma fold_pauli_iter (z : phase) (m : Fin (n + 1) -> Pauli) :
   fold_pauli (by simp) z m = unitary_nkron (fold_pauli hn z (Fin.tail m)) (m 0) := by
   rw [fold_pauli]
   rw [unitary_n_nkron.eq_def]
   rw [fold_pauli]
-  -- TODO some more rewrites...
-  sorry
+  cases n with
+  | zero => cases hn
+  | succ r => rw [uphase_of_kron]; rfl
+
+lemma pauli_distinct'' {z : ℂ} {m m' : Pauli} (eq: m.val.1 = z • m'.val.1) :
+  z = 1 := by
+  by_cases H: m = m'
+  · subst H
+    symm at eq
+    apply scalar_mat_is_one at eq
+    · assumption
+    apply ne0_unitary
+    aesop
+  revert eq
+  suffices: z ≠ 1 -> m.val.1 ≠ z • ↑↑m'
+  · tauto
+  intro ne1_z
+  symm
+  apply paulis_distinct_aux
+  symm
+  assumption
+
+lemma Pauli_ext {m m' : Pauli} (eq : m.val = m'.val) :
+  m = m' := by aesop
 
 lemma injective_fold_pauli (z z' : phase) (m m' : Fin n -> Pauli) :
   fold_pauli hn z m = fold_pauli hn z' m' ->
@@ -266,9 +375,10 @@ lemma injective_fold_pauli (z z' : phase) (m m' : Fin n -> Pauli) :
     · constructor
       · tauto
       -- some `Fin 1` nonsense
-      sorry
-    apply paulis_distinct'
-    assumption
+      rcases this with ⟨H, H'⟩
+      funext x; fin_cases x
+      simp; assumption
+    apply paulis_distinct'; assumption
   | succ n ih =>
   replace H := by simpa [fold_pauli_iter] using H
   apply (congrArg (fun a => a.1)) at H
@@ -276,12 +386,10 @@ lemma injective_fold_pauli (z z' : phase) (m m' : Fin n -> Pauli) :
   simp_rw [unitary_nkron_valE] at H
   apply normalize_mat_ext at H
   have ⟨w, HTails, HHeads⟩ :=
-    kron_injective_up_to_scalar H ?g ?g' ?g'' ?g'''
+    kron_injective_up_to_scalar H ?_ ?_
   rotate_left
-  · sorry
-  · sorry
-  · sorry
-  · sorry
+  · apply ne0_unitary; simp
+  · apply ne0_unitary; aesop
   suffices: m 0 = m' 0 /\ (m 0 = m' 0 -> z = z' /\ Fin.tail m = Fin.tail m')
   · constructor
     · tauto
@@ -289,13 +397,13 @@ lemma injective_fold_pauli (z z' : phase) (m m' : Fin n -> Pauli) :
       apply tuple_eqE_by_cons <;> tauto
   have eq1_w : w = 1 := by
     -- more Pauli distinction...
-    sorry
+    apply pauli_distinct'' at HHeads
+    aesop
   subst eq1_w
   constructor
-  · -- suggested by aesop
-    simp_all
-    ext i j : 2
-    simp_all only
+  · simp_all
+    apply Pauli_ext
+    assumption
   intro eq_m0
   apply ih
   apply unitary_ext

@@ -6,7 +6,7 @@ noncomputable section
 
 abbrev mat2 := Matrix (Fin 2) (Fin 2) ℂ
 
-def rawI : mat2 := !![1, 0; 0, 1]
+def rawI : mat2 := 1
 def rawX : mat2 := !![0, 1; 1, 0]
 def rawY : mat2 := !![0, -Complex.I; Complex.I, 0]
 def rawZ : mat2 := !![1, 0; 0, -1]
