@@ -1,6 +1,12 @@
 import ATPTest.Unitary.Basic
+import ATPTest.KronNonsense
+import ATPTest.PauliBruteForce
+import ATPTest.States.Phase
 
 open Qubit
+open Function
+
+noncomputable section
 
 def pX := (unitary_fin_equiv beq) X
 def pY := (unitary_fin_equiv beq) Y
@@ -13,6 +19,47 @@ def Pauli_X : Pauli := ⟨pX, by simp [Pauli]⟩
 def Pauli_Y : Pauli := ⟨pY, by simp [Pauli]⟩
 def Pauli_Z : Pauli := ⟨pZ, by simp [Pauli]⟩
 def Pauli_I : Pauli := ⟨1, by simp [Pauli]⟩
+
+lemma mem_raw_paulis (u : Pauli) :
+  (Matrix.reindex beq.symm beq.symm) u ∈ raw_Paulis := by
+  sorry
+
+lemma paulis_distinct {p p' : Pauli} (z : phase) (H: p ≠ p') :
+  (U_phase p.val z) ≠ p' := by
+  suffices: z.1 • p.val.1 ≠ p'.val.1
+  · rw [U_phase]
+    aesop
+  let rawP : raw_Paulis := ⟨Matrix.reindex beq.symm beq.symm p.val.1, ?g⟩
+  swap
+  · apply mem_raw_paulis
+  let rawP' : raw_Paulis := ⟨Matrix.reindex beq.symm beq.symm p'.val.1, ?g'⟩
+  swap
+  · apply mem_raw_paulis
+  suffices: z.1 • rawP.1 ≠ rawP'.1
+  · by_contra H'
+    apply (congrArg (Matrix.reindex beq beq).symm) at H'
+    tauto
+  apply raw_paulis_distinct
+  simp
+  suffices: rawP.val ≠ rawP'.val
+  · tauto
+  by_contra H'
+  apply (congrArg (Matrix.reindex beq beq)) at H'
+  aesop
+
+lemma paulis_distinct' (z z' : phase) (p p' : Pauli)
+  (eq: U_phase p.val z = U_phase p'.val z') :
+  z = z' /\ p = p' := by
+  let r := z * Phase.phase_star z'
+  have eq' : U_phase p.val r = p'.val
+  · sorry
+  suffices: (p = p' -> z = z') /\ p = p'
+  · tauto
+  constructor
+  · sorry
+  by_contra H
+  let H' := paulis_distinct r H
+  tauto
 
 lemma isHermitian_X : Matrix.IsHermitian pX.1 := by
   rw [Matrix.IsHermitian, pX]
@@ -163,12 +210,132 @@ noncomputable def pauli_products_n : Finset (𝐔ₙ[n]) := Finset.image (λ m =
 
 --def PauliGroup : Set 𝐔[(Fin (2^n))] := {U_phase (pauli_tensor hn m) z | (m : Fin n → Pauli) (z : phase)}
 
---def PauliGroup : Finset 𝐔[Fin (2^n)] := Finset.image (λ (x : (pauli_products_n hn) × pgroup_phases) => U_phase x.1 x.2 by admit) (Finset.univ pgroup_phases)
+lemma unitary_nkron_valE {n₁ n₂}
+  (M₁ : 𝐔ₙ[n₁]) (M₂ : 𝐔ₙ[n₂]) :
+  (M₁ ⊗ₙ M₂).1 = normalize_mat (Matrix.kronecker M₁ M₂)
+  := by simp [unitary_nkron, normalized_kron]
+
+lemma normalize_mat_ext {n₁ n₂ m₁ m₂}
+  (M : Matrix (BitVec n₁ × BitVec m₁) (BitVec n₂ × BitVec m₂) ℂ)
+  (M' : Matrix (BitVec n₁ × BitVec m₁) (BitVec n₂ × BitVec m₂) ℂ) :
+  normalize_mat M = normalize_mat M' ->
+  M = M' := by
+    intro H
+    apply (congrArg normalize_mat.symm) at H
+    aesop
+
+lemma unitary_ext {n} {U U' : 𝐔ₙ[n]} (vals_eq: U.1 = U'.1) : U = U' := by aesop
+
+lemma uphase_eqE {n} (s s' : phase) (U U' : 𝐔ₙ[n])
+  (eq: U_phase U s = U_phase U' s') :
+  s.1 • U.val = s'.1 • U'.val := by
+  simp [U_phase] at eq
+  assumption
+
+lemma tuple_eqE_by_cons {n} {u : Type}
+  (t t' : Fin (n + 1) → u)
+  (eq_head : t 0 = t' 0)
+  (eq_tail : Fin.tail t = Fin.tail t') :
+  t = t' := by
+  apply (Fin.consEquiv (fun _ => u)).symm.injective
+  simp; constructor <;> assumption
+
+def fold_pauli (z : phase) (m : Fin n -> Pauli) :=
+  U_phase (unitary_n_nkron hn m) z
+
+lemma fold_pauli_iter (z : phase) (m : Fin (n + 1) -> Pauli) :
+  fold_pauli (by simp) z m = unitary_nkron (fold_pauli hn z (Fin.tail m)) (m 0) := by
+  rw [fold_pauli]
+  rw [unitary_n_nkron.eq_def]
+  rw [fold_pauli]
+  -- TODO some more rewrites...
+  sorry
+
+lemma injective_fold_pauli (z z' : phase) (m m' : Fin n -> Pauli) :
+  fold_pauli hn z m = fold_pauli hn z' m' ->
+  z = z' /\ m = m' := by
+  intro H
+  rcases n with _ | n'
+  · contradiction
+  induction n' with
+  | zero =>
+    -- no two of IXYZ differ by only phase
+    simp [fold_pauli] at H
+    simp [unitary_n_nkron] at H
+    suffices: z = z' /\ m 0 = m' 0
+    · constructor
+      · tauto
+      -- some `Fin 1` nonsense
+      sorry
+    apply paulis_distinct'
+    assumption
+  | succ n ih =>
+  replace H := by simpa [fold_pauli_iter] using H
+  apply (congrArg (fun a => a.1)) at H
+  rename_i H'; clear H'
+  simp_rw [unitary_nkron_valE] at H
+  apply normalize_mat_ext at H
+  have ⟨w, HTails, HHeads⟩ :=
+    kron_injective_up_to_scalar H ?g ?g' ?g'' ?g'''
+  rotate_left
+  · sorry
+  · sorry
+  · sorry
+  · sorry
+  suffices: m 0 = m' 0 /\ (m 0 = m' 0 -> z = z' /\ Fin.tail m = Fin.tail m')
+  · constructor
+    · tauto
+    · have eq_tails : Fin.tail m = Fin.tail m' := by tauto
+      apply tuple_eqE_by_cons <;> tauto
+  have eq1_w : w = 1 := by
+    -- more Pauli distinction...
+    sorry
+  subst eq1_w
+  constructor
+  · -- suggested by aesop
+    simp_all
+    ext i j : 2
+    simp_all only
+  intro eq_m0
+  apply ih
+  apply unitary_ext
+  rw [HTails]
+  simp
+
+abbrev fold (mp : (Fin n → Pauli) × phase) :=
+  let m := mp.1
+  let z := mp.2
+  U_phase (unitary_n_nkron hn m) z
+
+lemma inj_fold : Injective (fold hn) := by
+  rw [Injective]
+  sorry
+
 noncomputable def PauliGroup : Finset 𝐔ₙ[n] :=
-  (pauli_n_univ.product pgroup_phases).image (λ (mp : (Fin n → Pauli) × phase) =>
-    let m := mp.1
-    let z := mp.2
-    U_phase (unitary_n_nkron hn m) z)
+  (pauli_n_univ.product pgroup_phases).image (fold hn)
+
+def foldPauli (pm: pgroup_phases × (Fin n -> Pauli)) : PauliGroup hn :=
+  let p := pm.1
+  let m := pm.2
+  let v := fold hn (m, p)
+  ⟨v, by sorry⟩
+
+lemma inj_foldPauli : Injective (foldPauli hn) := by
+  sorry
+
+local instance : Nonempty (pgroup_phases × (Fin n -> Pauli)) := by
+  refine ⟨⟨?phase, ?paulis⟩⟩
+  · exact 1
+  · intro r
+    exact Pauli_I
+
+def unfoldPauli : PauliGroup hn ≃ (pgroup_phases × (Fin n -> Pauli)) where
+  toFun := invFun (foldPauli hn)
+  invFun := foldPauli hn
+  left_inv := by
+    sorry
+  right_inv := by
+    sorry
 
 lemma mem_PauliGroup_iff (U : 𝐔ₙ[n]) : U ∈ PauliGroup hn ↔ ∃ (m : Fin n → Pauli), (∃ z : pgroup_phases, U_phase (unitary_n_nkron hn m) z = U) := by
   unfold PauliGroup
@@ -216,7 +383,6 @@ theorem kron_mem_PauliGroup_iff {n₁ n₂ : ℕ} (hn₁ : 0 < n₁) (hn₂ : 0 
   rw [unitaries_cat_nkron]
   congr
 
-
 noncomputable def PauliGroup.phase {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn)
 : pgroup_phases := Classical.choose ((mem_PauliGroup_iff hn U).mp hU).choose_spec
 
@@ -231,7 +397,6 @@ lemma mem_PauliGroup_id : 1 ∈ PauliGroup hn := by
     unfold pgphase_1
     simp [-phase_id, U_phase_id, unitary_n_nkron, Pauli_I]
   sorry
-
 
    --this aristotle proof was invalidated when i messed around with pauli definitions again
   /-

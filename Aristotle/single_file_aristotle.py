@@ -3,11 +3,11 @@ import aristotlelib
 import shutil
 
 with open("Aristotle/apikey.txt", "r", encoding="utf-8") as file:
-    api_key = file.read()
+    api_key = file.read().strip()
 
 aristotlelib.set_api_key(api_key)
 
-target_id = "PState.lean"
+target_id = "KronNonsense.lean"
 context = []
 
 target_path = f'Aristotle/Targets/{target_id}'
@@ -20,7 +20,7 @@ async def main():
     print(f"Created project: {project.project_id}")
 
     # Manually add files needed for import
-    await project.add_context(context)
+    # await project.add_context(context)
 
     # Prove a theorem from a Lean file
     sp = await project.prove_from_file(target_path, auto_add_imports=True)
