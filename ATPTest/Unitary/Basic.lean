@@ -130,10 +130,9 @@ lemma uphase_div {n} (z z' : phase) (u u' : 𝐔ₙ[n])
   U_phase u r = u' := by
   apply unitary_ext
   simp [U_phase, Phase.phase_star] at ⊢ eq
-  apply raw_uphase_div
-  · apply ne0_phase
-  apply ne0_unitary; aesop
-  assumption
+  apply raw_uphase_div; try assumption
+  rcases z' with ⟨zval, znorm⟩
+  simp_all; assumption
 
 lemma u_phase_eq_is_1 {n} {z : phase} {u : 𝐔ₙ[n]}
   (eq : U_phase u z = u) :

@@ -56,7 +56,7 @@ lemma phase_star_move (a b c : phase) :
   cases b with | mk bval norm_b
   cases c with | mk cval norm_c
   simp [Phase.phase_star]
-  apply raw_phase_star_move <;> aesop
+  apply raw_phase_star_move; assumption
 
 lemma phase_id_1 (a : phase) :
   a * phase_id = a := by
