@@ -43,6 +43,13 @@ theorem inv_stab {n : ℕ} {U : 𝐔ₙ[n]} {ψ : PState n} (hstab : stabilizes 
   nth_rw 2 [←(Matrix.one_mulVec ψ.vec)]
   rw [←U.2.1, ←Matrix.mulVec_mulVec, stabilizes_apply' hstab]
 
+theorem mul_stab {n : ℕ} {U₁ U₂ : 𝐔ₙ[n]} {ψ : PState n} (hstab₁ : stabilizes U₁ ψ) (hstab₂ : stabilizes U₂ ψ) :
+  stabilizes (U₁ * U₂) ψ := by
+  simp [stabilizes]
+  rw [Ket.mk.injEq, ←Matrix.mulVec_mulVec,
+  stabilizes_apply' hstab₂, stabilizes_apply' hstab₁]
+
+
 --theorem for stabilizing sums?
 
 
@@ -83,6 +90,19 @@ structure pauli_code (l c : ℕ) (hc : 0 < c) where
 -/
 
 
+--MOVE TO PAULI FILE AFTER YI FINISHES HIS REWRITE:
+lemma pauli_mul {n : ℕ} (hn : 0 < n) {U₁ U₂ : 𝐔ₙ[n]}
+ (hP₁ : U₁ ∈ PauliGroup hn) (hP₂ : U₂ ∈ PauliGroup hn) :
+ U₁ * U₂ ∈ PauliGroup hn := by sorry
+
+--maybe tedious proof?
+lemma pauli_inv {n : ℕ} (hn : 0 < n) {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn)
+  : U⁻¹ ∈ PauliGroup hn := by sorry
+
+--want to prove this one soon
+lemma pauli_commute_or_anticommute {n : ℕ} (hn : 0 < n) {U₁ U₂ : 𝐔ₙ[n]}
+  (hU₁ : U₁ ∈ PauliGroup hn) (hU₂ : U₂ ∈ PauliGroup hn) : U₁ * U₂ = U₂ * U₁ ∨ U₁ * U₂ = - U₂ * U₁ := sorry
+
 
 variable (n : ℕ) (k : ℕ)
 
@@ -92,9 +112,66 @@ noncomputable section
 
 variable {n : ℕ} {k : ℕ} (hn : 0 < n)
 
-
 def QCode.stabilizers (C : QCode n k) :=
   {U | (∀ ψ, stabilizes U (C ψ)) ∧ U ∈ PauliGroup hn}
+
+
+lemma QCode.stabilizer_closed_under_mul (C : QCode n k) {a b : 𝐔ₙ[n]} (ha : a ∈ C.stabilizers hn) (hb : b ∈ C.stabilizers hn)
+  : a * b ∈ C.stabilizers hn := by
+  rcases ha with ⟨a_stab, a_pauli⟩
+  rcases hb with ⟨b_stab, b_pauli⟩
+  constructor
+  · intros ψ
+    exact mul_stab (a_stab _) (b_stab _)
+  exact pauli_mul hn a_pauli b_pauli
+
+lemma QCode.stabilizer_closed_under_inv (C : QCode n k) {x : 𝐔ₙ[n]} (hx : x ∈ C.stabilizers hn) : x⁻¹ ∈ C.stabilizers hn := by
+  rcases hx with ⟨x_stab, x_pauli⟩
+  refine ⟨fun ψ => inv_stab (x_stab ψ), pauli_inv hn x_pauli⟩
+
+def stabilizer_group (C : QCode n k) : Subgroup (𝐔ₙ[n]) where
+  carrier := C.stabilizers hn
+  mul_mem' := by intros a b ha hb; exact C.stabilizer_closed_under_mul hn ha hb
+  one_mem' := by refine ⟨fun ψ => one_stab_all _, mem_PauliGroup_id hn⟩
+  inv_mem' := by intros x hx; exact C.stabilizer_closed_under_inv hn hx
+
+def PState.zero {n : ℕ} (hn : 0 < n) := pstate_n_kron hn (fun _ => qub_zero)
+
+
+
+--easy proof, see if aristotle can do this
+lemma PState.ne_zero {n : ℕ} {ψ : PState n} : ψ.vec ≠ 0 := sorry
+
+lemma neg_one_not_stab (C : QCode n k) (hk : 0 < k) : u_neg 1 ∉ C.stabilizers hn := by
+  rintro ⟨h_stab, h_pauli⟩
+  have:= h_stab (PState.zero hk)
+  unfold stabilizes PState.apply u_neg U_phase at this
+  rw [Ket.mk.injEq, Matrix.toLin'_apply] at this
+  simp [Matrix.neg_mulVec] at this
+  apply PState.ne_zero
+  rw [←neg_eq_self]
+  exact this
+
+
+--this is untrue if k=0: If the message space is trivial, then every member of pauli group is a stabilizer.
+--As pauli group is noncommutative, this is then untrue
+theorem stab_comm (C : QCode n k) (hk : 0 < k) : IsMulCommutative (stabilizer_group hn C) := by
+  refine ⟨⟨by rintro ⟨a, ha⟩ ⟨b, hb⟩
+              simp
+              rcases pauli_commute_or_anticommute hn ha.2 hb.2 with comm | anticomm
+              · assumption
+              have abstab := ((stabilizer_group hn C).mul_mem' ha hb).1 (PState.zero hk)
+              rw [anticomm] at abstab
+              unfold stabilizes PState.apply at abstab
+              rw [Ket.mk.injEq, Matrix.toLin'_apply] at abstab
+              simp only [neg_mul, Matrix.neg_unitary_val,
+                Submonoid.coe_mul, Matrix.neg_mulVec, ←Matrix.mulVec_mulVec,
+                stabilizes_apply' (ha.1 _), stabilizes_apply' (hb.1 _)
+                ] at abstab
+              apply absurd (neg_eq_self.1 abstab) (PState.ne_zero)
+
+  ⟩⟩
+
 
 def QCode.syndrome {k : ℕ} (C : QCode n k) {E : 𝐔ₙ[n]} (hE : E ∈ PauliGroup hn)
    : C.stabilizers hn → pgroup_phases := fun U => pauli_pauli_phase hn hE U.2.2
@@ -102,17 +179,18 @@ def QCode.syndrome {k : ℕ} (C : QCode n k) {E : 𝐔ₙ[n]} (hE : E ∈ PauliG
 def QCode.distinguishes (C : QCode n k) {E₁ E₂} (hE₁ : E₁ ∈ PauliGroup hn) (hE₂ : E₂ ∈ PauliGroup hn) := C.syndrome hn hE₁ ≠ C.syndrome hn hE₂
 
 --to detect errors, it suffices to distinguish an error and the I pauli
-def Qcode.detects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ E (hE : E ∈ PauliGroup hn),
+def Qcode.unique_detects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ E (hE : E ∈ PauliGroup hn),
   pauli_weight hn hE ≤ w → E ≠ 1 → C.distinguishes hn hE (mem_PauliGroup_id hn)
 
-def Qcode.corrects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ E₁ (hE₁ : E₁ ∈ PauliGroup hn), ∀ E₂ (hE₂ : E₂ ∈ PauliGroup hn),
+def Qcode.unique_corrects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ E₁ (hE₁ : E₁ ∈ PauliGroup hn), ∀ E₂ (hE₂ : E₂ ∈ PauliGroup hn),
   (PauliGroup.phase hn hE₁).1 = ⟨1, by norm_num⟩ → (PauliGroup.phase hn hE₂).1 = ⟨1, by norm_num⟩ →
   pauli_weight hn hE₁ ≤ w → pauli_weight hn hE₂ ≤ w → E₁ ≠ E₂ → C.distinguishes hn hE₁ hE₂
 
-def Qcode.detects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli):= ∀ E (hE : E ∈ PauliGroup hn),
+def Qcode.unique_detects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli):= ∀ E (hE : E ∈ PauliGroup hn),
   (pauli_only hn hE P) → pauli_weight hn hE ≤ w → E ≠ 1 → C.distinguishes hn hE (mem_PauliGroup_id hn)
 
-def Qcode.corrects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli) := ∀ E₁ (hE₁ : E₁ ∈ PauliGroup hn), ∀ E₂ (hE₂ : E₂ ∈ PauliGroup hn),
+--unique distinguishing
+def Qcode.unique_corrects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli) := ∀ E₁ (hE₁ : E₁ ∈ PauliGroup hn), ∀ E₂ (hE₂ : E₂ ∈ PauliGroup hn),
   (pauli_only hn hE₁ P) → (pauli_only hn hE₂ P) → (PauliGroup.phase hn hE₁).1 = ⟨1, by norm_num⟩ → (PauliGroup.phase hn hE₂).1 = ⟨1, by norm_num⟩ →
   pauli_weight hn hE₁ ≤ w → pauli_weight hn hE₂ ≤ w → E₁ ≠ E₂ → C.distinguishes hn hE₁ hE₂
 
