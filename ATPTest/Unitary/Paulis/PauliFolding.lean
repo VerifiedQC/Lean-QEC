@@ -6,6 +6,7 @@ import ATPTest.AI_Generated.KronNonsense
 import ATPTest.AI_Generated.PauliBruteForce
 import ATPTest.Unitary.Paulis.Pauli1
 import Batteries.Logic
+import ATPTest.Unitary.KronAssoc
 
 open Qubit
 open Function
@@ -193,15 +194,6 @@ def foldPauli : factored_Pauli n ≃ PauliGroup hn where
     apply Function.rightInverse_invFun
     apply surj_foldPauli
 
-/-
-lemma unfold_kron_aux {n₁ n₂} (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
-  (m : Fin n₁ -> Pauli) (m' : Fin n₂ -> Pauli)
-  (p p' : pgroup_phases) :
-  fold_aux (by aesop) (p * p') (Fin.append m m') =
-  (fold_aux hn₁ p m) ⊗ₙ (fold_aux hn₂ p' m') := by
-  sorry
-  -/
-
 lemma foldPauli_iter (z : pgroup_phases) (m : Fin n → Pauli) (t : Pauli) :
   (foldPauli (by simp) (z, (Fin.cons t m))).1 = (foldPauli hn (z, m)) ⊗ₙ t := by
   rcases n with _ | n'
@@ -215,42 +207,6 @@ lemma fold_pauli_mul (p p' : pgroup_phases) (m : Fin n -> Pauli) :
   foldPauli hn ((p * p'), m) = U_phase (foldPauli hn (p, m)).1 p' := by
   sorry
 
--- ??????
--- don't ask...
-lemma kron_assoc {n₁ n₂ n₃} (U₁ : 𝐔ₙ[n₁]) (U₂ : 𝐔ₙ[n₂]) (U₃ : 𝐔ₙ[n₃]) :
-  (U₁ ⊗ₙ U₂) ⊗ₙ U₃ ≍ (U₁ ⊗ₙ (U₂ ⊗ₙ U₃)) := by
-  apply heq_of_eq_cast
-  swap
-  · suffices: n₁ + (n₂ + n₃) = n₁ + n₂ + n₃
-    · rw [this]
-    group
-  sorry
-
-  /-
-lemma kron_assoc {n₁ n₂ n₃} (U₁ : 𝐔ₙ[n₁]) (U₂ : 𝐔ₙ[n₂]) (U₃ : 𝐔ₙ[n₃]) :
-  (U₁ ⊗ₙ U₂) ⊗ₙ U₃ = cast (by
-    suffices: n₁ + (n₂ + n₃) = n₁ + n₂ + n₃
-    · rw [this]
-    group
-  ) (U₁ ⊗ₙ (U₂ ⊗ₙ U₃)) := by
-  simp [unitary_nkron]
-  unfold normalized_kron
-  unfold normalize_mat
-  unfold Matrix.kronecker
-  let M₁ : Matrix (BitVec n₁) (BitVec n₁) ℂ := U₁
-  let M₂ : Matrix (BitVec n₂) (BitVec n₂) ℂ := U₂
-  let M₃ : Matrix (BitVec n₃) (BitVec n₃) ℂ := U₃
-  let H := Matrix.kroneckerMap_reindex_left (fun (x1 x2 : ℂ) => x1 * x2) bits_cat bits_cat (Matrix.kroneckerMap (fun x1 x2 : ℂ => x1 * x2) M₁ M₂) M₃
-  conv =>
-    enter[1]
-    enter[1]
-    enter[2]
-    rw [H]
-  #check Matrix.kronecker_assoc'
-  --rw [Matrix.kronecker_assoc]
-  sorry
-  -/
-
 lemma uphase_of_kron' {n₁ n₂} (z : phase) (m1 : 𝐔ₙ[n₁]) (m2 : 𝐔ₙ[n₂]) :
   m1 ⊗ₙ U_phase m2 z = U_phase (m1 ⊗ₙ m2) z := by
   apply unitary_ext
@@ -259,14 +215,14 @@ lemma uphase_of_kron' {n₁ n₂} (z : phase) (m1 : 𝐔ₙ[n₁]) (m2 : 𝐔ₙ
   rw [Matrix.kronecker_smul]
   simp [Matrix.submatrix_smul]
 
+def cast_fin_append {t n₁ n₂} (v₁ : Fin n₁ -> t) (v₂ : Fin n₂ -> t)
+  (i : Fin (n₂ + n₁)) : t :=
+  (Fin.append v₁ v₂) (Fin.cast (by group) i)
+
 lemma kron_Paulis_aux' {n₁ n₂} (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
   (z z' : pgroup_phases) (m : Fin n₁ → Pauli) (m' : Fin n₂ → Pauli) :
   (foldPauli hn₁ (z, m)).1 ⊗ₙ (foldPauli hn₂ (z', m')).1 =
-  cast (by
-    suffices H: n₁ + n₂ = n₂ + n₁
-    · rw [H]
-    group)
-  (foldPauli (by simp_all) (z * z', Fin.append m' m)).1 := by
+  (foldPauli (by simp_all) (z * z', cast_fin_append m' m)).1 := by
   rcases n₂ with _ | n'
   · contradiction
   induction n' with
@@ -277,9 +233,11 @@ lemma kron_Paulis_aux' {n₁ n₂} (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
     rw [fold_pauli_mul]
     rw [uphase_of_kron']
     rw [<- foldPauli_iter]
-    suffices: Fin.cons (m' 0) m = Fin.append m m'
+    suffices: Fin.cons (m' 0) m = cast_fin_append m' m
     · simp [this]
-      sorry
+    -- extensionality of fin and whatnot?
+    apply funext; intro i
+    rw [cast_fin_append]
     sorry
   | succ n'' ih =>
     let m_eq := (Fin.consEquiv (fun _ => Pauli)).symm m'
@@ -290,6 +248,19 @@ lemma kron_Paulis_aux' {n₁ n₂} (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
     rw [this]
     rw [foldPauli_iter]
     swap; simp
+    suffices: cast_fin_append (Fin.cons head tail) m =
+      Fin.cons (α := fun _ => Pauli) head (cast_fin_append tail m)
+    · rw [this]
+      clear this
+      rw [<- heq_iff_eq]
+      apply HEq.trans
+      · apply HEq.symm
+        apply kron_assoc
+      rw [ih]
+      rw [<- foldPauli_iter]
+      simp_all
+      rfl
+    -- TODO more fin extensionalities...
     sorry
 
 def factored_kron {n₁ n₂} (p: factored_Pauli n₁) (p': factored_Pauli n₂) :
@@ -351,7 +322,12 @@ lemma PauliGroup_mem_kron {n₁ n₂ : ℕ} (hn₁ : 0 < n₁) (hn₂ : 0 < n₂
   rw [kron_PaulisE]
   simp [Finset.coe_mem]
 
-theorem kron_mem_PauliGroup_iff' {n₁ n₂ : ℕ} (hn₁ : 0 < n₁) (hn₂ : 0 < n₂)
+def kronOfPauli {n₁ n₂ : ℕ} (hn₁ : 0 < n₁) (hn₂ : 0 < n₂)
+  (U₁ : PauliGroup hn₁) (U₂ : PauliGroup hn₂) :
+  @PauliGroup (n₁ + n₂) (Nat.add_pos_left hn₁ n₂) :=
+  ⟨U₁ ⊗ₙ U₂, PauliGroup_mem_kron hn₁ hn₂ U₁ U₂⟩
+
+theorem kron_mem_PauliGroup_iff {n₁ n₂ : ℕ} (hn₁ : 0 < n₁) (hn₂ : 0 < n₂)
   (U : 𝐔ₙ[n₁ + n₂]) :
   (U ∈ PauliGroup (Nat.add_pos_left hn₁ n₂)) ↔
   (∃ (U₁ : PauliGroup hn₁) (U₂ : PauliGroup hn₂), U = U₁ ⊗ₙ U₂) := by

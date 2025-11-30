@@ -1,11 +1,14 @@
 
 import ATPTest.Stabilizer.Basic
 
+noncomputable section
+
 def three_qubit_encode : QCode 3 1:= fun (ψ : PState 1) =>
   (((ψ ⊗ₚ qub_zero) ⊗ₚ qub_zero).apply
     (Cₙ[pX] ⊗ₙ p1)).apply
     (Cₙ[p1 ⊗ₙ pX])
 
+def gt0_3 : 0 < 3 := by simp
 
 lemma three_qubit_encode_correct (ψ : PState 1) : three_qubit_encode ψ =
   PState.sum (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
@@ -42,7 +45,18 @@ lemma qub_zero_Z : qub_zero.apply pZ = qub_zero := by admit
 @[simp]
 lemma qub_one_Z : qub_one.apply pZ = Ket.phase_mul qub_one ⟨-1, by simp⟩ := by admit
 
-lemma IZZ_in_stab : 1 ⊗ₙ pZ ⊗ₙ pZ ∈ QCode.stabilizers (by norm_num) three_qubit_encode := by
+-- def IXI_pg := foldPauli 1 (pZ, p1, pZ)
+def IXI_pg := foldPauli gt0_3 (1, ![Pauli_Z, Pauli_I, Pauli_Z])
+def XII_pg := foldPauli gt0_3 (1, ![Pauli_X, Pauli_I, Pauli_I])
+def IIX_pg := foldPauli gt0_3 (1, ![Pauli_I, Pauli_I, Pauli_X])
+def IZZ_pg := foldPauli gt0_3 (1, ![Pauli_I, Pauli_Z, Pauli_Z])
+def ZZI_pg := foldPauli gt0_3 (1, ![Pauli_Z, Pauli_Z, Pauli_I])
+def stab := QCode.stabilizers gt0_3 three_qubit_encode
+
+lemma IZZ_in_stab :
+  foldPauli gt0_3 (1, ![Pauli_I, Pauli_Z, Pauli_Z]) ∈
+  QCode.stabilizers gt0_3 three_qubit_encode := by
+  /-
   refine' ⟨fun ψ => _, _⟩
   · rewrite [three_qubit_encode_correct]
     unfold stabilizes
@@ -53,6 +67,7 @@ lemma IZZ_in_stab : 1 ⊗ₙ pZ ⊗ₙ pZ ∈ QCode.stabilizers (by norm_num) th
     have ho: (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply (1 ⊗ₙ pZ ⊗ₙ pZ) = ((qub_one ⊗ₚ qub_one ⊗ₚ qub_one) : PState 3) := by
       admit
     simp_rw [hz, ho]
+  -/
   sorry
 
   /- TODO FIX AND RESTORE -/
@@ -61,32 +76,14 @@ lemma IZZ_in_stab : 1 ⊗ₙ pZ ⊗ₙ pZ ∈ QCode.stabilizers (by norm_num) th
   refine' ⟨![Pauli_Z, Pauli_Z, Pauli_I],⟨pgphase_1, _⟩⟩
   simp [-phase_id, unitary_n_nkron, Pauli_I, Pauli_Z]
   rw [unitary_kron_assoc]
+  -/
 
 
-lemma ZIZ_in_stab : pZ ⊗ₙ p1 ⊗ₙ pZ ∈ QCode.stabilizers (by norm_num) three_qubit_encode := by admit
-lemma ZZI_in_stab : pZ ⊗ₙ pZ ⊗ₙ p1 ∈ QCode.stabilizers (by norm_num) three_qubit_encode := by admit
-
-lemma IXI_pg : p1 ⊗ₙ pX ⊗ₙ p1 ∈ PauliGroup (by norm_num) := by
-  apply (kron_mem_PauliGroup_iff (by norm_num) (by norm_num)).2 ⟨pg1.2, _⟩
-  apply (kron_mem_PauliGroup_iff zero_lt_one zero_lt_one).2 ⟨pgX.2, pg1.2⟩
-
-lemma XII_pg : pX ⊗ₙ p1 ⊗ₙ p1 ∈ PauliGroup (by norm_num) := by
-  apply (kron_mem_PauliGroup_iff (by norm_num) (by norm_num)).2 ⟨pgX.2, _⟩
-  apply (kron_mem_PauliGroup_iff zero_lt_one zero_lt_one).2 ⟨pg1.2, pg1.2⟩
-
-lemma IIX_pg : p1 ⊗ₙ p1 ⊗ₙ pX ∈ PauliGroup (by norm_num) := by
-  apply (kron_mem_PauliGroup_iff (by norm_num) (by norm_num)).2 ⟨pg1.2, _⟩
-  apply (kron_mem_PauliGroup_iff zero_lt_one zero_lt_one).2 ⟨pg1.2, pgX.2⟩
-
-lemma IZZ_pg : p1 ⊗ₙ pZ ⊗ₙ pZ ∈ PauliGroup (by norm_num) := by
-  apply (kron_mem_PauliGroup_iff (by norm_num) (by norm_num)).2 ⟨pg1.2, _⟩
-  apply (kron_mem_PauliGroup_iff zero_lt_one zero_lt_one).2 ⟨pgZ.2, pgZ.2⟩
-
-lemma ZZI_pg : pZ ⊗ₙ pZ ⊗ₙ p1 ∈ PauliGroup (by norm_num) := by
-  apply (kron_mem_PauliGroup_iff (by norm_num) (by norm_num)).2 ⟨pgZ.2, _⟩
-  apply (kron_mem_PauliGroup_iff zero_lt_one zero_lt_one).2 ⟨pgZ.2, pg1.2⟩
+lemma ZIZ_in_stab : foldPauli gt0_3 (1, ![Pauli_Z, Pauli_I, Pauli_Z]) ∈ stab := by admit
+lemma ZZI_in_stab : foldPauli gt0_3 (1, ![Pauli_Z, Pauli_Z, Pauli_I]) ∈ stab := by admit
 
 lemma pphase_IXI_IZZ : pauli_pauli_phase (by norm_num) IXI_pg IZZ_pg = pgphase_n1 := by
+  /-
   rw [pauli_pauli_phase_kron (by norm_num) (by norm_num), pauli_pauli_phase_kron (by norm_num) (by norm_num)]
   · rw [pauli_pauli_phase_self (by norm_num), pphase_XZ, pphase_id_right]
     simp
@@ -96,8 +93,11 @@ lemma pphase_IXI_IZZ : pauli_pauli_phase (by norm_num) IXI_pg IZZ_pg = pgphase_n
   all_goals try rw [kron_mem_PauliGroup_iff zero_lt_one zero_lt_one]
   exact ⟨pgX.2, pg1.2⟩
   exact ⟨pgZ.2, pgZ.2⟩
+  -/
+  sorry
 
 lemma pphase_XII_IZZ : pauli_pauli_phase (by norm_num) XII_pg IZZ_pg = pgphase_1 := by
+  /-
   rw [pauli_pauli_phase_kron (by norm_num) (by norm_num), pauli_pauli_phase_kron (by norm_num) (by norm_num)]
   · rw [pphase_id_right, pphase_id_left]
     simp
@@ -107,8 +107,11 @@ lemma pphase_XII_IZZ : pauli_pauli_phase (by norm_num) XII_pg IZZ_pg = pgphase_1
   all_goals try rw [kron_mem_PauliGroup_iff zero_lt_one zero_lt_one]
   exact ⟨pg1.2, pg1.2⟩
   exact ⟨pgZ.2, pgZ.2⟩
+  -/
+  sorry
 
 lemma pphase_IIX_IZZ : pauli_pauli_phase (by norm_num) IIX_pg IZZ_pg = pgphase_n1 := by
+/-
   rw [pauli_pauli_phase_kron (by norm_num) (by norm_num), pauli_pauli_phase_kron (by norm_num) (by norm_num)]
   · rw [pphase_id_right, pphase_XZ, pphase_id_right]
     simp
@@ -118,8 +121,11 @@ lemma pphase_IIX_IZZ : pauli_pauli_phase (by norm_num) IIX_pg IZZ_pg = pgphase_n
   all_goals try rw [kron_mem_PauliGroup_iff zero_lt_one zero_lt_one]
   exact ⟨pg1.2, pgX.2⟩
   exact ⟨pgZ.2, pgZ.2⟩
+  -/
+  sorry
 
 lemma pphase_IIX_ZZI : pauli_pauli_phase (by norm_num) IIX_pg ZZI_pg = pgphase_1 := by
+  /-
   rw [pauli_pauli_phase_kron (by norm_num) (by norm_num), pauli_pauli_phase_kron (by norm_num) (by norm_num)]
   · rw [pphase_id_right, pphase_id_left]
     simp
@@ -129,8 +135,11 @@ lemma pphase_IIX_ZZI : pauli_pauli_phase (by norm_num) IIX_pg ZZI_pg = pgphase_1
   all_goals try rw [kron_mem_PauliGroup_iff zero_lt_one zero_lt_one]
   exact ⟨pg1.2, pgX.2⟩
   exact ⟨pgZ.2, pg1.2⟩
+  -/
+  sorry
 
 lemma pphase_IXI_ZZI : pauli_pauli_phase (by norm_num) IXI_pg ZZI_pg = pgphase_n1 := by
+/-
   rw [pauli_pauli_phase_kron (by norm_num) (by norm_num), pauli_pauli_phase_kron (by norm_num) (by norm_num)]
   · rw [pphase_id_right, pphase_id_left]
     simp
@@ -140,13 +149,13 @@ lemma pphase_IXI_ZZI : pauli_pauli_phase (by norm_num) IXI_pg ZZI_pg = pgphase_n
   all_goals try rw [kron_mem_PauliGroup_iff zero_lt_one zero_lt_one]
   exact ⟨pgX.2, pg1.2⟩
   exact ⟨pgZ.2, pg1.2⟩
+  -/
+  sorry
 
-
-
-
-
-theorem three_qub_corrects_one_x : Qcode.corrects_P_error_of_weight (by norm_num) three_qubit_encode 1
- ⟨pX, by simp[Pauli]⟩ := by
+theorem three_qub_corrects_one_x :
+  Qcode.corrects_P_error_of_weight (by norm_num) three_qubit_encode 1
+  ⟨pX, by simp[Pauli]⟩ := by
+  /-
   intros E₁ hE₁ E₂ hE₂ hE₁' hE₂' hE₁'' hE₂'' hW₁ hW₂ hne
   have h_or : ∀ E : 𝐔ₙ[3], (hE : E ∈ PauliGroup (by norm_num)) → pauli_only (by norm_num) hE ⟨pX, by simp[Pauli]⟩
    → (PauliGroup.phase (by norm_num) hE).1 = ⟨1, by norm_num⟩  → pauli_weight (by norm_num) hE ≤ 1 →
@@ -177,3 +186,4 @@ theorem three_qub_corrects_one_x : Qcode.corrects_P_error_of_weight (by norm_num
     norm_num
   · contradiction
     -/
+  sorry
