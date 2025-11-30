@@ -221,10 +221,22 @@ def cast_fin_append {t n₁ n₂} (v₁ : Fin n₁ -> t) (v₂ : Fin n₂ -> t)
   (i : Fin (n₂ + n₁)) : t :=
   (Fin.append v₁ v₂) (Fin.cast (by group) i)
 
+lemma cast_fin_append_aux {t n₁ n₂}
+  (head : t) (tail : Fin n₁ -> t) (m : Fin n₂ -> t)
+  (i : Fin (n₂ + n₁ + 1)) :
+  Fin.append (Fin.cons head tail) m (Fin.cast (by ring) i) =
+  Fin.cons (α := fun _ => t) head (cast_fin_append tail m) i := by
+  unfold cast_fin_append
+  simp [Fin.append, Fin.addCases]
+  rcases i with _ | i'
+  · simp
+    rfl
+  simp [Fin.cons]
+
 lemma kron_Paulis_aux' {n₁ n₂} (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
   (z z' : pgroup_phases) (m : Fin n₁ → Pauli) (m' : Fin n₂ → Pauli) :
   (foldPauli hn₁ (z, m)).1 ⊗ₙ (foldPauli hn₂ (z', m')).1 =
-  (foldPauli (by simp_all) (z * z', cast_fin_append m' m)).1 := by
+  (foldPauli (Nat.add_pos_left hn₁ n₂) (z * z', cast_fin_append m' m)).1 := by
   rcases n₂ with _ | n'
   · contradiction
   induction n' with
@@ -240,7 +252,11 @@ lemma kron_Paulis_aux' {n₁ n₂} (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
     -- extensionality of fin and whatnot?
     apply funext; intro i
     rw [cast_fin_append]
-    sorry
+    rcases i with _ | i'
+    · simp [Fin.append, Fin.addCases]
+      aesop
+    · simp [Fin.append, Fin.addCases]
+      aesop
   | succ n'' ih =>
     let m_eq := (Fin.consEquiv (fun _ => Pauli)).symm m'
     let head : Pauli := m_eq.1
@@ -263,34 +279,42 @@ lemma kron_Paulis_aux' {n₁ n₂} (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
       simp_all
       rfl
     -- TODO more fin extensionalities...
-    sorry
+    apply funext; intro i
+    rw [cast_fin_append]
+    rw [cast_fin_append_aux]
 
 def factored_kron {n₁ n₂} (p: factored_Pauli n₁) (p': factored_Pauli n₂) :
   factored_Pauli (n₁ + n₂) :=
   let (z, m) := p
   let (z', m') := p'
-  (z * z', Fin.append m m')
+  (z * z', cast_fin_append m' m)
 
 lemma kron_PaulisE {n₁ n₂} (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
   (p : PauliGroup hn₁) (p': PauliGroup hn₂) :
-  p.1 ⊗ₙ p'.1 = foldPauli (by aesop) (factored_kron ((foldPauli hn₁).symm p) ((foldPauli hn₂).symm p')) := by
-  /-
-  rcases n₂ with _ | n'
-  · contradiction
-  induction n' with
-  | zero =>
-    rw [foldPauli]; simp
-    conv =>
-      enter [2]
-      enter [2]
-      enter [2]
-      rw [foldPauli]; simp
-    rw [fold, fold_aux]
-    sorry
-  | succ n'' ih =>
-    sorry
-    -/
-  sorry
+  p.1 ⊗ₙ p'.1 =
+  foldPauli (Nat.add_pos_left hn₁ n₂) (factored_kron ((foldPauli hn₁).symm p) ((foldPauli hn₂).symm p')) := by
+  let p₀ := (foldPauli hn₁).symm p
+  let p₀' := (foldPauli hn₂).symm p'
+  have: p = (foldPauli hn₁) p₀ := by
+    rw [Equiv.apply_symm_apply]
+  rw [this]
+  have: p' = (foldPauli hn₂) p₀' := by
+    rw [Equiv.apply_symm_apply]
+  rw [this]
+  rw [kron_Paulis_aux']
+  rw [factored_kron]
+  aesop
+
+lemma cast_split_cat {n₁ n₂ t} (ab : Fin (n₁ + n₂) -> t) :
+  let cab (i : Fin (n₂ + n₁)) := ab (Fin.cast (by ring) i)
+  let abe := (Fin.appendEquiv n₂ n₁).symm cab
+  ab = cast_fin_append (abe.1) (abe.2) := by
+  unfold cast_fin_append
+  intro cab abe
+  have: Fin.append abe.1 abe.2 = (Fin.appendEquiv n₂ n₁) abe := by rfl
+  rw [this]
+  rw [Equiv.apply_symm_apply]
+  aesop
 
 lemma kron_mem_PauliGroup {n₁ n₂ : ℕ} {hn₁ : 0 < n₁} {hn₂ : 0 < n₂}
   (U : PauliGroup (Nat.add_pos_left hn₁ n₂)) :
@@ -298,23 +322,17 @@ lemma kron_mem_PauliGroup {n₁ n₂ : ℕ} {hn₁ : 0 < n₁} {hn₂ : 0 < n₂
   U.1 = U₁ ⊗ₙ U₂ := by
   let factors := (foldPauli (by aesop)).symm U
   let ab := factors.2
-  let abe := (Fin.appendEquiv n₁ n₂).symm ab
+  let cab (i : Fin (n₂ + n₁)) := ab (Fin.cast (by rw [add_comm]) i)
+  let abe := (Fin.appendEquiv n₂ n₁).symm cab
   let a := abe.1
   let b := abe.2
-  exists foldPauli hn₁ (factors.1, a)
-  exists foldPauli hn₂ (1, b)
+  exists foldPauli hn₁ (factors.1, b)
+  exists foldPauli hn₂ (1, a)
   rw [kron_PaulisE]
   simp [factored_kron]
   apply congrArg
   apply (foldPauli (by aesop)).symm.injective
-  have: Fin.append a b = (Fin.appendEquiv n₁ n₂) (a, b) := by
-    rfl
-  rw [this]
-  have: (Fin.appendEquiv n₁ n₂) (a, b) = ab := by
-    have: (a, b) = abe := by rfl
-    rw [this]
-    rw [(Fin.appendEquiv n₁ n₂).apply_symm_apply]
-  rw [this]
+  rw [<- cast_split_cat]
   rw [(foldPauli (by aesop)).symm_apply_apply]
 
 lemma PauliGroup_mem_kron {n₁ n₂ : ℕ} (hn₁ : 0 < n₁) (hn₂ : 0 < n₂)

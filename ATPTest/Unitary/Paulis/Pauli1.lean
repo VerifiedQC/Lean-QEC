@@ -157,7 +157,9 @@ lemma pgroup_phases_star_move (a b c : pgroup_phases) :
 
 lemma pgphase_id_1 (a : pgroup_phases) :
   a * pgphase_1 = a := by
-  sorry
+  rcases a with ⟨a₀, ha⟩
+  simp [pgphase_1]
+  rfl
 
 lemma uphase_injective (z z' : pgroup_phases) (p p' : Pauli)
   (eq: U_phase p.val z = U_phase p'.val z') :

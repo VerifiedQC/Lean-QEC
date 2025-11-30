@@ -93,7 +93,7 @@ lemma pauli_pauli_phase_symm (U₁ U₂ : PauliGroup hn) :
   sorry
 
 lemma pauli_pauli_phase_self (U : PauliGroup hn) :
-  pauli_pauli_phase hn U U  = pgphase_1 := by admit
+  pauli_pauli_phase hn U U = pgphase_1 := by admit
 
 def pgX := foldPauli zero_lt_one (pgphase_1, fun _ => Pauli_X)
 def pgY := foldPauli zero_lt_one (pgphase_1, fun _ => Pauli_X)
