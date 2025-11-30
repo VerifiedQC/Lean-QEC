@@ -96,7 +96,7 @@ lemma injective_fold_aux {z z' : pgroup_phases} {m m' : Fin n -> Pauli} :
       rcases this with ⟨H, H'⟩
       funext x; fin_cases x
       simp; assumption
-    apply paulis_distinct'; assumption
+    apply uphase_injective; assumption
   | succ n ih =>
   replace H := by simpa [fold_aux_iter] using H
   apply (congrArg (fun a => a.1)) at H
@@ -205,7 +205,9 @@ lemma foldPauli_iter (z : pgroup_phases) (m : Fin n → Pauli) (t : Pauli) :
 
 lemma fold_pauli_mul (p p' : pgroup_phases) (m : Fin n -> Pauli) :
   foldPauli hn ((p * p'), m) = U_phase (foldPauli hn (p, m)).1 p' := by
-  sorry
+  simp [foldPauli, fold, fold_aux]
+  rw [uphase_of_uphase]
+  aesop
 
 lemma uphase_of_kron' {n₁ n₂} (z : phase) (m1 : 𝐔ₙ[n₁]) (m2 : 𝐔ₙ[n₂]) :
   m1 ⊗ₙ U_phase m2 z = U_phase (m1 ⊗ₙ m2) z := by

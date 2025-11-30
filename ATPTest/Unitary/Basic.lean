@@ -151,3 +151,8 @@ lemma uphase_eqE {n} (s s' : phase) (U U' : 𝐔ₙ[n])
   s.1 • U.val = s'.1 • U'.val := by
   simp [U_phase] at eq
   assumption
+
+lemma uphase_of_uphase (U : 𝐔ₙ[n]) z z' :
+  U_phase (U_phase U z) z' = U_phase U (z * z') := by
+  simp [U_phase]
+  module

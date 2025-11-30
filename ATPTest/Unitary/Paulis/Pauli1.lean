@@ -40,7 +40,7 @@ lemma pgroup_phases_closed_under_inv : ∀ a : pgroup_phases, (Phase.phase_star 
 
 def pgroup_phases.inv (a : pgroup_phases) : pgroup_phases := ⟨_, pgroup_phases_closed_under_inv a⟩
 
-instance : Group pgroup_phases where
+instance PauliPhases : Group pgroup_phases where
   mul := pgroup_phases.gmul
   mul_assoc := by
     intros a b c
@@ -98,15 +98,21 @@ lemma mem_raw_paulis (u : Pauli) :
   · subst HZ; simp [Pauli_Z, pZ, unitary_fin_equiv, Z, raw_Paulis]; tauto
   · subst HI; simp [Pauli_I, raw_Paulis]; tauto
 
-lemma paulis_distinct_aux {p p' : Pauli} (z : pgroup_phases) (H: p ≠ p') :
-  z.1.1 • p.val.1 ≠ p'.val.1 := by
+lemma reindex_symm_hmul (z : ℂ) (p : Matrix (BitVec 1) (BitVec 1) ℂ) :
+  (Matrix.reindex beq beq).symm (z • p) = z • (Matrix.reindex beq beq).symm p := by
+  aesop
+
+lemma paulis_distinct_aux {p p' : Pauli} (z : ℂ) (H: p ≠ p') :
+  z • p.val.1 ≠ p'.val.1 := by
   let rawP : raw_Paulis := ⟨Matrix.reindex beq.symm beq.symm p.val.1, ?_⟩; swap
   · apply mem_raw_paulis
   let rawP' : raw_Paulis := ⟨Matrix.reindex beq.symm beq.symm p'.val.1, ?_⟩; swap
   · apply mem_raw_paulis
-  suffices: z.1.1 • rawP.1 ≠ rawP'.1
+  suffices: z • rawP.1 ≠ rawP'.1
   · by_contra H'
-    apply (congrArg (Matrix.reindex beq beq).symm) at H'; tauto
+    apply (congrArg (Matrix.reindex beq beq).symm) at H'
+    rw [reindex_symm_hmul] at H'
+    contradiction
   apply raw_paulis_distinct
   suffices: rawP.val ≠ rawP'.val
   · tauto
@@ -120,18 +126,40 @@ lemma paulis_distinct {p p' : Pauli} (z : pgroup_phases) (H: p ≠ p') :
   · rw [U_phase]; aesop
   apply paulis_distinct_aux; assumption
 
+lemma pgroup_phases_mul_coe (a b : pgroup_phases) :
+  ↑(a * b) = a.1 * b.1 := by
+  aesop
+
+-- There's gotta be an easier way...
 lemma pgroup_phases_star_move (a b c : pgroup_phases) :
   a * pgroup_phases.inv b = c ↔ a = b * c := by
-  sorry
-
--- rw [phase_id_1] at this
+  suffices: a.1 * Phase.phase_star b.1 = c ↔ a.1 = b.1 * c.1
+  · rw [pgroup_phases.inv]
+    rcases a with ⟨a0, ha⟩
+    rcases b with ⟨b0, hb⟩
+    rcases c with ⟨c0, hc⟩
+    constructor
+    · intro H'
+      apply Subtype.ext ?_
+      rw [pgroup_phases_mul_coe]
+      rw [<- this]
+      apply congrArg (fun x => x.1) at H'
+      rw [<- H']
+      rfl
+    · intro H'
+      apply Subtype.ext ?_
+      rw [pgroup_phases_mul_coe]
+      rw [this]
+      apply congrArg (fun x => x.1) at H'
+      rw [H']
+      rfl
+  apply phase_star_move
 
 lemma pgphase_id_1 (a : pgroup_phases) :
-  a * pgphase_1 = a := by sorry
+  a * pgphase_1 = a := by
+  sorry
 
--- need this specific form later
--- TODO maybe call this U_phase injective?
-lemma paulis_distinct' (z z' : pgroup_phases) (p p' : Pauli)
+lemma uphase_injective (z z' : pgroup_phases) (p p' : Pauli)
   (eq: U_phase p.val z = U_phase p'.val z') :
   z = z' /\ p = p' := by
   let r := z * pgroup_phases.inv z'
@@ -146,22 +174,20 @@ lemma paulis_distinct' (z z' : pgroup_phases) (p p' : Pauli)
       rw [pgroup_phases_star_move, pgphase_id_1] at this
       assumption
     apply u_phase_eq_is_1 at eq'
-
-    sorry
+    aesop
   by_contra H
   let H' := paulis_distinct r H
-  sorry
+  contradiction
 
 -- need this thing later too...
 -- sigh. looks terrible, I know.
 lemma pauli_distinct'' {z : ℂˣ} {m m' : Pauli} (eq: m.val.1 = z • m'.val.1) :
   z = 1 := by
-  /-
   by_cases H: m = m'
   · subst H
     symm at eq
     apply scalar_mat_is_one at eq
-    · assumption
+    · simp_all
     apply ne0_unitary
     aesop
   revert eq
@@ -172,8 +198,6 @@ lemma pauli_distinct'' {z : ℂˣ} {m m' : Pauli} (eq: m.val.1 = z • m'.val.1)
   apply paulis_distinct_aux
   symm
   assumption
-  -/
-  sorry
 
 lemma isHermitian_X : Matrix.IsHermitian pX.1 := by
   rw [Matrix.IsHermitian, pX]
