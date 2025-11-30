@@ -16,11 +16,6 @@ lemma three_qubit_encode_correct (ψ : PState 1) : three_qubit_encode ψ =
   (prod_orth_left zero_one_orth) := by
   admit
 
-/- --alas, this doesn't typecheck. am i cooked?
-lemma unitary_kron_assoc {n₁ n₂ n₃ : ℕ} {U₁ : 𝐔ₙ[n₁]} {U₂ : 𝐔ₙ[n₂]} {U₃ : 𝐔ₙ[n₃]} :
-  (U₁ ⊗ₙ U₂) ⊗ₙ U₃ = (U₁ ⊗ₙ (U₂ ⊗ₙ U₃) : 𝐔ₙ[(n₁ + n₂) + n₃]) := by admit
--/
-
 lemma unitary_kron_assoc {U₁ U₂ U₃ : 𝐔ₙ[1]}  :
   (U₁ ⊗ₙ U₂) ⊗ₙ U₃ = U₁ ⊗ₙ (U₂ ⊗ₙ U₃) := by
   ext i j;
@@ -56,13 +51,13 @@ abbrev ZZI_pg := fold1 gt0_3 ![Pauli_Z, Pauli_Z, Pauli_I]
 abbrev stab := QCode.stabilizers gt0_3 three_qubit_encode
 
 lemma IZZ_in_stab :
-  fold1 gt0_3 ![Pauli_I, Pauli_Z, Pauli_Z] ∈
+  (fold1 gt0_3 ![Pauli_I, Pauli_Z, Pauli_Z]).1 ∈
   QCode.stabilizers gt0_3 three_qubit_encode := by
+  /-
   intro ψ
   rewrite [three_qubit_encode_correct]
   unfold stabilizes
   rw [PState.sum_apply]
-  /-
   have hz : ((qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero).apply (1 ⊗ₙ pZ ⊗ₙ pZ) : PState 3) = ((qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero) : PState 3) := by
     rw [kron_mul_kron, kron_mul_kron]
     admit
@@ -80,8 +75,8 @@ lemma IZZ_in_stab :
   -/
 
 
-lemma ZIZ_in_stab : fold1 gt0_3 ![Pauli_Z, Pauli_I, Pauli_Z] ∈ stab := by admit
-lemma ZZI_in_stab : fold1 gt0_3 ![Pauli_Z, Pauli_Z, Pauli_I] ∈ stab := by admit
+lemma ZIZ_in_stab : (fold1 gt0_3 ![Pauli_Z, Pauli_I, Pauli_Z]).1 ∈ stab := by admit
+lemma ZZI_in_stab : (fold1 gt0_3 ![Pauli_Z, Pauli_Z, Pauli_I]).1 ∈ stab := by admit
 
 -- TODO pending commute/anti-commute rework
 lemma pphase_IXI_IZZ : pauli_pauli_phase gt0_3 IXI_pg IZZ_pg = pgphase_n1 := by
@@ -110,9 +105,8 @@ lemma pphase_IIX_ZZI : pauli_pauli_phase gt0_3 IIX_pg ZZI_pg = pgphase_1 := by
 lemma pphase_IXI_ZZI : pauli_pauli_phase gt0_3 IXI_pg ZZI_pg = pgphase_n1 := by
   sorry
 
-theorem three_qub_corrects_one_x :
-  Qcode.corrects_P_error_of_weight (by norm_num) three_qubit_encode 1
-  ⟨pX, by simp[Pauli]⟩ := by
+theorem three_qub_corrects_one_x : Qcode.unique_corrects_P_error_of_weight (by norm_num) three_qubit_encode 1
+ ⟨pX, by simp[Pauli]⟩ := by
   intros E₁ E₂ only_E₁ only_E₂ p1_E₁ p1_E₂ hW₁ hW₂ hne
   have h_or :
     ∀(E : PauliGroup gt0_3),
