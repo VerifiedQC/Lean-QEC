@@ -14,6 +14,36 @@ open Function
 noncomputable section
 
 -- variable {l : ℕ} (m_test : Fin l → Pauli)
+variable {n : ℕ} (hn : 0 < n) (m : Fin n → Pauli)
+
+def unfolded1 := (pgphase_1, (fun (_ : Fin n) => Pauli_I))
+
+lemma kron_of_1s {n₁ n₂} :
+  (1 : 𝐔ₙ[n₁]) ⊗ₙ (1 : 𝐔ₙ[n₂]) = 1 := by
+  simp [unitary_nkron, normalized_kron, normalize_mat]
+
+lemma foldPauli1 : fold hn unfolded1 = 1 := by
+  rcases n with _ | n'
+  · contradiction
+  induction n' with
+  | zero =>
+    simp [fold, fold_aux, unfolded1, unitary_n_nkron, U_phase, Pauli_I]
+  | succ n'' H =>
+    rw [fold, fold_aux, unfolded1]
+    simp [unitary_n_nkron]
+    rw [<- uphase_of_kron]
+    specialize H (by simp)
+    simp [fold, fold_aux, unfolded1] at H
+    rw [H]
+    have: Pauli_I = (1 : 𝐔ₙ[1]) := by rfl
+    rw [this, kron_of_1s]
+
+lemma mem_PauliGroup_id : 1 ∈ PauliGroup hn := by
+  rw [PauliGroup, Finset.mem_image, factored_Pauli_univ]
+  exists unfolded1
+  constructor
+  · simp [unfolded1, pgroup_phases]
+  · apply foldPauli1
 
 /- TODO RESTORE -/
 /-
@@ -51,7 +81,7 @@ theorem kron_mem_PauliGroup_iff {n₁ n₂ : ℕ} (hn₁ : 0 < n₁) (hn₂ : 0 
   congr
   -/
 
-  /--
+  /-
 
 -- can get this from unfolding now
 noncomputable def PauliGroup.phase {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup hn)

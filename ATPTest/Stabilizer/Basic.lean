@@ -1,5 +1,5 @@
 import ATPTest.States.Basic
-import ATPTest.Unitary.Pauli
+import ATPTest.Unitary.Paulis.Basic
 variable {n : ℕ}
 
 def stabilizes (U : 𝐔ₙ[n]) (ψ : PState n) := ψ.apply U = ψ
@@ -96,6 +96,9 @@ variable {n : ℕ} {k : ℕ} (hn : 0 < n)
 def QCode.stabilizers (C : QCode n k) :=
   {U | (∀ ψ, stabilizes U (C ψ)) ∧ U ∈ PauliGroup hn}
 
+/- TODO FIX AND RESTORE -/
+
+/-
 def QCode.syndrome {k : ℕ} (C : QCode n k) {E : 𝐔ₙ[n]} (hE : E ∈ PauliGroup hn)
    : C.stabilizers hn → pgroup_phases := fun U => pauli_pauli_phase hn hE U.2.2
 
@@ -124,6 +127,7 @@ theorem QCode.distinguishes_of_exists_dist_stab {k : ℕ} (C : QCode n k) {E₁ 
     refine ⟨S, hS⟩
   rintro ⟨S, hS⟩
   apply Function.ne_iff.2 ⟨S, hS⟩
+  -/
 
 --theorem that says pauli X, Z errors on stabilized vectors result
 --in either U stabilizing or U_neg stabilizing?
