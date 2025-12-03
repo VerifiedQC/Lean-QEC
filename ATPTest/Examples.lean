@@ -1,5 +1,6 @@
 
 import ATPTest.Stabilizer.Basic
+import ATPTest.QuantumInfoSkeleton
 
 noncomputable section
 
@@ -8,7 +9,7 @@ def three_qubit_encode : QCode 3 1:= fun (ψ : PState 1) =>
     (Cₙ[pX] ⊗ₙ p1)).apply
     (Cₙ[p1 ⊗ₙ pX])
 
-lemma gt0_3 : 0 < 3 := by simp
+lemma gt0_3 : 0 < 3 := by norm_num
 
 lemma three_qubit_encode_correct (ψ : PState 1) : three_qubit_encode ψ =
   PState.sum (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
@@ -65,7 +66,7 @@ lemma IZZ_in_stab :
     admit
   simp_rw [hz, ho]
   -/
-  sorry
+  admit
   /- TODO FIX AND RESTORE -/
   /-
   rw [mem_PauliGroup_iff]
@@ -78,32 +79,119 @@ lemma IZZ_in_stab :
 lemma ZIZ_in_stab : (fold1 gt0_3 ![Pauli_Z, Pauli_I, Pauli_Z]).1 ∈ stab := by admit
 lemma ZZI_in_stab : (fold1 gt0_3 ![Pauli_Z, Pauli_Z, Pauli_I]).1 ∈ stab := by admit
 
--- TODO pending commute/anti-commute rework
+/--
+  The Pauli matrices X and I are not equal to each other
+
+  PROVIDED SOLUTION:
+  For these matrices to be unequal, it suffices that they differ in some
+  index. X and I differ in the 0th row and the 0th column, so check those values
+  to show they are unequal.
+-/
+@[simp] lemma pgXnepgI : Pauli_X ≠ Pauli_I := by
+  -- To show that Pauli_X ≠ Pauli_I, we can compare their entries. The (0,0) entry of Pauli_X is 0, while the (0,0) entry of Pauli_I is 1. Since these entries are different, the matrices cannot be equal.
+  have h_diff : (Pauli_X.val 0 0) ≠ (Pauli_I.val 0 0) := by
+    exact show ( 0 : ℂ ) ≠ 1 from by norm_num;
+  contrapose! h_diff; aesop;
+
+@[simp] lemma pgZnepgI : Pauli_Z ≠ Pauli_I := by
+  -- To show that Pauli_Z ≠ Pauli_I, we can compare their entries. The (0,0) entry of Pauli_X is 0, while the (0,0) entry of Pauli_I is 1. Since these entries are different, the matrices cannot be equal.
+  have h_diff : (Pauli_Z.val 1 1) ≠ (Pauli_I.val 1 1) := by
+    exact show ( -1 : ℂ ) ≠ 1 from by norm_num;
+  contrapose! h_diff; aesop;
+
+@[simp] lemma pgYnepgI : Pauli_Y ≠ Pauli_I := by
+  -- To show that Pauli_Y ≠ Pauli_I, we can compare their entries. The (0,0) entry of Pauli_X is 0, while the (0,0) entry of Pauli_I is 1. Since these entries are different, the matrices cannot be equal.
+  have h_diff : (Pauli_Y.val 0 0) ≠ (Pauli_I.val 0 0) := by
+    exact show ( 0 : ℂ ) ≠ 1 from by norm_num;
+  contrapose! h_diff; aesop;
+
+@[simp] lemma pgXnepgZ : Pauli_X ≠ Pauli_Z := by
+  -- To show that Pauli_X ≠ Pauli_Z, we can compare their entries. The (0,0) entry of Pauli_X is 0, while the (0,0) entry of Pauli_I is 1. Since these entries are different, the matrices cannot be equal.
+  have h_diff : (Pauli_X.val 0 0) ≠ (Pauli_Z.val 0 0) := by
+    exact show ( 0 : ℂ ) ≠ 1 from by norm_num;
+  contrapose! h_diff; aesop;
+
+
+--can i make proving this a tactic?
 lemma pphase_IXI_IZZ : pauli_pauli_phase gt0_3 IXI_pg IZZ_pg = pgphase_n1 := by
-  /-
-  rw [pauli_pauli_phase_kron (by norm_num) (by norm_num), pauli_pauli_phase_kron (by norm_num) (by norm_num)]
-  · rw [pauli_pauli_phase_self (by norm_num), pphase_XZ, pphase_id_right]
-    simp
-  all_goals try exact pgX.2
-  all_goals try exact pgZ.2
-  all_goals try exact pg1.2
-  all_goals try rw [kron_mem_PauliGroup_iff zero_lt_one zero_lt_one]
-  exact ⟨pgX.2, pg1.2⟩
-  exact ⟨pgZ.2, pgZ.2⟩
-  -/
-  sorry
+  unfold pauli_pauli_phase
+  have h_anti : count_anticommutes gt0_3 IXI_pg IZZ_pg = 1
+  · unfold count_anticommutes IXI_pg IZZ_pg
+    have h_mem0 : (0 ∉ {i | ith_anticommute gt0_3 IXI_pg IZZ_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h_mem1 : (1 ∈ {i | ith_anticommute gt0_3 IXI_pg IZZ_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h_mem2 : (2 ∉ {i | ith_anticommute gt0_3 IXI_pg IZZ_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h: ({1} : Finset (Fin 3)).card = 1:= by simp
+    convert h
+    ext x
+    fin_cases x <;> simp at * <;> assumption
+  simp [h_anti]
 
 lemma pphase_XII_IZZ : pauli_pauli_phase gt0_3 XII_pg IZZ_pg = pgphase_1 := by
-  sorry
+  unfold pauli_pauli_phase
+  have comm : count_anticommutes gt0_3 XII_pg IZZ_pg = 0
+  · unfold count_anticommutes XII_pg IZZ_pg
+    have h_mem0 : (0 ∉ {i | ith_anticommute gt0_3 XII_pg IZZ_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h_mem1 : (1 ∉ {i | ith_anticommute gt0_3 XII_pg IZZ_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h_mem2 : (2 ∉ {i | ith_anticommute gt0_3 XII_pg IZZ_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h: ({} : Finset (Fin 3)).card = 0:= by simp
+    convert h
+    ext x
+    fin_cases x <;> simp at * <;> assumption
+  simp [comm]
 
 lemma pphase_IIX_IZZ : pauli_pauli_phase gt0_3 IIX_pg IZZ_pg = pgphase_n1 := by
-  sorry
+  unfold pauli_pauli_phase
+  have h_anti : count_anticommutes gt0_3 IIX_pg IZZ_pg = 1
+  · unfold count_anticommutes IIX_pg IZZ_pg
+    have h_mem0 : (0 ∉ {i | ith_anticommute gt0_3 IIX_pg IZZ_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h_mem1 : (1 ∉ {i | ith_anticommute gt0_3 IIX_pg IZZ_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h_mem2 : (2 ∈ {i | ith_anticommute gt0_3 IIX_pg IZZ_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h: ({2} : Finset (Fin 3)).card = 1:= by simp
+    convert h
+    ext x
+    fin_cases x <;> simp at * <;> assumption
+  simp [h_anti]
 
 lemma pphase_IIX_ZZI : pauli_pauli_phase gt0_3 IIX_pg ZZI_pg = pgphase_1 := by
-  sorry
+  unfold pauli_pauli_phase
+  have comm : count_anticommutes gt0_3 IIX_pg ZZI_pg = 0
+  · unfold count_anticommutes IIX_pg ZZI_pg
+    have h_mem0 : (0 ∉ {i | ith_anticommute gt0_3 IIX_pg ZZI_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h_mem1 : (1 ∉ {i | ith_anticommute gt0_3 IIX_pg ZZI_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h_mem2 : (2 ∉ {i | ith_anticommute gt0_3 IIX_pg ZZI_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h: ({} : Finset (Fin 3)).card = 0:= by simp
+    convert h
+    ext x
+    fin_cases x <;> simp at * <;> assumption
+  simp [comm]
 
 lemma pphase_IXI_ZZI : pauli_pauli_phase gt0_3 IXI_pg ZZI_pg = pgphase_n1 := by
-  sorry
+  unfold pauli_pauli_phase
+  have h_anti : count_anticommutes gt0_3 IXI_pg ZZI_pg = 1
+  · unfold count_anticommutes IXI_pg ZZI_pg
+    have h_mem0 : (0 ∉ {i | ith_anticommute gt0_3 IXI_pg ZZI_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h_mem1 : (1 ∈ {i | ith_anticommute gt0_3 IXI_pg ZZI_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h_mem2 : (2 ∉ {i | ith_anticommute gt0_3 IXI_pg ZZI_pg i = true})
+    · simp [PauliGroup.map, commute]
+    have h: ({1} : Finset (Fin 3)).card = 1:= by simp
+    convert h
+    ext x
+    fin_cases x <;> simp at * <;> assumption
+  simp [h_anti]
 
 theorem three_qub_corrects_one_x : Qcode.unique_corrects_P_error_of_weight (by norm_num) three_qubit_encode 1
  ⟨pX, by simp[Pauli]⟩ := by
@@ -116,7 +204,7 @@ theorem three_qub_corrects_one_x : Qcode.unique_corrects_P_error_of_weight (by n
     E = fold1 gt0_3 ![Pauli_X, Pauli_I, Pauli_I] ∨
     E = fold1 gt0_3 ![Pauli_I, Pauli_X, Pauli_I] ∨
     E = fold1 gt0_3 ![Pauli_I, Pauli_I, Pauli_X] := by
-      sorry
+      admit
   rcases h_or E₁ only_E₁ p1_E₁ hW₁ with rfl | rfl | rfl
   all_goals rcases h_or E₂ only_E₂ p1_E₂ hW₂ with rfl | rfl | rfl
   all_goals rw [QCode.distinguishes_of_exists_dist_stab]

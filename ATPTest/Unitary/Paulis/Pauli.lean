@@ -77,7 +77,7 @@ def count_anticommutes (U₁ U₂ : PauliGroup hn) : ℕ :=
   (Finset.univ.filter (fun i => ith_anticommute hn U₁ U₂ i)).card
 
 def pauli_pauli_phase (U₁ U₂ : PauliGroup hn) : pgroup_phases :=
-  if count_anticommutes hn U₁ U₂ % 2 == 0 then 1 else pgphase_n1
+  if count_anticommutes hn U₁ U₂ % 2 == 0 then pgphase_1 else pgphase_n1
 
 lemma pauli_pauli_phase_kron {n₁ n₂ : ℕ}
   (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
