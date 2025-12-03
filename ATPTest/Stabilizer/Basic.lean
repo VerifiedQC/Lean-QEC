@@ -1,5 +1,5 @@
 import ATPTest.States.Basic
-import ATPTest.Unitary.Pauli
+import ATPTest.Unitary.Paulis.Basic
 variable {n : ℕ}
 
 def stabilizes (U : 𝐔ₙ[n]) (ψ : PState n) := ψ.apply U = ψ
@@ -59,21 +59,15 @@ theorem sum_stab {n : ℕ} {ψ₁ ψ₂ : PState n} {a b : ℂ} {U : 𝐔ₙ[n]}
   simp [stabilizes, PState.sum, Matrix.mulVec_add, Matrix.mulVec_smul]
   simp [DFunLike.coe, stabilizes_apply' hstab1, stabilizes_apply' hstab2]
 
-
-
-
 --think harder about how i want to define this: subtype for pauli tensors?
 def stabilizer_set {n : ℕ} (ψ : PState n) :=
   {U // stabilizes U ψ}
 
 variable {n : ℕ}
 
-
-
 --wait, how do i cX transversally? just controllize 1 ⊗ X?
 --clearly if this is to be easier to work with i have to
 --change how this is done
-
 
 
 /-
@@ -172,36 +166,49 @@ theorem stab_comm (C : QCode n k) (hk : 0 < k) : IsMulCommutative (stabilizer_gr
 
   ⟩⟩
 
+abbrev Pauli_of_stab {k} {C : QCode n k} (S : C.stabilizers hn) : PauliGroup hn :=
+  ⟨S.1, S.2.2⟩
 
-def QCode.syndrome {k : ℕ} (C : QCode n k) {E : 𝐔ₙ[n]} (hE : E ∈ PauliGroup hn)
-   : C.stabilizers hn → pgroup_phases := fun U => pauli_pauli_phase hn hE U.2.2
+def QCode.syndrome {k : ℕ} (C : QCode n k) (E : PauliGroup hn)
+   : C.stabilizers hn → pgroup_phases := fun U => pauli_pauli_phase hn E (Pauli_of_stab hn U)
 
-def QCode.distinguishes (C : QCode n k) {E₁ E₂} (hE₁ : E₁ ∈ PauliGroup hn) (hE₂ : E₂ ∈ PauliGroup hn) := C.syndrome hn hE₁ ≠ C.syndrome hn hE₂
+def QCode.distinguishes (C : QCode n k) (E₁ : PauliGroup hn) (E₂ : PauliGroup hn) := C.syndrome hn E₁ ≠ C.syndrome hn E₂
 
 --to detect errors, it suffices to distinguish an error and the I pauli
-def Qcode.unique_detects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ E (hE : E ∈ PauliGroup hn),
-  pauli_weight hn hE ≤ w → E ≠ 1 → C.distinguishes hn hE (mem_PauliGroup_id hn)
+def Qcode.unique_detects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ (E : PauliGroup hn),
+  pauli_weight hn E ≤ w → E ≠ Pauli1 hn → C.distinguishes hn E (Pauli1 hn)
 
-def Qcode.unique_corrects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ E₁ (hE₁ : E₁ ∈ PauliGroup hn), ∀ E₂ (hE₂ : E₂ ∈ PauliGroup hn),
-  (PauliGroup.phase hn hE₁).1 = ⟨1, by norm_num⟩ → (PauliGroup.phase hn hE₂).1 = ⟨1, by norm_num⟩ →
-  pauli_weight hn hE₁ ≤ w → pauli_weight hn hE₂ ≤ w → E₁ ≠ E₂ → C.distinguishes hn hE₁ hE₂
+def Qcode.unique_corrects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ (E₁ E₂ : PauliGroup hn),
+  (PauliGroup.phase hn E₁).1 = ⟨1, by norm_num⟩ → (PauliGroup.phase hn E₂).1 = ⟨1, by norm_num⟩ →
+  pauli_weight hn E₁ ≤ w → pauli_weight hn E₂ ≤ w → E₁ ≠ E₂ → C.distinguishes hn E₁ E₂
 
-def Qcode.unique_detects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli):= ∀ E (hE : E ∈ PauliGroup hn),
-  (pauli_only hn hE P) → pauli_weight hn hE ≤ w → E ≠ 1 → C.distinguishes hn hE (mem_PauliGroup_id hn)
+def Qcode.unique_detects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli):= ∀ (E : PauliGroup hn),
+  (pauli_only hn E P) → pauli_weight hn E ≤ w → E ≠ Pauli1 hn → C.distinguishes hn E (Pauli1 hn)
 
 --unique distinguishing
-def Qcode.unique_corrects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli) := ∀ E₁ (hE₁ : E₁ ∈ PauliGroup hn), ∀ E₂ (hE₂ : E₂ ∈ PauliGroup hn),
-  (pauli_only hn hE₁ P) → (pauli_only hn hE₂ P) → (PauliGroup.phase hn hE₁).1 = ⟨1, by norm_num⟩ → (PauliGroup.phase hn hE₂).1 = ⟨1, by norm_num⟩ →
-  pauli_weight hn hE₁ ≤ w → pauli_weight hn hE₂ ≤ w → E₁ ≠ E₂ → C.distinguishes hn hE₁ hE₂
+def Qcode.unique_corrects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli) := ∀ (E₁ E₂ : PauliGroup hn),
+  (pauli_only hn E₁ P) → (pauli_only hn E₂ P) →
+  PauliGroup.phase hn E₁ = 1 -> PauliGroup.phase hn E₂ = 1 ->
+  pauli_weight hn E₁ ≤ w → pauli_weight hn E₂ ≤ w → E₁ ≠ E₂ → C.distinguishes hn E₁ E₂
 
-theorem QCode.distinguishes_of_exists_dist_stab {k : ℕ} (C : QCode n k) {E₁ E₂} (hE₁ : E₁ ∈ PauliGroup hn) (hE₂ : E₂ ∈ PauliGroup hn) :
-  C.distinguishes hn hE₁ hE₂ ↔ ∃ S : C.stabilizers hn, pauli_pauli_phase hn hE₁ S.2.2 ≠ pauli_pauli_phase hn hE₂ S.2.2 := by
+theorem QCode.distinguishes_of_exists_dist_stab {k : ℕ} (C : QCode n k) (E₁ : PauliGroup hn) (E₂ : PauliGroup hn) :
+  C.distinguishes hn E₁ E₂ ↔
+  ∃ S : C.stabilizers hn,
+    let SP : PauliGroup hn := Pauli_of_stab hn S
+    pauli_pauli_phase hn E₁ SP ≠ pauli_pauli_phase hn E₂ SP := by
+  constructor
+  · -- aesop?
+    sorry
+  -- TODO FIX
+  /-
   constructor
   · intro hD
     rcases (Function.ne_iff.1 hD) with ⟨S, hS⟩
     refine ⟨S, hS⟩
   rintro ⟨S, hS⟩
   apply Function.ne_iff.2 ⟨S, hS⟩
+  -/
+  sorry
 
 --theorem that says pauli X, Z errors on stabilized vectors result
 --in either U stabilizing or U_neg stabilizing?

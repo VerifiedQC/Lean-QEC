@@ -5,6 +5,9 @@ import ATPTest.QuantumInfoSkeleton
 import ATPTest.States.BitVec
 import ATPTest.KroneckerLemmas
 import ATPTest.States.Phase
+import ATPTest.AI_Generated.TediousLinearAlgebra
+import ATPTest.AI_Generated.ne0_unitary
+
 open Matrix
 
 section unitary
@@ -106,3 +109,50 @@ def fin2prodbitvec_equiv {n : ℕ} : (Fin 2 × BitVec n) ≃ BitVec (1+n) := (be
 def n_controllize {n : ℕ} (U : 𝐔ₙ[n]) : 𝐔ₙ[1+n] := unitary_fin_equiv fin2prodbitvec_equiv (Qubit.controllize U)
 
 notation "Cₙ[" g "]" => n_controllize g
+
+lemma unitary_ext {n} {U U' : 𝐔ₙ[n]} (vals_eq: U.1 = U'.1) : U = U' := by aesop
+
+lemma unitary_nkron_valE {n₁ n₂}
+  (M₁ : 𝐔ₙ[n₁]) (M₂ : 𝐔ₙ[n₂]) :
+  (M₁ ⊗ₙ M₂).1 = normalize_mat (Matrix.kronecker M₁ M₂)
+  := by simp [unitary_nkron, normalized_kron]
+
+lemma uphase_of_kron {n₁ n₂} (z : phase) (m1 : 𝐔ₙ[n₁]) (m2 : 𝐔ₙ[n₂]) :
+  U_phase m1 z ⊗ₙ m2 = U_phase (m1 ⊗ₙ m2) z := by
+  apply unitary_ext
+  simp [U_phase, unitary_nkron]
+  simp [normalized_kron]
+  simp [Matrix.smul_kronecker, Matrix.submatrix_smul]
+
+lemma uphase_div {n} (z z' : phase) (u u' : 𝐔ₙ[n])
+  (eq : U_phase u z = U_phase u' z') :
+  let r := z * Phase.phase_star z'
+  U_phase u r = u' := by
+  apply unitary_ext
+  simp [U_phase, Phase.phase_star] at ⊢ eq
+  apply raw_uphase_div; try assumption
+  rcases z' with ⟨zval, znorm⟩
+  simp_all; assumption
+
+lemma u_phase_eq_is_1 {n} {z : phase} {u : 𝐔ₙ[n]}
+  (eq : U_phase u z = u) :
+  z = phase_id := by
+  cases z with | mk zval z_norm
+  rw [U_phase] at eq
+  cases u with | mk uval unitary_u
+  simp_all
+  apply raw_uphase_eq_is_1 at eq
+  · assumption
+  apply ne0_unitary
+  aesop
+
+lemma uphase_eqE {n} (s s' : phase) (U U' : 𝐔ₙ[n])
+  (eq: U_phase U s = U_phase U' s') :
+  s.1 • U.val = s'.1 • U'.val := by
+  simp [U_phase] at eq
+  assumption
+
+lemma uphase_of_uphase (U : 𝐔ₙ[n]) z z' :
+  U_phase (U_phase U z) z' = U_phase U (z * z') := by
+  simp [U_phase]
+  module

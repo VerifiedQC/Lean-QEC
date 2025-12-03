@@ -115,3 +115,12 @@ def beq : Fin 2 ≃ BitVec 1 := (@BitVec.equivFin 1).symm
 -- aristotle
 lemma BitVec1_cases (i : BitVec 1) : i = 0#1 ∨ i = 1#1 := by
   rcases i with ⟨ _ | _ | i, hi ⟩ <;> tauto
+
+lemma normalize_mat_ext {n₁ n₂ m₁ m₂}
+  (M : Matrix (BitVec n₁ × BitVec m₁) (BitVec n₂ × BitVec m₂) ℂ)
+  (M' : Matrix (BitVec n₁ × BitVec m₁) (BitVec n₂ × BitVec m₂) ℂ) :
+  normalize_mat M = normalize_mat M' ->
+  M = M' := by
+    intro H
+    apply (congrArg normalize_mat.symm) at H
+    aesop
