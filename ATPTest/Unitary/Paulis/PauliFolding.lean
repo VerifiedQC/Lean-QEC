@@ -68,8 +68,6 @@ lemma fold_aux_iter (z : pgroup_phases) (m : Fin (n + 1) -> Pauli) :
   | zero => cases hn
   | succ r => rw [uphase_of_kron]; rfl
 
-lemma Pauli_ext {m m' : Pauli} (eq : m.val = m'.val) : m = m' := by aesop
-
 lemma tuple_eqE_by_cons {n} {u : Type}
   (t t' : Fin (n + 1) → u)
   (eq_head : t 0 = t' 0)
@@ -118,7 +116,8 @@ lemma injective_fold_aux {z z' : pgroup_phases} {m m' : Fin n -> Pauli} :
   subst eq1_w
   constructor
   · simp at HHeads
-    apply Pauli_ext; assumption
+    rw [Subtype.ext_iff]
+    assumption
   intro eq_m0
   apply ih
   apply unitary_ext
