@@ -188,7 +188,7 @@ def Qcode.unique_detects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli)
 --unique distinguishing
 def Qcode.unique_corrects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli) := ∀ (E₁ E₂ : PauliGroup hn),
   (pauli_only hn E₁ P) → (pauli_only hn E₂ P) →
-  PauliGroup.phase hn E₁ = 1 -> PauliGroup.phase hn E₂ = 1 ->
+  PauliGroup.phase hn E₁ = 1 → PauliGroup.phase hn E₂ = 1 →
   pauli_weight hn E₁ ≤ w → pauli_weight hn E₂ ≤ w → E₁ ≠ E₂ → C.distinguishes hn E₁ E₂
 
 theorem QCode.distinguishes_of_exists_dist_stab {k : ℕ} (C : QCode n k) (E₁ : PauliGroup hn) (E₂ : PauliGroup hn) :

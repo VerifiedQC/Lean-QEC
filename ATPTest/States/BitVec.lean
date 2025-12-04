@@ -71,7 +71,7 @@ def toMat {t} : (t → ℂ) ≃ (Matrix t (BitVec 0) ℂ) where
     rfl
 
 -- Aristotle
-lemma mulvec_toMat {t u} {fin_u : Fintype u} (U : Matrix t u ℂ) (v : u -> ℂ) :
+lemma mulvec_toMat {t u} {fin_u : Fintype u} (U : Matrix t u ℂ) (v : u → ℂ) :
   toMat (U *ᵥ v) = U * (toMat v) := by
     -- By definition of matrix multiplication and the definitions of `toMat` and `tm_inv`, we can show that the equality holds elementwise.
     ext n; simp [Matrix.mulVec, toMat];
@@ -119,7 +119,7 @@ lemma BitVec1_cases (i : BitVec 1) : i = 0#1 ∨ i = 1#1 := by
 lemma normalize_mat_ext {n₁ n₂ m₁ m₂}
   (M : Matrix (BitVec n₁ × BitVec m₁) (BitVec n₂ × BitVec m₂) ℂ)
   (M' : Matrix (BitVec n₁ × BitVec m₁) (BitVec n₂ × BitVec m₂) ℂ) :
-  normalize_mat M = normalize_mat M' ->
+  normalize_mat M = normalize_mat M' →
   M = M' := by
     intro H
     apply (congrArg normalize_mat.symm) at H

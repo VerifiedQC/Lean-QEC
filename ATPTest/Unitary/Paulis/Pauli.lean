@@ -47,7 +47,7 @@ lemma mem_PauliGroup_id : 1 ∈ PauliGroup hn := by
 
 def Pauli1 : PauliGroup hn := ⟨1, mem_PauliGroup_id hn⟩
 
-def PauliGroup.map (P : PauliGroup hn) : (Fin n -> Pauli) :=
+def PauliGroup.map (P : PauliGroup hn) : (Fin n → Pauli) :=
   ((foldPauli hn).symm P).2
 
 def PauliGroup.phase (P : PauliGroup hn) : pgroup_phases :=
@@ -63,7 +63,7 @@ def pauli_weight (U : PauliGroup hn) : ℕ :=
   (Finset.univ.filter (fun i => (PauliGroup.map hn U) i ≠ Pauli_I)).card
 
 def pauli_only (U : PauliGroup hn) (P : Pauli) :=
-  ∀ x, ((PauliGroup.map hn U) x = (1 : 𝐔ₙ[1]) ∨ (PauliGroup.map hn U) x = P)
+  ∀ x, ((PauliGroup.map hn U) x = Pauli_I ∨ (PauliGroup.map hn U) x = P)
 
 def commute (P P' : Pauli) := P = Pauli_I || P' = Pauli_I || P = P'
 

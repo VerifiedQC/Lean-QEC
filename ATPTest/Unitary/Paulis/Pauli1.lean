@@ -167,7 +167,7 @@ lemma uphase_injective (z z' : pgroup_phases) (p p' : Pauli)
   let r := z * pgroup_phases.inv z'
   have eq' : U_phase p.val r = p'.val
   · apply uphase_div; assumption
-  suffices: (p = p' -> z = z') /\ p = p'
+  suffices: (p = p' → z = z') /\ p = p'
   · tauto
   constructor
   · intro H'; subst H'
@@ -193,7 +193,7 @@ lemma pauli_distinct'' {z : ℂˣ} {m m' : Pauli} (eq: m.val.1 = z • m'.val.1)
     apply ne0_unitary
     aesop
   revert eq
-  suffices: z ≠ 1 -> m.val.1 ≠ z • ↑↑m'
+  suffices: z ≠ 1 → m.val.1 ≠ z • ↑↑m'
   · tauto
   intro ne1_z
   symm

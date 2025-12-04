@@ -90,7 +90,7 @@ lemma ket_prodE {n₁ n₂} (ψ₁ : BitVec n₁ → ℂ) (ψ₂ : BitVec n₂ �
   ext s; simp
   simp [ket_prod, toMat, normalized_kron, normalize_mat]
 
-lemma sum_prod_bitvecs {n₁ n₂} (f : _ -> ℂ) :
+lemma sum_prod_bitvecs {n₁ n₂} (f : _ → ℂ) :
   ∑ (s : BitVec n₁ × BitVec n₂), f s =
   ∑ (s₁ : BitVec n₁), ∑ (s₂ : BitVec n₂), f (s₁, s₂) := by
   simp [<- Finset.sum_product]

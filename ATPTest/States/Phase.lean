@@ -51,7 +51,7 @@ lemma phase_ext (z z' : phase) (eq_z : z.1 = z'.1) : z = z' := by
   cases z; aesop
 
 lemma phase_star_move (a b c : phase) :
-  a * Phase.phase_star b = c <-> a = b * c := by
+  a * Phase.phase_star b = c ↔ a = b * c := by
   cases a with | mk aval norm_a
   cases b with | mk bval norm_b
   cases c with | mk cval norm_c

@@ -15,7 +15,7 @@ The following was proved by Aristotle:
 
 - lemma raw_phase_star_move (a b c : ℂ)
   (norm_b : ‖b‖ = 1) :
-  a * star b = c <-> a = b * c
+  a * star b = c ↔ a = b * c
 
 - lemma raw_uphase_div {T U}
   [Nonempty T] [Nonempty U] [Fintype T] [Fintype U]
@@ -49,7 +49,7 @@ lemma raw_uphase_eq_is_1 {T U}
 -- slightly broken, human fix needed
 lemma raw_phase_star_move (a b c : ℂ)
   (norm_b : ‖b‖ = 1) :
-  a * star b = c <-> a = b * c := by
+  a * star b = c ↔ a = b * c := by
     -- Since $b$ has norm 1, we have $star b = 1/b$.
     have h_star_b : star b = 1 / b := by
       -- Since $b$ has norm 1, we have $|b|^2 = b \cdot \overline{b} = 1$.

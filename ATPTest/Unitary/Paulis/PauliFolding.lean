@@ -58,10 +58,10 @@ noncomputable def pauli_n_univ : Finset (Fin n → Pauli) := Finset.univ
 
 noncomputable def pauli_products_n : Finset (𝐔ₙ[n]) := Finset.image (λ m => unitary_n_nkron hn m) (Finset.univ : Finset (Fin n → Pauli))
 
-def fold_aux (z : pgroup_phases) (m : Fin n -> Pauli) :=
+def fold_aux (z : pgroup_phases) (m : Fin n → Pauli) :=
   U_phase (unitary_n_nkron hn m) z
 
-lemma fold_aux_iter (z : pgroup_phases) (m : Fin (n + 1) -> Pauli) :
+lemma fold_aux_iter (z : pgroup_phases) (m : Fin (n + 1) → Pauli) :
   fold_aux (by simp) z m = unitary_nkron (fold_aux hn z (Fin.tail m)) (m 0) := by
   rw [fold_aux, unitary_n_nkron.eq_def, fold_aux]
   cases n with
@@ -76,8 +76,8 @@ lemma tuple_eqE_by_cons {n} {u : Type}
   apply (Fin.consEquiv (fun _ => u)).symm.injective
   simp; constructor <;> assumption
 
-lemma injective_fold_aux {z z' : pgroup_phases} {m m' : Fin n -> Pauli} :
-  fold_aux hn z m = fold_aux hn z' m' ->
+lemma injective_fold_aux {z z' : pgroup_phases} {m m' : Fin n → Pauli} :
+  fold_aux hn z m = fold_aux hn z' m' →
   z = z' /\ m = m' := by
   intro H
   rcases n with _ | n'
@@ -106,7 +106,7 @@ lemma injective_fold_aux {z z' : pgroup_phases} {m m' : Fin n -> Pauli} :
   rotate_left
   · apply ne0_unitary; simp
   · apply ne0_unitary; aesop
-  suffices: m 0 = m' 0 /\ (m 0 = m' 0 -> z = z' /\ Fin.tail m = Fin.tail m')
+  suffices: m 0 = m' 0 /\ (m 0 = m' 0 → z = z' /\ Fin.tail m = Fin.tail m')
   · constructor <;> try tauto
     have eq_tails : Fin.tail m = Fin.tail m' := by tauto
     apply tuple_eqE_by_cons <;> tauto
@@ -134,7 +134,7 @@ lemma inj_fold : Injective (fold hn) := by
   apply injective_fold_aux at eq_folds
   simp_all
 
-abbrev factored_Pauli n := pgroup_phases × (Fin n -> Pauli)
+abbrev factored_Pauli n := pgroup_phases × (Fin n → Pauli)
 def factored_Pauli_univ : Finset (factored_Pauli n) := Finset.univ
 def PauliGroup := (factored_Pauli_univ).image (fold hn)
 
@@ -202,7 +202,7 @@ lemma foldPauli_iter (z : pgroup_phases) (m : Fin n → Pauli) (t : Pauli) :
   rw [<- uphase_of_kron]
   rfl
 
-lemma fold_pauli_mul (p p' : pgroup_phases) (m : Fin n -> Pauli) :
+lemma fold_pauli_mul (p p' : pgroup_phases) (m : Fin n → Pauli) :
   foldPauli hn ((p * p'), m) = U_phase (foldPauli hn (p, m)).1 p' := by
   simp [foldPauli, fold, fold_aux]
   rw [uphase_of_uphase]
@@ -216,12 +216,12 @@ lemma uphase_of_kron' {n₁ n₂} (z : phase) (m1 : 𝐔ₙ[n₁]) (m2 : 𝐔ₙ
   rw [Matrix.kronecker_smul]
   simp [Matrix.submatrix_smul]
 
-def cast_fin_append {t n₁ n₂} (v₁ : Fin n₁ -> t) (v₂ : Fin n₂ -> t)
+def cast_fin_append {t n₁ n₂} (v₁ : Fin n₁ → t) (v₂ : Fin n₂ → t)
   (i : Fin (n₂ + n₁)) : t :=
   (Fin.append v₁ v₂) (Fin.cast (by group) i)
 
 lemma cast_fin_append_aux {t n₁ n₂}
-  (head : t) (tail : Fin n₁ -> t) (m : Fin n₂ -> t)
+  (head : t) (tail : Fin n₁ → t) (m : Fin n₂ → t)
   (i : Fin (n₂ + n₁ + 1)) :
   Fin.append (Fin.cons head tail) m (Fin.cast (by ring) i) =
   Fin.cons (α := fun _ => t) head (cast_fin_append tail m) i := by
@@ -259,7 +259,7 @@ lemma kron_Paulis_aux' {n₁ n₂} (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
   | succ n'' ih =>
     let m_eq := (Fin.consEquiv (fun _ => Pauli)).symm m'
     let head : Pauli := m_eq.1
-    let tail : Fin (n'' + 1) -> Pauli := m_eq.2
+    let tail : Fin (n'' + 1) → Pauli := m_eq.2
     -- ???
     have: m' = Fin.cons head tail := by aesop
     rw [this]
@@ -304,7 +304,7 @@ lemma kron_PaulisE {n₁ n₂} (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
   rw [factored_kron]
   aesop
 
-lemma cast_split_cat {n₁ n₂ t} (ab : Fin (n₁ + n₂) -> t) :
+lemma cast_split_cat {n₁ n₂ t} (ab : Fin (n₁ + n₂) → t) :
   let cab (i : Fin (n₂ + n₁)) := ab (Fin.cast (by ring) i)
   let abe := (Fin.appendEquiv n₂ n₁).symm cab
   ab = cast_fin_append (abe.1) (abe.2) := by
