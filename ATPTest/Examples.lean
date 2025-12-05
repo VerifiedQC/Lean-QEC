@@ -9,8 +9,6 @@ def three_qubit_encode : QCode 3 1:= fun (ψ : PState 1) =>
     (Cₙ[pX] ⊗ₙ p1)).apply
     (Cₙ[p1 ⊗ₙ pX])
 
-lemma gt0_3 : 0 < 3 := by norm_num
-
 lemma three_qubit_encode_correct (ψ : PState 1) : three_qubit_encode ψ =
   PState.sum (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
   (qub_one ⊗ₚ qub_one ⊗ₚ qub_one) (ψ 0) (ψ 1) (single_qub_normalized _)
@@ -56,38 +54,43 @@ lemma qub_zero_Z : qub_zero.apply pZ = qub_zero := by admit
 @[simp]
 lemma qub_one_Z : qub_one.apply pZ = Ket.phase_mul qub_one ⟨-1, by simp⟩ := by admit
 
-abbrev fold1 {n} (hn: n > 0) (t : Fin n → Pauli) := foldPauli hn (1, t)
+abbrev fold1 {n} (t : Fin n → Pauli) := foldPauli (1, t)
 
 -- def IXI_pg := foldPauli 1 (pZ, p1, pZ)
-abbrev IXI_pg := fold1 gt0_3 ![Pauli_I, Pauli_X, Pauli_I]
-abbrev XII_pg := fold1 gt0_3 ![Pauli_X, Pauli_I, Pauli_I]
-abbrev IIX_pg := fold1 gt0_3 ![Pauli_I, Pauli_I, Pauli_X]
-abbrev IZZ_pg := fold1 gt0_3 ![Pauli_I, Pauli_Z, Pauli_Z]
-abbrev ZZI_pg := fold1 gt0_3 ![Pauli_Z, Pauli_Z, Pauli_I]
-abbrev stab := QCode.stabilizers gt0_3 three_qubit_encode
+abbrev IXI_pg := fold1 ![Pauli_I, Pauli_X, Pauli_I]
+abbrev XII_pg := fold1 ![Pauli_X, Pauli_I, Pauli_I]
+abbrev IIX_pg := fold1 ![Pauli_I, Pauli_I, Pauli_X]
+abbrev IZZ_pg := fold1 ![Pauli_I, Pauli_Z, Pauli_Z]
+abbrev ZZI_pg := fold1 ![Pauli_Z, Pauli_Z, Pauli_I]
+abbrev stab := QCode.stabilizers three_qubit_encode
 
 lemma phase_id_coe : (↑(1 : pgroup_phases) : phase).z = 1 := by
   rfl
 
 lemma Ket.mul_phase_id {k : Type*} [Fintype k] {ψ : Ket k} : ψ.phase_mul phase_id = ψ := by simp [Ket.phase_mul]
 
+@[simp]
+lemma zero_tensor_one_id {U : 𝐔ₙ[1]} : (1 : 𝐔ₙ[0]) ⊗ₙ U = U := by
+  rw [←heq_iff_eq]
+  exact (unitary_nkron_zero_id_left _)
+
 lemma IZZ_in_stab :
-  (fold1 gt0_3 ![Pauli_I, Pauli_Z, Pauli_Z]).1 ∈
-  QCode.stabilizers gt0_3 three_qubit_encode := by
+  (fold1 ![Pauli_I, Pauli_Z, Pauli_Z]).1 ∈
+  QCode.stabilizers three_qubit_encode := by
   constructor
   · intro ψ
     rw [three_qubit_encode_correct]
     unfold stabilizes
     rw [PState.sum_apply]
-    have hz : (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero).apply ↑(fold1 gt0_3 ![Pauli_I, Pauli_Z, Pauli_Z]) = (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
+    have hz : (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero).apply ↑(fold1 ![Pauli_I, Pauli_Z, Pauli_Z]) = (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
     · unfold fold1 foldPauli
       simp [-PState.apply]
       unfold fold fold_aux
       simp [-PState.apply, U_phase, phase_id_coe, unitary_n_nkron]
       rw [unitary_kron_assoc, kron_mul_kron, kron_mul_kron]
       simp_rw [Pauli_Z, Pauli_I, qub_zero_Z]
-      simp
-    have ho : (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply ↑(fold1 gt0_3 ![Pauli_I, Pauli_Z, Pauli_Z]) = (qub_one ⊗ₚ qub_one ⊗ₚ qub_one)
+      rw [PState.apply_id]
+    have ho : (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply ↑(fold1 ![Pauli_I, Pauli_Z, Pauli_Z]) = (qub_one ⊗ₚ qub_one ⊗ₚ qub_one)
     · unfold fold1 foldPauli
       simp [-PState.apply]
       unfold fold fold_aux
@@ -99,13 +102,13 @@ lemma IZZ_in_stab :
     simp_rw [hz, ho]
   simp only [Finset.coe_mem]
 
-lemma ZIZ_in_stab : (fold1 gt0_3 ![Pauli_Z, Pauli_I, Pauli_Z]).1 ∈ stab := by
+lemma ZIZ_in_stab : (fold1 ![Pauli_Z, Pauli_I, Pauli_Z]).1 ∈ stab := by
   constructor
   · intro ψ
     rw [three_qubit_encode_correct]
     unfold stabilizes
     rw [PState.sum_apply]
-    have hz : (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero).apply ↑(fold1 gt0_3 ![Pauli_Z, Pauli_I, Pauli_Z]) = (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
+    have hz : (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero).apply ↑(fold1 ![Pauli_Z, Pauli_I, Pauli_Z]) = (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
     · unfold fold1 foldPauli
       simp [-PState.apply]
       unfold fold fold_aux
@@ -113,7 +116,7 @@ lemma ZIZ_in_stab : (fold1 gt0_3 ![Pauli_Z, Pauli_I, Pauli_Z]).1 ∈ stab := by
       rw [unitary_kron_assoc, kron_mul_kron, kron_mul_kron]
       simp_rw [Pauli_Z, Pauli_I, qub_zero_Z]
       simp
-    have ho : (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply ↑(fold1 gt0_3 ![Pauli_Z, Pauli_I, Pauli_Z]) = (qub_one ⊗ₚ qub_one ⊗ₚ qub_one)
+    have ho : (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply ↑(fold1 ![Pauli_Z, Pauli_I, Pauli_Z]) = (qub_one ⊗ₚ qub_one ⊗ₚ qub_one)
     · unfold fold1 foldPauli
       simp [-PState.apply]
       unfold fold fold_aux
@@ -126,13 +129,13 @@ lemma ZIZ_in_stab : (fold1 gt0_3 ![Pauli_Z, Pauli_I, Pauli_Z]).1 ∈ stab := by
       simp [Ket.phase_mul]
     simp_rw [hz, ho]
   simp only [Finset.coe_mem]
-lemma ZZI_in_stab : (fold1 gt0_3 ![Pauli_Z, Pauli_Z, Pauli_I]).1 ∈ stab := by
+lemma ZZI_in_stab : (fold1 ![Pauli_Z, Pauli_Z, Pauli_I]).1 ∈ stab := by
   constructor
   · intro ψ
     rw [three_qubit_encode_correct]
     unfold stabilizes
     rw [PState.sum_apply]
-    have hz : (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero).apply ↑(fold1 gt0_3 ![Pauli_Z, Pauli_Z, Pauli_I]) = (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
+    have hz : (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero).apply ↑(fold1 ![Pauli_Z, Pauli_Z, Pauli_I]) = (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
     · unfold fold1 foldPauli
       simp [-PState.apply]
       unfold fold fold_aux
@@ -140,7 +143,7 @@ lemma ZZI_in_stab : (fold1 gt0_3 ![Pauli_Z, Pauli_Z, Pauli_I]).1 ∈ stab := by
       rw [unitary_kron_assoc, kron_mul_kron, kron_mul_kron]
       simp_rw [Pauli_Z, Pauli_I, qub_zero_Z]
       simp
-    have ho : (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply ↑(fold1 gt0_3 ![Pauli_Z, Pauli_Z, Pauli_I]) = (qub_one ⊗ₚ qub_one ⊗ₚ qub_one)
+    have ho : (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply ↑(fold1 ![Pauli_Z, Pauli_Z, Pauli_I]) = (qub_one ⊗ₚ qub_one ⊗ₚ qub_one)
     · unfold fold1 foldPauli
       simp [-PState.apply]
       unfold fold fold_aux
@@ -195,15 +198,15 @@ lemma ZZI_in_stab : (fold1 gt0_3 ![Pauli_Z, Pauli_Z, Pauli_I]).1 ∈ stab := by
 
 
 --can i make proving this a tactic?
-lemma pphase_IXI_IZZ : pauli_pauli_phase gt0_3 IXI_pg IZZ_pg = pgphase_n1 := by
+lemma pphase_IXI_IZZ : pauli_pauli_phase IXI_pg IZZ_pg = pgphase_n1 := by
   unfold pauli_pauli_phase
-  have h_anti : count_anticommutes gt0_3 IXI_pg IZZ_pg = 1
+  have h_anti : count_anticommutes IXI_pg IZZ_pg = 1
   · unfold count_anticommutes IXI_pg IZZ_pg
-    have h_mem0 : (0 ∉ {i | ith_anticommute gt0_3 IXI_pg IZZ_pg i = true})
+    have h_mem0 : (0 ∉ {i | ith_anticommute IXI_pg IZZ_pg i = true})
     · simp [PauliGroup.map, commute]
-    have h_mem1 : (1 ∈ {i | ith_anticommute gt0_3 IXI_pg IZZ_pg i = true})
+    have h_mem1 : (1 ∈ {i | ith_anticommute IXI_pg IZZ_pg i = true})
     · simp [PauliGroup.map, commute]
-    have h_mem2 : (2 ∉ {i | ith_anticommute gt0_3 IXI_pg IZZ_pg i = true})
+    have h_mem2 : (2 ∉ {i | ith_anticommute IXI_pg IZZ_pg i = true})
     · simp [PauliGroup.map, commute]
     have h: ({1} : Finset (Fin 3)).card = 1:= by simp
     convert h
@@ -211,15 +214,15 @@ lemma pphase_IXI_IZZ : pauli_pauli_phase gt0_3 IXI_pg IZZ_pg = pgphase_n1 := by
     fin_cases x <;> simp at * <;> assumption
   simp [h_anti]
 
-lemma pphase_XII_IZZ : pauli_pauli_phase gt0_3 XII_pg IZZ_pg = pgphase_1 := by
+lemma pphase_XII_IZZ : pauli_pauli_phase XII_pg IZZ_pg = pgphase_1 := by
   unfold pauli_pauli_phase
-  have comm : count_anticommutes gt0_3 XII_pg IZZ_pg = 0
+  have comm : count_anticommutes XII_pg IZZ_pg = 0
   · unfold count_anticommutes XII_pg IZZ_pg
-    have h_mem0 : (0 ∉ {i | ith_anticommute gt0_3 XII_pg IZZ_pg i = true})
+    have h_mem0 : (0 ∉ {i | ith_anticommute XII_pg IZZ_pg i = true})
     · simp [PauliGroup.map, commute]
-    have h_mem1 : (1 ∉ {i | ith_anticommute gt0_3 XII_pg IZZ_pg i = true})
+    have h_mem1 : (1 ∉ {i | ith_anticommute XII_pg IZZ_pg i = true})
     · simp [PauliGroup.map, commute]
-    have h_mem2 : (2 ∉ {i | ith_anticommute gt0_3 XII_pg IZZ_pg i = true})
+    have h_mem2 : (2 ∉ {i | ith_anticommute XII_pg IZZ_pg i = true})
     · simp [PauliGroup.map, commute]
     have h: ({} : Finset (Fin 3)).card = 0:= by simp
     convert h
@@ -227,15 +230,15 @@ lemma pphase_XII_IZZ : pauli_pauli_phase gt0_3 XII_pg IZZ_pg = pgphase_1 := by
     fin_cases x <;> simp at * <;> assumption
   simp [comm]
 
-lemma pphase_XII_ZZI : pauli_pauli_phase gt0_3 XII_pg ZZI_pg = pgphase_n1 := by
+lemma pphase_XII_ZZI : pauli_pauli_phase XII_pg ZZI_pg = pgphase_n1 := by
   unfold pauli_pauli_phase
-  have h_anti : count_anticommutes gt0_3 XII_pg ZZI_pg = 1
+  have h_anti : count_anticommutes XII_pg ZZI_pg = 1
   · unfold count_anticommutes XII_pg ZZI_pg
-    have h_mem0 : (0 ∈ {i | ith_anticommute gt0_3 XII_pg ZZI_pg i = true})
+    have h_mem0 : (0 ∈ {i | ith_anticommute XII_pg ZZI_pg i = true})
     · simp [PauliGroup.map, commute]
-    have h_mem1 : (1 ∉ {i | ith_anticommute gt0_3 XII_pg ZZI_pg i = true})
+    have h_mem1 : (1 ∉ {i | ith_anticommute XII_pg ZZI_pg i = true})
     · simp [PauliGroup.map, commute]
-    have h_mem2 : (2 ∉ {i | ith_anticommute gt0_3 XII_pg ZZI_pg i = true})
+    have h_mem2 : (2 ∉ {i | ith_anticommute XII_pg ZZI_pg i = true})
     · simp [PauliGroup.map, commute]
     have h: ({0} : Finset (Fin 3)).card = 1:= by simp
     convert h
@@ -243,15 +246,15 @@ lemma pphase_XII_ZZI : pauli_pauli_phase gt0_3 XII_pg ZZI_pg = pgphase_n1 := by
     fin_cases x <;> simp at * <;> assumption
   simp [h_anti]
 
-lemma pphase_IIX_IZZ : pauli_pauli_phase gt0_3 IIX_pg IZZ_pg = pgphase_n1 := by
+lemma pphase_IIX_IZZ : pauli_pauli_phase IIX_pg IZZ_pg = pgphase_n1 := by
   unfold pauli_pauli_phase
-  have h_anti : count_anticommutes gt0_3 IIX_pg IZZ_pg = 1
+  have h_anti : count_anticommutes IIX_pg IZZ_pg = 1
   · unfold count_anticommutes IIX_pg IZZ_pg
-    have h_mem0 : (0 ∉ {i | ith_anticommute gt0_3 IIX_pg IZZ_pg i = true})
+    have h_mem0 : (0 ∉ {i | ith_anticommute IIX_pg IZZ_pg i = true})
     · simp [PauliGroup.map, commute]
-    have h_mem1 : (1 ∉ {i | ith_anticommute gt0_3 IIX_pg IZZ_pg i = true})
+    have h_mem1 : (1 ∉ {i | ith_anticommute IIX_pg IZZ_pg i = true})
     · simp [PauliGroup.map, commute]
-    have h_mem2 : (2 ∈ {i | ith_anticommute gt0_3 IIX_pg IZZ_pg i = true})
+    have h_mem2 : (2 ∈ {i | ith_anticommute IIX_pg IZZ_pg i = true})
     · simp [PauliGroup.map, commute]
     have h: ({2} : Finset (Fin 3)).card = 1:= by simp
     convert h
@@ -259,15 +262,15 @@ lemma pphase_IIX_IZZ : pauli_pauli_phase gt0_3 IIX_pg IZZ_pg = pgphase_n1 := by
     fin_cases x <;> simp at * <;> assumption
   simp [h_anti]
 
-lemma pphase_IIX_ZZI : pauli_pauli_phase gt0_3 IIX_pg ZZI_pg = pgphase_1 := by
+lemma pphase_IIX_ZZI : pauli_pauli_phase IIX_pg ZZI_pg = pgphase_1 := by
   unfold pauli_pauli_phase
-  have comm : count_anticommutes gt0_3 IIX_pg ZZI_pg = 0
+  have comm : count_anticommutes IIX_pg ZZI_pg = 0
   · unfold count_anticommutes IIX_pg ZZI_pg
-    have h_mem0 : (0 ∉ {i | ith_anticommute gt0_3 IIX_pg ZZI_pg i = true})
+    have h_mem0 : (0 ∉ {i | ith_anticommute IIX_pg ZZI_pg i = true})
     · simp [PauliGroup.map, commute]
-    have h_mem1 : (1 ∉ {i | ith_anticommute gt0_3 IIX_pg ZZI_pg i = true})
+    have h_mem1 : (1 ∉ {i | ith_anticommute IIX_pg ZZI_pg i = true})
     · simp [PauliGroup.map, commute]
-    have h_mem2 : (2 ∉ {i | ith_anticommute gt0_3 IIX_pg ZZI_pg i = true})
+    have h_mem2 : (2 ∉ {i | ith_anticommute IIX_pg ZZI_pg i = true})
     · simp [PauliGroup.map, commute]
     have h: ({} : Finset (Fin 3)).card = 0:= by simp
     convert h
@@ -275,15 +278,15 @@ lemma pphase_IIX_ZZI : pauli_pauli_phase gt0_3 IIX_pg ZZI_pg = pgphase_1 := by
     fin_cases x <;> simp at * <;> assumption
   simp [comm]
 
-lemma pphase_IXI_ZZI : pauli_pauli_phase gt0_3 IXI_pg ZZI_pg = pgphase_n1 := by
+lemma pphase_IXI_ZZI : pauli_pauli_phase IXI_pg ZZI_pg = pgphase_n1 := by
   unfold pauli_pauli_phase
-  have h_anti : count_anticommutes gt0_3 IXI_pg ZZI_pg = 1
+  have h_anti : count_anticommutes IXI_pg ZZI_pg = 1
   · unfold count_anticommutes IXI_pg ZZI_pg
-    have h_mem0 : (0 ∉ {i | ith_anticommute gt0_3 IXI_pg ZZI_pg i = true})
+    have h_mem0 : (0 ∉ {i | ith_anticommute IXI_pg ZZI_pg i = true})
     · simp [PauliGroup.map, commute]
-    have h_mem1 : (1 ∈ {i | ith_anticommute gt0_3 IXI_pg ZZI_pg i = true})
+    have h_mem1 : (1 ∈ {i | ith_anticommute IXI_pg ZZI_pg i = true})
     · simp [PauliGroup.map, commute]
-    have h_mem2 : (2 ∉ {i | ith_anticommute gt0_3 IXI_pg ZZI_pg i = true})
+    have h_mem2 : (2 ∉ {i | ith_anticommute IXI_pg ZZI_pg i = true})
     · simp [PauliGroup.map, commute]
     have h: ({1} : Finset (Fin 3)).card = 1:= by simp
     convert h
@@ -291,39 +294,19 @@ lemma pphase_IXI_ZZI : pauli_pauli_phase gt0_3 IXI_pg ZZI_pg = pgphase_n1 := by
     fin_cases x <;> simp at * <;> assumption
   simp [h_anti]
 
-lemma pphase_pauli1 {n : ℕ} (hn : 0 < n) {p : PauliGroup hn} :
-  pauli_pauli_phase hn (Pauli1 hn) p = pgphase_1 := sorry
+lemma pphase_pauli1 {n : ℕ} {p : PauliGroup n} :
+  pauli_pauli_phase Pauli1 p = pgphase_1 := sorry
 
-/-
---aaaaaaaaaggggghhhhhhhh
-lemma foldPauli_symm_cancel {n : ℕ} (hn : 0 < n) {pmap : Fin n → Pauli}
-{pp : pgroup_phases} (h_mem : fold hn (pp, pmap) ∈ PauliGroup hn) :
-  (foldPauli hn).symm ⟨fold hn (pp, pmap), h_mem⟩ = (pp, pmap) := by
-  unfold foldPauli
-  simp only [Equiv.coe_fn_symm_mk]
-  have h_eq : (⟨fold hn (pp, pmap), h_mem⟩ : PauliGroup hn) = foldPauli_toFun hn (pp, pmap) := rfl
-  rw [h_eq]
-  haveI : Nonempty (factored_Pauli n) := sorry --just use id, should be easy but im lazy rn
-  rw [Function.leftInverse_invFun (inj_foldPauli hn)]
 
---this is making me start to doubt the new pauli setup
-lemma PauliGroup.phase_fold_eq {n : ℕ} (hn : 0 < n) {pmap : Fin n → Pauli}
-{pp: pgroup_phases} {h_mem : fold hn (pp, pmap) ∈ PauliGroup hn}
-: PauliGroup.phase hn ⟨fold hn (pp, pmap), h_mem⟩ = pp
-:= by
-  unfold phase
-  simp only [foldPauli_symm_cancel hn h_mem]
--/
-
-lemma pauli_weight_one_contra {n : ℕ} (hn : 0 < n) {E : PauliGroup hn}
-(hpw : pauli_weight hn E ≤ 1)
- (i₁ i₂ : Fin n) (hne : i₁ ≠ i₂): ((PauliGroup.map hn E) i₁ = Pauli_I) ∨ ((PauliGroup.map hn E) i₂ = Pauli_I) := by
-  by_cases heq₁: ((PauliGroup.map hn E) i₁ = Pauli_I)
+lemma pauli_weight_one_contra {n : ℕ} {E : PauliGroup n}
+(hpw : pauli_weight E ≤ 1)
+ (i₁ i₂ : Fin n) (hne : i₁ ≠ i₂): ((PauliGroup.map E) i₁ = Pauli_I) ∨ ((PauliGroup.map E) i₂ = Pauli_I) := by
+  by_cases heq₁: ((PauliGroup.map E) i₁ = Pauli_I)
   · exact Or.inl heq₁
-  by_cases heq₂ : ((PauliGroup.map hn E) i₂ = Pauli_I)
+  by_cases heq₂ : ((PauliGroup.map E) i₂ = Pauli_I)
   · exact Or.inr heq₂
   unfold pauli_weight PauliGroup.map at hpw
-  have hsub: {i₁, i₂} ⊆ ({i | (PauliGroup.map hn E) i ≠ Pauli_I} : Finset (Fin n))
+  have hsub: {i₁, i₂} ⊆ ({i | (PauliGroup.map E) i ≠ Pauli_I} : Finset (Fin n))
   · rintro x hx
     simp only [Finset.mem_insert, Finset.mem_singleton] at hx
     simp only [ne_eq, Finset.mem_filter, Finset.mem_univ, true_and]
@@ -334,9 +317,9 @@ lemma pauli_weight_one_contra {n : ℕ} (hn : 0 < n) {E : PauliGroup hn}
   rw [Finset.card_eq_two]
   refine ⟨i₁, i₂, hne, rfl⟩
 
-lemma pauli_only_X_contra_Y {n : ℕ} (hn : 0 < n) {E : PauliGroup hn}
-(hpo : pauli_only hn E Pauli_X) {i : Fin n} :
-  (PauliGroup.map hn E) i ≠ Pauli_Y := by
+lemma pauli_only_X_contra_Y {n : ℕ} {E : PauliGroup n}
+(hpo : pauli_only E Pauli_X) {i : Fin n} :
+  (PauliGroup.map E) i ≠ Pauli_Y := by
   unfold pauli_only at hpo
   have hpoi:= hpo i
   unfold PauliGroup.map at hpoi
@@ -344,9 +327,9 @@ lemma pauli_only_X_contra_Y {n : ℕ} (hn : 0 < n) {E : PauliGroup hn}
   · exact fun hf => pgYnepgI (hf.symm.trans hi)
   exact fun hf => pgXnepgY (hx.symm.trans hf)
 
-lemma pauli_only_X_contra_Z {n : ℕ} (hn : 0 < n) {E : PauliGroup hn}
-(hpo : pauli_only hn E Pauli_X) {i : Fin n} :
-  (PauliGroup.map hn E) i ≠ Pauli_Z := by
+lemma pauli_only_X_contra_Z {n : ℕ} {E : PauliGroup n}
+(hpo : pauli_only E Pauli_X) {i : Fin n} :
+  (PauliGroup.map E) i ≠ Pauli_Z := by
   unfold pauli_only at hpo
   have hpoi:= hpo i
   unfold PauliGroup.map at hpoi
@@ -355,128 +338,88 @@ lemma pauli_only_X_contra_Z {n : ℕ} (hn : 0 < n) {E : PauliGroup hn}
   exact fun hf => pgXnepgZ (hx.symm.trans hf)
 
 
-theorem three_qub_corrects_one_x : Qcode.unique_corrects_P_error_of_weight (by norm_num) three_qubit_encode 1
+theorem three_qub_corrects_one_x : Qcode.unique_corrects_P_error_of_weight three_qubit_encode 1
  ⟨pX, by simp[Pauli]⟩ := by
   intros E₁ E₂ only_E₁ only_E₂ p1_E₁ p1_E₂ hW₁ hW₂ hne
   have h_or :
-    ∀(E : PauliGroup gt0_3),
-    pauli_only gt0_3 E Pauli_X →
-    PauliGroup.phase gt0_3 E = pgphase_1 →
-    pauli_weight gt0_3 E ≤ 1 →
-    E = fold1 gt0_3 ![Pauli_X, Pauli_I, Pauli_I] ∨
-    E = fold1 gt0_3 ![Pauli_I, Pauli_X, Pauli_I] ∨
-    E = fold1 gt0_3 ![Pauli_I, Pauli_I, Pauli_X] ∨
-    E = Pauli1 gt0_3 := by
+    ∀ E,
+    pauli_only E Pauli_X →
+    PauliGroup.phase E = pgphase_1 →
+    pauli_weight E ≤ 1 →
+    E = fold1 ![Pauli_X, Pauli_I, Pauli_I] ∨
+    E = fold1 ![Pauli_I, Pauli_X, Pauli_I] ∨
+    E = fold1 ![Pauli_I, Pauli_I, Pauli_X] ∨
+    E = Pauli1 := by
       intro E
-      let pm := PauliGroup.map gt0_3 E
-      let pp := PauliGroup.phase gt0_3 E
+      let pm := PauliGroup.map E
+      let pp := PauliGroup.phase E
       intro hpo hpp hpw
       rcases (Pauli_cases (pm 0)) with h0x | hf | hf | h0i <;>
       rcases (Pauli_cases (pm 1)) with h1x | hf | hf | h1i
-      · rcases (pauli_weight_one_contra gt0_3 hpw 0 1 (by norm_num)) with h0I | h1I
+      · rcases (pauli_weight_one_contra hpw 0 1 (by norm_num)) with h0I | h1I
         · apply absurd (h0x.symm.trans h0I) pgXnepgI
         apply absurd (h1x.symm.trans h1I) pgXnepgI
       all_goals rcases (Pauli_cases (pm 2)) with h2x | hf | hf | h2i
-      all_goals try apply absurd hf (pauli_only_X_contra_Y gt0_3 hpo)
-      all_goals try apply absurd hf (pauli_only_X_contra_Z gt0_3 hpo)
-      · rcases (pauli_weight_one_contra gt0_3 hpw 0 2 (by simp)) with h0I | h1I
+      all_goals try apply absurd hf (pauli_only_X_contra_Y hpo)
+      all_goals try apply absurd hf (pauli_only_X_contra_Z hpo)
+      · rcases (pauli_weight_one_contra hpw 0 2 (by simp)) with h0I | h1I
         · apply absurd (h0x.symm.trans h0I) pgXnepgI
         apply absurd (h2x.symm.trans h1I) pgXnepgI
       · left
-        apply Equiv.injective (foldPauli gt0_3).symm
-        ext : 1
+        apply Equiv.injective foldPauli.symm
+        ext1
         · simp only [Equiv.symm_apply_apply]
           congr
         simp only [Equiv.symm_apply_apply]
-        ext x : 1
+        ext1 x
         fin_cases x <;> assumption
-      · rcases (pauli_weight_one_contra gt0_3 hpw 1 2 (by simp)) with h1I | h2I
+      · rcases (pauli_weight_one_contra hpw 1 2 (by simp)) with h1I | h2I
         · apply absurd (h1x.symm.trans h1I) pgXnepgI
         apply absurd (h2x.symm.trans h2I) pgXnepgI
-      all_goals sorry
-      /-
-      unfold PauliGroup
-      rintro ⟨x, hx⟩ hpo hpp hpw
-      have hfold:= Finset.mem_image.1 hx
-      simp only [Prod.exists, Subtype.exists] at hfold
-      rcases hfold with ⟨xphase, ⟨hpphase, ⟨xmap, ⟨_, rfl⟩⟩⟩⟩
-      unfold fold1
-      rw [PauliGroup.phase_fold_eq] at hpp
-      rcases (Pauli_cases (xmap 0)) with h0x | hf | hf | h0i <;>
-      rcases (Pauli_cases (xmap 1)) with h1x | hf | hf | h1i
-      · rcases (pauli_weight_one_contra gt0_3 hpw 0 1 (by norm_num)) with h0I | h1I
-        · apply absurd (h0x.symm.trans h0I) pgXnepgI
-        apply absurd (h1x.symm.trans h1I) pgXnepgI
-      all_goals rcases (Pauli_cases (xmap 2)) with h2x | hf | hf | h2i
-      all_goals try apply absurd hf (pauli_only_X_contra_Y gt0_3 hpo)
-      all_goals try apply absurd hf (pauli_only_X_contra_Z gt0_3 hpo)
-      · rcases (pauli_weight_one_contra gt0_3 hpw 0 2 (by simp)) with h0I | h2I
-        · apply absurd (h0x.symm.trans h0I) pgXnepgI
-        apply absurd (h2x.symm.trans h2I) pgXnepgI
-      · left
-        congr 2
-        ext i : 2
-        · rw [hpp]
-          unfold pgphase_1 phase_id
-          simp only
-          rw [phase.mk.injEq]
-          rfl
-        fin_cases i <;> assumption
-      rcases (pauli_weight_one_contra gt0_3 hpw 1 2 (by simp)) with h1I | h2I
-      · apply absurd (h1x.symm.trans h1I) pgXnepgI
-      apply absurd (h2x.symm.trans h2I) pgXnepgI
-      · right ; left
-        congr 2
-        ext i : 2
-        · rw [hpp]
-          unfold pgphase_1 phase_id
-          simp only
-          rw [phase.mk.injEq]
-          rfl
-        fin_cases i <;> assumption
-      · right ; right; left
-        congr 2
-        ext i : 2
-        · rw [hpp]
-          unfold pgphase_1 phase_id
-          simp only
-          rw [phase.mk.injEq]
-          rfl
-        fin_cases i <;> assumption
-      · right ; right; right
-        unfold Pauli1
-        congr 2
-        rw [←(foldPauli1 gt0_3)]
-        congr
-        ext i : 2
-        fin_cases i <;> simp only <;> congr <;> assumption
-        -/
+      · apply Or.inr (Or.inl _)
+        apply Equiv.injective foldPauli.symm
+        ext1
+        · simp only [Equiv.symm_apply_apply]
+          congr
+        simp only [Equiv.symm_apply_apply]
+        ext1 x
+        fin_cases x <;> assumption
+      · apply (Or.inr (Or.inr (Or.inl _)))
+        apply Equiv.injective foldPauli.symm
+        ext1
+        · simp only [Equiv.symm_apply_apply]
+          congr
+        simp only [Equiv.symm_apply_apply]
+        ext1 x
+        fin_cases x <;> assumption
+      · apply (Or.inr (Or.inr (Or.inr _))) --wait, not actually sure how to do this
+        sorry
   rcases h_or E₁ only_E₁ p1_E₁ hW₁ with rfl | rfl | rfl | rfl
   all_goals rcases h_or E₂ only_E₂ p1_E₂ hW₂ with rfl | rfl | rfl | rfl
   all_goals rw [QCode.distinguishes_of_exists_dist_stab]
   · contradiction --case where errors are identical
-  · exists ⟨fold1 gt0_3 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩
+  · exists ⟨fold1 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩
     simp [pphase_XII_IZZ, pphase_IXI_IZZ]
     norm_num
-  · exists ⟨fold1 gt0_3 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩
+  · exists ⟨fold1 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩
     simp [pphase_XII_IZZ, pphase_IIX_IZZ]
     norm_num
-  · exists ⟨fold1 gt0_3 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩
+  · exists ⟨fold1 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩
     simp [pphase_XII_ZZI]
     sorry
   all_goals admit --oops i need to rewrite this because i forgot the i case
   /-
-  · exists ⟨fold1 gt0_3 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩
+  · exists ⟨fold1 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩
     simp [pphase_IXI_IZZ, pphase_XII_IZZ]
     norm_num
   · contradiction
-  · exists ⟨fold1 gt0_3 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩
+  · exists ⟨fold1 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩
     simp [pphase_IXI_ZZI, pphase_IIX_ZZI]
     norm_num
-  · exists ⟨fold1 gt0_3 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩
+  · exists ⟨fold1 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩
     simp [pphase_IIX_IZZ, pphase_XII_IZZ]
     norm_num
-  · exists ⟨fold1 gt0_3 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩
+  · exists ⟨fold1 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩
     simp [pphase_IXI_ZZI, pphase_IIX_ZZI]
     norm_num
   · contradiction
