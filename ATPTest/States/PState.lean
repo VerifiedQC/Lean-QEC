@@ -69,11 +69,19 @@ theorem kron_mul_kron {n₁ n₂ : ℕ} (ψ₁ : PState n₁) (ψ₂ : PState n�
   rw [Ket.mk.injEq]
   simp [PState.kron, unitary_nkron, kron_prod]
 
-noncomputable def pstate_n_kron {n : ℕ} (hn : 0 < n) (m : Fin n → PState 1) : PState n :=
+/-
+The trivial pure state, on 0 qubits, or a vector space with dimension 1
+-/
+def PState.trivial : PState 0 where
+  vec := fun _ => 1
+  normalized' := by
+    rw [Fintype.sum_subsingleton _ BitVec.nil]
+    norm_num
+
+noncomputable def pstate_n_kron {n : ℕ} (m : Fin n → PState 1) : PState n :=
 match n with
-| 0 => (by contradiction)
-| 1 => (m 0)
-| n₀+2 => ((pstate_n_kron (by norm_num) (λ (x : Fin (n₀+1)) => m ⟨x.val + 1, by simp [x.isLt]⟩)).kron (m 0))
+| 0 => PState.trivial
+| n₀+1 => ((pstate_n_kron (λ (x : Fin n₀) => m ⟨x.val + 1, by simp [x.isLt]⟩)).kron (m 0))
 
 noncomputable section
 open ComplexConjugate
