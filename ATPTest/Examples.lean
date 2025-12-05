@@ -393,7 +393,7 @@ theorem three_qub_corrects_one_x : Qcode.unique_corrects_P_error_of_weight (by n
       · rcases (pauli_weight_one_contra gt0_3 hpw 1 2 (by simp)) with h1I | h2I
         · apply absurd (h1x.symm.trans h1I) pgXnepgI
         apply absurd (h2x.symm.trans h2I) pgXnepgI
-
+      all_goals sorry
       /-
       unfold PauliGroup
       rintro ⟨x, hx⟩ hpo hpp hpw
