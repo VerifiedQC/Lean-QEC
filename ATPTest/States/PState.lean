@@ -70,7 +70,8 @@ theorem kron_mul_kron {n₁ n₂ : ℕ} (ψ₁ : PState n₁) (ψ₂ : PState n�
   simp [PState.kron, unitary_nkron, kron_prod]
 
 /-
-The trivial pure state, on 0 qubits, or a vector space with dimension 1
+The trivial pure state, on 0 qubits, or a vector space with dimension 1.
+Notably, this is not a singleton type due to global phase.
 -/
 def PState.trivial : PState 0 where
   vec := fun _ => 1

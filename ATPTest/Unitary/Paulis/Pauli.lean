@@ -130,3 +130,15 @@ lemma pphase_id_left (U : PauliGroup 1) :
   pauli_pauli_phase U pg1 = pgphase_1 := by
   rw [pauli_pauli_phase_symm]
   exact pphase_id_right
+
+lemma pauli_mul {n : ℕ} {U₁ U₂ : 𝐔ₙ[n]}
+ (hP₁ : U₁ ∈ PauliGroup n) (hP₂ : U₂ ∈ PauliGroup n) :
+ U₁ * U₂ ∈ PauliGroup n := by sorry
+
+--maybe tedious proof?
+lemma pauli_inv {n : ℕ} {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup n)
+  : U⁻¹ ∈ PauliGroup n := by sorry
+
+--want to prove this one soon
+lemma pauli_commute_or_anticommute {n : ℕ}{U₁ U₂ : 𝐔ₙ[n]}
+  (hU₁ : U₁ ∈ PauliGroup n) (hU₂ : U₂ ∈ PauliGroup n) : U₁ * U₂ = U₂ * U₁ ∨ U₁ * U₂ = - U₂ * U₁ := sorry
