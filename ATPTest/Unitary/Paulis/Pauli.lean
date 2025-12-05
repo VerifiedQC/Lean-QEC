@@ -65,19 +65,70 @@ def pauli_weight (U : PauliGroup hn) : ℕ :=
 def pauli_only (U : PauliGroup hn) (P : Pauli) :=
   ∀ x, ((PauliGroup.map hn U) x = Pauli_I ∨ (PauliGroup.map hn U) x = P)
 
-def commute (P P' : Pauli) := P = Pauli_I || P' = Pauli_I || P = P'
+def commute₁ (P P' : Pauli) := P = Pauli_I || P' = Pauli_I || P = P'
 
-def pauli1_pauli1_phase (P P' : Pauli) : pgroup_phases :=
-  if commute P P' then 1 else pgphase_n1
+lemma commute₁_commute P P' :
+  commute₁ P P' ↔ commute₁ P' P := by
+  rcases (Pauli_cases P) with rfl | rfl | rfl | rfl
+  all_goals rcases (Pauli_cases P') with rfl | rfl | rfl | rfl
+  all_goals simp [commute₁]
+  all_goals tauto
 
-abbrev ith_anticommute (U₁ U₂ : PauliGroup hn) (i : Fin n) : Bool :=
-  !(commute (PauliGroup.map hn U₁ i) (PauliGroup.map hn U₂ i))
+lemma commute₁_rfl P : commute₁ P P := by simp [commute₁]
 
-def count_anticommutes (U₁ U₂ : PauliGroup hn) : ℕ :=
-  (Finset.univ.filter (fun i => ith_anticommute hn U₁ U₂ i)).card
+/-
+abbrev commuteᵢ (m m' : Fin n -> Pauli) (i : Fin n) : Bool :=
+  commute₁ (m i) (m' i)
+
+lemma commuteᵢ_commute (m m' : Fin n -> Pauli) i :
+  commuteᵢ m m' i ↔ commuteᵢ m' m i := by apply commute₁_commute
+
+lemma commuteᵢ_xx (m : Fin n -> Pauli) i :
+  commuteᵢ m m i := by apply commute_rfl
+
+def count_anticommutes (m m' : Fin n -> Pauli) : ℕ :=
+  (Finset.univ.filter (fun i => !(commuteᵢ m m' i))).card
+
+lemma count_anticommutes_commute (m m' : Fin n -> Pauli) :
+  count_anticommutes m m' = count_anticommutes m' m := by
+  sorry
+
+lemma count_anticommutes_xx (P : Fin n -> Pauli) :
+  count_anticommutes P P = 0 := by
+  /-
+  rw [count_anticommutes]
+  rw [Finset.filter_false_of_mem]
+  simp_all
+  intros i _
+  simp_all
+  apply commuteᵢ_xx
+  -/
+  sorry
+  -/
+
+def commuteₘ {n} (m m' : Fin n -> Pauli) :=
+  match n with
+  | 0 => true
+  | _ + 1 =>
+    commute₁ (m 0) (m' 0) ^^ commuteₘ (Fin.tail m) (Fin.tail m)
+
+lemma commuteₘ_cat {n₁ n₂}
+  (m₁ m₁' : Fin n₁ -> Pauli)
+  (m₂ m₂' : Fin n₂ -> Pauli) :
+  -- TODO reverse/cast might be needed?
+  commuteₘ (Fin.append m₁ m₂) (Fin.append m₁ m₂) =
+  commuteₘ m₁ m₁' ^^ commuteₘ m₂ m₂' := by
+  sorry
+
+def commute (U₁ U₂ : PauliGroup hn) :=
+  commuteₘ (PauliGroup.map hn U₁) (PauliGroup.map hn U₂)
 
 def pauli_pauli_phase (U₁ U₂ : PauliGroup hn) : pgroup_phases :=
-  if count_anticommutes hn U₁ U₂ % 2 == 0 then pgphase_1 else pgphase_n1
+  if commute hn U₁ U₂ then pgphase_1 else pgphase_n1
+
+lemma pauli_pauli_phase_commute (P₁ P₂ : PauliGroup hn) :
+  pauli_pauli_phase hn P₁ P₂ = pauli_pauli_phase hn P₂ P₁ := by
+  sorry
 
 lemma pauli_pauli_phase_kron {n₁ n₂ : ℕ}
   (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
@@ -86,7 +137,14 @@ lemma pauli_pauli_phase_kron {n₁ n₂ : ℕ}
   (pauli_pauli_phase hn₁ U₁ U₁') * (pauli_pauli_phase hn₂ U₂ U₂') =
   (pauli_pauli_phase (Nat.add_pos_left hn₁ n₂)
     (kronOfPauli hn₁ hn₂ U₁ U₂)) (kronOfPauli hn₁ hn₂ U₁' U₂') := by
-  sorry
+  rcases n₂ with _ | n'
+  · contradiction
+  induction n' with
+  | zero =>
+    sorry
+  | succ n'' IH =>
+    rw [pauli_pauli_phase]
+    sorry
 
 lemma pauli_pauli_phase_symm (U₁ U₂ : PauliGroup hn) :
   pauli_pauli_phase hn U₁ U₂ = pauli_pauli_phase hn U₂ U₁ := by
