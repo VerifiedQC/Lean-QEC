@@ -64,14 +64,14 @@ def pauli_only (U : PauliGroup n) (P : Pauli) :=
 
 def commute₁ (P P' : Pauli) := P = Pauli_I || P' = Pauli_I || P = P'
 
-lemma commute₁_commute P P' :
+lemma commute₁_sym P P' :
   commute₁ P P' ↔ commute₁ P' P := by
   rcases (Pauli_cases P) with rfl | rfl | rfl | rfl
   all_goals rcases (Pauli_cases P') with rfl | rfl | rfl | rfl
   all_goals simp [commute₁]
   all_goals tauto
 
-lemma commute₁_rfl P : commute₁ P P := by simp [commute₁]
+lemma commute₁_xx P : commute₁ P P := by simp [commute₁]
 
 def anticommuteₘ {n} (m m' : Fin n -> Pauli) :=
   match n with
@@ -124,6 +124,28 @@ lemma anticommuteₘ_cat {n₁ n₂}
     simp [cast_fin_append_iter1]
     simp [IH]
 
+lemma anticommuteₘ_sym (m₁ m₂ : Fin n -> Pauli) :
+  anticommuteₘ m₁ m₂ = anticommuteₘ m₂ m₁ := by
+  induction n with
+  | zero => simp [anticommuteₘ]
+  | succ n₀ IH =>
+    simp [anticommuteₘ]
+    rw [IH]
+    suffices: commute₁ (m₁ 0) (m₂ 0) = commute₁ (m₂ 0) (m₁ 0)
+    · rw [this]
+    rw [Bool.eq_iff_iff]
+    rw [commute₁_sym]
+
+lemma anticommuteₘ_xx (m : Fin n -> Pauli) :
+  anticommuteₘ m m = false := by
+  induction n with
+  | zero =>
+    simp [anticommuteₘ]
+  | succ n₀ IH =>
+    simp [anticommuteₘ]
+    simp [IH]
+    rw [commute₁_xx]
+
 def anticommute (U₁ U₂ : PauliGroup n) :=
   anticommuteₘ (PauliGroup.map U₁) (PauliGroup.map U₂)
 
@@ -152,12 +174,18 @@ lemma anticommute_kron {n₁ n₂}
   rw [anticommuteₘ_cat]
   rw [Bool.xor_comm]
 
+lemma anticommute_sym (U₁ U₂ : PauliGroup n) :
+  anticommute U₁ U₂ = anticommute U₂ U₁ := by
+  unfold anticommute
+  rw [anticommuteₘ_sym]
+
+lemma anticommute_xx (P : PauliGroup n) :
+  anticommute P P = false := by
+  unfold anticommute
+  rw [anticommuteₘ_xx]
+
 def pauli_pauli_phase (U₁ U₂ : PauliGroup n) : pgroup_phases :=
   if anticommute U₁ U₂ then pgphase_n1 else pgphase_1
-
-lemma pauli_pauli_phase_commute (P₁ P₂ : PauliGroup n) :
-  pauli_pauli_phase P₁ P₂ = pauli_pauli_phase P₂ P₁ := by
-  sorry
 
 lemma pauli_pauli_phase_kron {n₁ n₂ : ℕ}
   (U₁ U₁' : PauliGroup n₁)
@@ -171,12 +199,14 @@ lemma pauli_pauli_phase_kron {n₁ n₂ : ℕ}
   all_goals rcases (anticommute U₂ U₂') with Ht₂ | Hf₂
   all_goals simp
 
-lemma pauli_pauli_phase_symm (U₁ U₂ : PauliGroup n) :
-  pauli_pauli_phase U₁ U₂ = pauli_pauli_phase U₂ U₁ := by
-  sorry
+lemma pauli_pauli_phase_symm (P₁ P₂ : PauliGroup n) :
+  pauli_pauli_phase P₁ P₂ = pauli_pauli_phase P₂ P₁ := by
+  unfold pauli_pauli_phase
+  rw [anticommute_sym]
 
 lemma pauli_pauli_phase_self (U : PauliGroup n) :
-  pauli_pauli_phase U U = pgphase_1 := by admit
+  pauli_pauli_phase U U = pgphase_1 := by
+  simp [pauli_pauli_phase, anticommute_xx]
 
 def pgX := foldPauli (pgphase_1, fun (_ : Fin 1) => Pauli_X)
 def pgY := foldPauli (pgphase_1, fun (_ : Fin 1) => Pauli_X)
