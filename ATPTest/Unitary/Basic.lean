@@ -43,18 +43,18 @@ def unitary_nkron {n₁ n₂ : ℕ} (a : 𝐔ₙ[n₁]) (b : 𝐔ₙ[n₂]) : �
 
 notation a:60 " ⊗ₙ " b:60 => unitary_nkron a b
 
-noncomputable def unitary_n_nkron {n : ℕ} (hn : 0 < n) (m : Fin n → 𝐔ₙ[1]) : 𝐔ₙ[n] :=
+noncomputable def unitary_n_nkron {n : ℕ} (m : Fin n → 𝐔ₙ[1]) : 𝐔ₙ[n] :=
 match n with
-| 0 => by contradiction
-| 1 => (m 0)
-| n₀+2 => (@unitary_nkron (n₀+1) 1 (unitary_n_nkron (by norm_num) (λ (x : Fin (n₀+1)) => m ⟨x.val + 1, by simp [x.isLt]⟩)) (m 0))
+| 0 => 1
+| n₀+1 => (unitary_nkron (unitary_n_nkron (λ (x : Fin n₀) => m ⟨x.val + 1, by simp [x.isLt]⟩)) (m 0))
+
 
 def unitaries_cat {l₁ l₂ n : ℕ} (m₁ : Fin l₁ → 𝐔ₙ[n]) (m₂ : Fin l₂ → 𝐔ₙ[n]) : Fin (l₁ + l₂) → 𝐔ₙ[n] :=
   fun x => if hle : x < l₁ then (m₁ ⟨x.1, hle⟩)
   else (m₂ ⟨x.1 - l₁, by push_neg at hle; apply Nat.sub_lt_right_of_lt_add hle; simp_rw [add_comm]; exact x.2⟩)
 
-theorem unitaries_cat_nkron {l₁ l₂} (hl₁ : 0 < l₁) (hl₂ : 0 < l₂) (m₁ : Fin l₁ → 𝐔ₙ[1]) (m₂ : Fin l₂ → 𝐔ₙ[1]) :
-  (unitary_n_nkron hl₁ m₁) ⊗ₙ (unitary_n_nkron hl₂ m₂) = unitary_n_nkron (Nat.add_pos_left hl₁ _) (unitaries_cat m₁ m₂) := sorry
+theorem unitaries_cat_nkron {l₁ l₂} (m₁ : Fin l₁ → 𝐔ₙ[1]) (m₂ : Fin l₂ → 𝐔ₙ[1]) :
+  (unitary_n_nkron m₁) ⊗ₙ (unitary_n_nkron m₂) = unitary_n_nkron (unitaries_cat m₁ m₂) := sorry
 
 lemma normalize_dagger {a₁ b₁ a₂ b₂}
   (m : Matrix (BitVec a₁ × BitVec b₁) (BitVec a₂ × BitVec b₂) ℂ):
@@ -70,15 +70,13 @@ lemma unitary_herm_of_kron_herm {n₁ n₂ : ℕ} {M₁ : 𝐔ₙ[n₁]} {M₂ :
   rw [Matrix.conjTranspose_kronecker]
   rw [hM₁, hM₂]
 
-def herm_of_qubit_tensor_herm {n : ℕ} (hn : 0 < n) (m : Fin n → 𝐔ₙ[1]) (Hm : ∀ x, Matrix.IsHermitian (m x).1) :
-  Matrix.IsHermitian (unitary_n_nkron hn m).1 := by
+def herm_of_qubit_tensor_herm {n : ℕ} (m : Fin n → 𝐔ₙ[1]) (Hm : ∀ x, Matrix.IsHermitian (m x).1) :
+  Matrix.IsHermitian (unitary_n_nkron m).1 := by
   induction n with
-  | zero => contradiction
-  | succ n ih => cases n
-                 · simp [unitary_n_nkron, (Hm 0)]
-                 · rw [unitary_n_nkron]
-                   apply unitary_herm_of_kron_herm (ih _ _ _) (Hm 0)
-                   exact fun x => (Hm ⟨x+1, by norm_num⟩)
+  | zero => exact Matrix.isHermitian_one
+  | succ n ih => rw [unitary_n_nkron]
+                 apply unitary_herm_of_kron_herm (ih _ _) (Hm 0)
+                 exact fun x => (Hm ⟨x+1, by norm_num⟩)
 
 noncomputable section
 
