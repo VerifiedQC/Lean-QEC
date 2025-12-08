@@ -56,7 +56,6 @@ lemma qub_one_Z : qub_one.apply pZ = Ket.phase_mul qub_one ⟨-1, by simp⟩ := 
 
 abbrev fold1 {n} (t : Fin n → Pauli) := foldPauli (1, t)
 
--- def IXI_pg := foldPauli 1 (pZ, p1, pZ)
 abbrev IXI_pg := fold1 ![Pauli_I, Pauli_X, Pauli_I]
 abbrev XII_pg := fold1 ![Pauli_X, Pauli_I, Pauli_I]
 abbrev IIX_pg := fold1 ![Pauli_I, Pauli_I, Pauli_X]
@@ -155,14 +154,7 @@ lemma ZZI_in_stab : (fold1 ![Pauli_Z, Pauli_Z, Pauli_I]).1 ∈ stab := by
     simp_rw [hz, ho]
   simp only [Finset.coe_mem]
 
-/--
-  The Pauli matrices X and I are not equal to each other
 
-  PROVIDED SOLUTION:
-  For these matrices to be unequal, it suffices that they differ in some
-  index. X and I differ in the 0th row and the 0th column, so check those values
-  to show they are unequal.
--/
 @[simp] lemma pgXnepgI : Pauli_X ≠ Pauli_I := by
   -- To show that Pauli_X ≠ Pauli_I, we can compare their entries. The (0,0) entry of Pauli_X is 0, while the (0,0) entry of Pauli_I is 1. Since these entries are different, the matrices cannot be equal.
   have h_diff : (Pauli_X.val 0 0) ≠ (Pauli_I.val 0 0) := by
@@ -393,34 +385,54 @@ theorem three_qub_corrects_one_x : Qcode.unique_corrects_P_error_of_weight three
         ext1 x
         fin_cases x <;> assumption
       · apply (Or.inr (Or.inr (Or.inr _))) --wait, not actually sure how to do this
-        sorry
+        rw [Pauli1_unfold]
+        apply Equiv.injective foldPauli.symm
+        ext1
+        · simp only [Equiv.symm_apply_apply]
+          congr
+        simp only [Equiv.symm_apply_apply]
+        ext1 x
+        fin_cases x <;> assumption
   rcases h_or E₁ only_E₁ p1_E₁ hW₁ with rfl | rfl | rfl | rfl
   all_goals rcases h_or E₂ only_E₂ p1_E₂ hW₂ with rfl | rfl | rfl | rfl
   all_goals rw [QCode.distinguishes_of_exists_dist_stab]
   · contradiction --case where errors are identical
-  · exists ⟨fold1 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩
+  · exists ⟨fold1 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩ --XII, IXI
     simp [pphase_XII_IZZ, pphase_IXI_IZZ]
     norm_num
-  · exists ⟨fold1 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩
+  · exists ⟨fold1 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩ --XII, IIX
     simp [pphase_XII_IZZ, pphase_IIX_IZZ]
     norm_num
-  · exists ⟨fold1 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩
-    simp [pphase_XII_ZZI]
-    sorry
-  all_goals admit --oops i need to rewrite this because i forgot the i case
-  /-
-  · exists ⟨fold1 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩
-    simp [pphase_IXI_IZZ, pphase_XII_IZZ]
+  · exists ⟨fold1 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩ --XII, III
+    simp [pphase_XII_ZZI, pphase_pauli1]
+    norm_num
+  · exists ⟨fold1 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩ --IXI, XII
+    simp [pphase_XII_IZZ, pphase_IXI_IZZ]
     norm_num
   · contradiction
-  · exists ⟨fold1 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩
+  · exists ⟨fold1 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩ --IXI, IIX
     simp [pphase_IXI_ZZI, pphase_IIX_ZZI]
     norm_num
-  · exists ⟨fold1 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩
-    simp [pphase_IIX_IZZ, pphase_XII_IZZ]
+  · exists ⟨fold1 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩ --IXI, III
+    simp [pphase_IXI_ZZI, pphase_pauli1]
     norm_num
-  · exists ⟨fold1 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩
+  · exists ⟨fold1 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩ --XII, IIX
+    simp [pphase_XII_ZZI, pphase_IIX_ZZI]
+    norm_num
+  · exists ⟨fold1 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩ --IIX, IXI
     simp [pphase_IXI_ZZI, pphase_IIX_ZZI]
     norm_num
   · contradiction
-  -/
+  · exists ⟨fold1 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩ --IIX, III
+    simp [pphase_IIX_IZZ, pphase_pauli1]
+    norm_num
+  · exists ⟨fold1 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩ --IIX, III
+    simp [pphase_XII_ZZI, pphase_pauli1]
+    norm_num
+  · exists ⟨fold1 ![Pauli_Z, Pauli_Z, Pauli_I], ZZI_in_stab⟩ --IXI, III
+    simp [pphase_IXI_ZZI, pphase_pauli1]
+    norm_num
+  · exists ⟨fold1 ![Pauli_I, Pauli_Z, Pauli_Z], IZZ_in_stab⟩ --IIX, III
+    simp [pphase_IIX_IZZ, pphase_pauli1]
+    norm_num
+  contradiction

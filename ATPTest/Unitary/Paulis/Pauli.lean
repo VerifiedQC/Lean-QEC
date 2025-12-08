@@ -14,7 +14,7 @@ open Function
 noncomputable section
 
 -- variable {l : ℕ} (m_test : Fin l → Pauli)
-variable {n : ℕ} (hn : 0 < n) (m : Fin n → Pauli)
+variable {n : ℕ} (m : Fin n → Pauli)
 
 def unfolded1 := (pgphase_1, (fun (_ : Fin n) => Pauli_I))
 
@@ -43,6 +43,8 @@ lemma mem_PauliGroup_id : 1 ∈ PauliGroup n := by
   · apply foldPauli1
 
 def Pauli1 : PauliGroup n := ⟨1, mem_PauliGroup_id⟩
+
+lemma Pauli1_unfold : Pauli1 = foldPauli (pgphase_1, (fun (_ : Fin n) => Pauli_I)) := sorry
 
 def PauliGroup.map (P : PauliGroup n) : (Fin n → Pauli) :=
   (foldPauli.symm P).2
