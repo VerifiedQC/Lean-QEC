@@ -64,35 +64,151 @@ def pauli_weight (U : PauliGroup n) : ℕ :=
 def pauli_only (U : PauliGroup n) (P : Pauli) :=
   ∀ x, ((PauliGroup.map U) x = Pauli_I ∨ (PauliGroup.map U) x = P)
 
-def commute (P P' : Pauli) := P = Pauli_I || P' = Pauli_I || P = P'
+def commute₁ (P P' : Pauli) := P = Pauli_I || P' = Pauli_I || P = P'
 
-def pauli1_pauli1_phase (P P' : Pauli) : pgroup_phases :=
-  if commute P P' then 1 else pgphase_n1
+lemma commute₁_sym P P' :
+  commute₁ P P' ↔ commute₁ P' P := by
+  rcases (Pauli_cases P) with rfl | rfl | rfl | rfl
+  all_goals rcases (Pauli_cases P') with rfl | rfl | rfl | rfl
+  all_goals simp [commute₁]
+  all_goals tauto
 
-abbrev ith_anticommute (U₁ U₂ : PauliGroup n) (i : Fin n) : Bool :=
-  !(commute (PauliGroup.map U₁ i) (PauliGroup.map U₂ i))
+lemma commute₁_xx P : commute₁ P P := by simp [commute₁]
 
-def count_anticommutes (U₁ U₂ : PauliGroup n) : ℕ :=
-  (Finset.univ.filter (fun i => ith_anticommute U₁ U₂ i)).card
+def anticommuteₘ {n} (m m' : Fin n -> Pauli) :=
+  match n with
+  | 0 => false
+  | _ + 1 =>
+    (!commute₁ (m 0) (m' 0)) ^^ anticommuteₘ (Fin.tail m) (Fin.tail m')
 
-def pauli_pauli_phase (U₁ U₂ : PauliGroup n) : pgroup_phases :=
-  if count_anticommutes U₁ U₂ % 2 == 0 then pgphase_1 else pgphase_n1
+lemma cast_fin_append_iter1 {t n₁ n₂} (m₁ : Fin (n₁ + 1) -> t) (m₂ : Fin n₂ -> t) :
+  (cast_fin_append m₁ m₂) = Fin.cons (m₁ 0) (cast_fin_append (Fin.tail m₁) m₂) := by
+  unfold cast_fin_append
+  ext a
+  rcases a with _ | a₀
+  · simp [Fin.append, Fin.addCases, Fin.castLT]
+  by_cases H: (a₀ < n₁)
+  · simp [Fin.append, Fin.addCases, Fin.castLT]
+    rw [dif_pos] <;> try assumption
+    simp [Fin.cons]
+    rw [dif_pos] <;> try assumption
+    simp [Fin.tail]
+  simp [Fin.append, Fin.addCases, Fin.castLT]
+  rw [dif_neg] <;> try assumption
+  simp [Fin.cons]
+  intro H
+  contradiction
 
-lemma pauli_pauli_phase_kron {n₁ n₂ : ℕ}
-  (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
+lemma cast_fin_append_iter2 {t n₂} (m₁ : Fin 0 -> t) (m₂ : Fin (n₂ + 1) -> t) :
+  (cast_fin_append m₁ m₂) = Fin.cons (m₂ 0) (cast_fin_append m₁ (Fin.tail m₂)) := by
+  unfold cast_fin_append
+  ext a
+  rcases a with _ | a₀
+  · simp [Fin.append, Fin.addCases]
+  simp [Fin.append, Fin.addCases]
+
+lemma anticommuteₘ_cat {n₁ n₂}
+  (m₁ m₁' : Fin n₁ -> Pauli)
+  (m₂ m₂' : Fin n₂ -> Pauli) :
+  anticommuteₘ (cast_fin_append m₁ m₂) (cast_fin_append m₁' m₂') =
+  (anticommuteₘ m₁ m₁' ^^ anticommuteₘ m₂ m₂') := by
+  induction n₁ with
+  | zero =>
+    simp [anticommuteₘ]
+    -- this is terrible
+    induction n₂ with
+    | zero => simp [anticommuteₘ]
+    | succ n₀ IH =>
+      simp [anticommuteₘ, cast_fin_append, Fin.append, Fin.addCases]
+      simp [cast_fin_append_iter2, IH]
+  | succ n₀ IH =>
+    simp [anticommuteₘ]
+    simp [cast_fin_append_iter1]
+    simp [IH]
+
+lemma anticommuteₘ_sym (m₁ m₂ : Fin n -> Pauli) :
+  anticommuteₘ m₁ m₂ = anticommuteₘ m₂ m₁ := by
+  induction n with
+  | zero => simp [anticommuteₘ]
+  | succ n₀ IH =>
+    simp [anticommuteₘ]
+    rw [IH]
+    suffices: commute₁ (m₁ 0) (m₂ 0) = commute₁ (m₂ 0) (m₁ 0)
+    · rw [this]
+    rw [Bool.eq_iff_iff]
+    rw [commute₁_sym]
+
+lemma anticommuteₘ_xx (m : Fin n -> Pauli) :
+  anticommuteₘ m m = false := by
+  induction n with
+  | zero =>
+    simp [anticommuteₘ]
+  | succ n₀ IH =>
+    simp [anticommuteₘ]
+    simp [IH]
+    rw [commute₁_xx]
+
+def anticommute (U₁ U₂ : PauliGroup n) :=
+  anticommuteₘ (PauliGroup.map U₁) (PauliGroup.map U₂)
+
+lemma map_kron_of_Pauli {n₁ n₂} -- (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
+  (P₁ : PauliGroup n₁) (P₂ : PauliGroup n₂) :
+  PauliGroup.map (kronOfPauli P₁ P₂) =
+  cast_fin_append (PauliGroup.map P₂) (PauliGroup.map P₁) := by
+  let P₁f := foldPauli.symm P₁
+  let w₁ := P₁f.1
+  let m₁ := P₁f.2
+  let P₂f := foldPauli.symm P₂
+  let w₂ := P₂f.1
+  let m₂ := P₂f.2
+  rw [kronOfPauli]
+  simp_rw [kron_PaulisE]
+  simp [factored_kron, PauliGroup.map]
+
+lemma anticommute_kron {n₁ n₂}
   (U₁ U₁' : PauliGroup n₁)
   (U₂ U₂' : PauliGroup n₂) :
-  (pauli_pauli_phase  U₁ U₁') * (pauli_pauli_phase U₂ U₂') =
+  anticommute (kronOfPauli U₁ U₂) (kronOfPauli U₁' U₂') =
+  (anticommute U₁ U₁' ^^ anticommute U₂ U₂') := by
+  unfold anticommute
+  rw [map_kron_of_Pauli]
+  rw [map_kron_of_Pauli]
+  rw [anticommuteₘ_cat]
+  rw [Bool.xor_comm]
+
+lemma anticommute_sym (U₁ U₂ : PauliGroup n) :
+  anticommute U₁ U₂ = anticommute U₂ U₁ := by
+  unfold anticommute
+  rw [anticommuteₘ_sym]
+
+lemma anticommute_xx (P : PauliGroup n) :
+  anticommute P P = false := by
+  unfold anticommute
+  rw [anticommuteₘ_xx]
+
+def pauli_pauli_phase (U₁ U₂ : PauliGroup n) : pgroup_phases :=
+  if anticommute U₁ U₂ then pgphase_n1 else pgphase_1
+
+lemma pauli_pauli_phase_kron {n₁ n₂ : ℕ}
+  (U₁ U₁' : PauliGroup n₁)
+  (U₂ U₂' : PauliGroup n₂) :
+  (pauli_pauli_phase U₁ U₁') * (pauli_pauli_phase U₂ U₂') =
   (pauli_pauli_phase
     (kronOfPauli U₁ U₂)) (kronOfPauli U₁' U₂') := by
-  sorry
+  unfold pauli_pauli_phase
+  rw [anticommute_kron]
+  rcases (anticommute U₁ U₁') with Ht | Hf
+  all_goals rcases (anticommute U₂ U₂') with Ht₂ | Hf₂
+  all_goals simp
 
-lemma pauli_pauli_phase_symm (U₁ U₂ : PauliGroup n) :
-  pauli_pauli_phase U₁ U₂ = pauli_pauli_phase U₂ U₁ := by
-  sorry
+lemma pauli_pauli_phase_symm (P₁ P₂ : PauliGroup n) :
+  pauli_pauli_phase P₁ P₂ = pauli_pauli_phase P₂ P₁ := by
+  unfold pauli_pauli_phase
+  rw [anticommute_sym]
 
 lemma pauli_pauli_phase_self (U : PauliGroup n) :
-  pauli_pauli_phase U U = pgphase_1 := by admit
+  pauli_pauli_phase U U = pgphase_1 := by
+  simp [pauli_pauli_phase, anticommute_xx]
 
 def pgX := foldPauli (pgphase_1, fun (_ : Fin 1) => Pauli_X)
 def pgY := foldPauli (pgphase_1, fun (_ : Fin 1) => Pauli_X)
