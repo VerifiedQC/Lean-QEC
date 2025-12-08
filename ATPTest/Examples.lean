@@ -188,106 +188,36 @@ lemma ZZI_in_stab : (fold1 ![Pauli_Z, Pauli_Z, Pauli_I]).1 ∈ stab := by
       simp at this;
   contrapose! h_diff; aesop;
 
+lemma commute₁_XZ : commute₁ Pauli_X Pauli_Z = false := by simp [commute₁]
 
---can i make proving this a tactic?
 lemma pphase_IXI_IZZ : pauli_pauli_phase IXI_pg IZZ_pg = pgphase_n1 := by
-  unfold pauli_pauli_phase
-  have h_anti : count_anticommutes IXI_pg IZZ_pg = 1
-  · unfold count_anticommutes IXI_pg IZZ_pg
-    have h_mem0 : (0 ∉ {i | ith_anticommute IXI_pg IZZ_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h_mem1 : (1 ∈ {i | ith_anticommute IXI_pg IZZ_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h_mem2 : (2 ∉ {i | ith_anticommute IXI_pg IZZ_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h: ({1} : Finset (Fin 3)).card = 1:= by simp
-    convert h
-    ext x
-    fin_cases x <;> simp at * <;> assumption
-  simp [h_anti]
+   simp [pauli_pauli_phase, anticommute, PauliGroup.map,
+   anticommuteₘ, Fin.tail, commute₁]
 
 lemma pphase_XII_IZZ : pauli_pauli_phase XII_pg IZZ_pg = pgphase_1 := by
-  unfold pauli_pauli_phase
-  have comm : count_anticommutes XII_pg IZZ_pg = 0
-  · unfold count_anticommutes XII_pg IZZ_pg
-    have h_mem0 : (0 ∉ {i | ith_anticommute XII_pg IZZ_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h_mem1 : (1 ∉ {i | ith_anticommute XII_pg IZZ_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h_mem2 : (2 ∉ {i | ith_anticommute XII_pg IZZ_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h: ({} : Finset (Fin 3)).card = 0:= by simp
-    convert h
-    ext x
-    fin_cases x <;> simp at * <;> assumption
-  simp [comm]
+  simp [pauli_pauli_phase, anticommute, PauliGroup.map,
+   anticommuteₘ, Fin.tail, commute₁]
 
 lemma pphase_XII_ZZI : pauli_pauli_phase XII_pg ZZI_pg = pgphase_n1 := by
-  unfold pauli_pauli_phase
-  have h_anti : count_anticommutes XII_pg ZZI_pg = 1
-  · unfold count_anticommutes XII_pg ZZI_pg
-    have h_mem0 : (0 ∈ {i | ith_anticommute XII_pg ZZI_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h_mem1 : (1 ∉ {i | ith_anticommute XII_pg ZZI_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h_mem2 : (2 ∉ {i | ith_anticommute XII_pg ZZI_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h: ({0} : Finset (Fin 3)).card = 1:= by simp
-    convert h
-    ext x
-    fin_cases x <;> simp at * <;> assumption
-  simp [h_anti]
+  simp [pauli_pauli_phase, anticommute, PauliGroup.map,
+   anticommuteₘ, Fin.tail, commute₁]
 
 lemma pphase_IIX_IZZ : pauli_pauli_phase IIX_pg IZZ_pg = pgphase_n1 := by
-  unfold pauli_pauli_phase
-  have h_anti : count_anticommutes IIX_pg IZZ_pg = 1
-  · unfold count_anticommutes IIX_pg IZZ_pg
-    have h_mem0 : (0 ∉ {i | ith_anticommute IIX_pg IZZ_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h_mem1 : (1 ∉ {i | ith_anticommute IIX_pg IZZ_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h_mem2 : (2 ∈ {i | ith_anticommute IIX_pg IZZ_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h: ({2} : Finset (Fin 3)).card = 1:= by simp
-    convert h
-    ext x
-    fin_cases x <;> simp at * <;> assumption
-  simp [h_anti]
+  simp [pauli_pauli_phase, anticommute, PauliGroup.map,
+   anticommuteₘ, Fin.tail, commute₁]
 
 lemma pphase_IIX_ZZI : pauli_pauli_phase IIX_pg ZZI_pg = pgphase_1 := by
-  unfold pauli_pauli_phase
-  have comm : count_anticommutes IIX_pg ZZI_pg = 0
-  · unfold count_anticommutes IIX_pg ZZI_pg
-    have h_mem0 : (0 ∉ {i | ith_anticommute IIX_pg ZZI_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h_mem1 : (1 ∉ {i | ith_anticommute IIX_pg ZZI_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h_mem2 : (2 ∉ {i | ith_anticommute IIX_pg ZZI_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h: ({} : Finset (Fin 3)).card = 0:= by simp
-    convert h
-    ext x
-    fin_cases x <;> simp at * <;> assumption
-  simp [comm]
+  simp [pauli_pauli_phase, anticommute, PauliGroup.map,
+   anticommuteₘ, Fin.tail, commute₁]
 
 lemma pphase_IXI_ZZI : pauli_pauli_phase IXI_pg ZZI_pg = pgphase_n1 := by
-  unfold pauli_pauli_phase
-  have h_anti : count_anticommutes IXI_pg ZZI_pg = 1
-  · unfold count_anticommutes IXI_pg ZZI_pg
-    have h_mem0 : (0 ∉ {i | ith_anticommute IXI_pg ZZI_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h_mem1 : (1 ∈ {i | ith_anticommute IXI_pg ZZI_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h_mem2 : (2 ∉ {i | ith_anticommute IXI_pg ZZI_pg i = true})
-    · simp [PauliGroup.map, commute]
-    have h: ({1} : Finset (Fin 3)).card = 1:= by simp
-    convert h
-    ext x
-    fin_cases x <;> simp at * <;> assumption
-  simp [h_anti]
+  simp [pauli_pauli_phase, anticommute, PauliGroup.map,
+   anticommuteₘ, Fin.tail, commute₁]
 
 lemma pphase_pauli1 {n : ℕ} {p : PauliGroup n} :
-  pauli_pauli_phase Pauli1 p = pgphase_1 := sorry
+  pauli_pauli_phase Pauli1 p = pgphase_1 := by
+  unfold pauli_pauli_phase anticommute
+  sorry --induction proof
 
 
 lemma pauli_weight_one_contra {n : ℕ} {E : PauliGroup n}

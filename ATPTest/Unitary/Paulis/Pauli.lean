@@ -44,7 +44,9 @@ lemma mem_PauliGroup_id : 1 ∈ PauliGroup n := by
 
 def Pauli1 : PauliGroup n := ⟨1, mem_PauliGroup_id⟩
 
-lemma Pauli1_unfold : Pauli1 = foldPauli (pgphase_1, (fun (_ : Fin n) => Pauli_I)) := sorry
+lemma Pauli1_unfold : Pauli1 = foldPauli (pgphase_1, (fun (_ : Fin n) => Pauli_I)) := by
+  unfold Pauli1; simp_rw [<- foldPauli1]
+  simp [foldPauli, foldPauli_toFun, unfolded1]
 
 def PauliGroup.map (P : PauliGroup n) : (Fin n → Pauli) :=
   (foldPauli.symm P).2
