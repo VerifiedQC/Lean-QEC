@@ -70,6 +70,9 @@ instance PauliPhases : Group pgroup_phases where
     rcases (pgphase_cases a) with ha | ha | ha | ha
     all_goals simp [ha]
 
+lemma phase_id_coe : (↑(1 : pgroup_phases) : phase).z = 1 := by
+  rfl
+
 def pX := (unitary_fin_equiv beq) X
 def pY := (unitary_fin_equiv beq) Y
 def pZ := (unitary_fin_equiv beq) Z

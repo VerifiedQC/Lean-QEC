@@ -113,7 +113,7 @@ lemma injective_fold_aux {z z' : pgroup_phases} {m m' : Fin n → Pauli} :
   apply unitary_ext
   rw [HTails]; simp
 
-def fold (zm : pgroup_phases × (Fin n → Pauli)) :=
+def fold (zm : pgroup_phases × (Fin n → Pauli)) : 𝐔ₙ[n] :=
   fold_aux zm.1 zm.2
 
 lemma inj_fold : Injective (@fold n) := by
@@ -221,36 +221,6 @@ lemma cast_fin_append_aux {t n₁ n₂}
   simp [Fin.cons]
 
 
-
-lemma unitary_nkron_zero_id_left {n : ℕ} (U : 𝐔ₙ[n]) : unitary_nkron (1 : 𝐔ₙ[0]) U ≍ U := by
-  apply heq_of_eq_cast
-  swap
-  rw [zero_add]
-  apply unitary_ext
-  ext i j
-  simp [unitary_nkron, normalized_kron, unitary_cast_coe, <- matrix_entry_of_cast]
-  simp [bits_cat]
-  have h_1 : (1 : (Matrix (BitVec 0) (BitVec 0) ℂ)) (bits_cat.symm i).1 (bits_cat.symm j).1 = 1
-  · show (((OfNat.ofNat 1) : Matrix (BitVec 0) (BitVec 0) ℂ)
-    (bits_cat.invFun i).1 (bits_cat.invFun j).1 = 1)
-    unfold bits_cat
-    simp only [BitVec.extractLsb'_eq_zero, Matrix.one_apply_eq]
-  rw [h_1, one_mul]
-  congr! --just congr doesn't work, couldn't possibly imagine why
-  all_goals --??????
-    ext x i h
-    rw [cast_to_bvcast]
-    swap
-    rw [zero_add]
-    simp only [BitVec.getElem_extractLsb', zero_add, BitVec.getElem_cast]
-    rfl
-
---much easier because defeq, typechecks
-lemma unitary_nkron_zero_id_right {n : ℕ} (U : 𝐔ₙ[n]) : unitary_nkron U (1 : 𝐔ₙ[0]) = U := by
-  apply unitary_ext
-  ext i j
-  simp [unitary_nkron, normalized_kron, normalize_mat, bits_cat]
-
 lemma kron_Paulis_aux' {n₁ n₂} (z z' : pgroup_phases) (m : Fin n₁ → Pauli)
  (m' : Fin n₂ → Pauli) :
   (foldPauli (z, m)).1 ⊗ₙ (foldPauli (z', m')).1 =
@@ -268,9 +238,6 @@ lemma kron_Paulis_aux' {n₁ n₂} (z z' : pgroup_phases) (m : Fin n₁ → Paul
   | zero =>
     have: (foldPauli (z', m')).1 = U_phase (m' 0) z' := by
       simp [foldPauli, fold, fold_aux, unitary_n_nkron]
-      congr 1
-      rw [←heq_iff_eq]
-      exact (unitary_nkron_zero_id_left _)
     rw [this]
     rw [fold_pauli_mul]
     rw [uphase_of_kron']

@@ -12,6 +12,21 @@ structure PState (n : ℕ) where
 -/
 variable {n : ℕ}
 
+theorem unitary_inner_preserve {k : Type*} [Fintype k] [DecidableEq k] (v₁ v₂ : k → ℂ) (U : 𝐔[k]) :
+  ∑ x : k, (U.val.mulVec v₁) x * starRingEnd ℂ ((U.val.mulVec v₂) x) = ∑ x : k, v₁ x * starRingEnd ℂ (v₂ x) := by
+  have h_unitary : U.val.conjTranspose * U.val = 1 := by
+    rw [←Matrix.star_eq_conjTranspose, ←Matrix.mem_unitaryGroup_iff']
+    simp_all only [SetLike.coe_mem]
+  have h_inner : ∑ x : k, (U.val.mulVec v₁) x * starRingEnd ℂ ((U.val.mulVec v₂) x) = ∑ x : k, ∑ y : k, v₁ y * starRingEnd ℂ (v₂ x) * (U.val.conjTranspose * U.val) x y := by
+    simp +decide [ Matrix.mulVec, dotProduct, mul_comm ];
+    simp +decide [ Matrix.mul_apply, mul_assoc, mul_comm, mul_left_comm, Finset.mul_sum _ _ _, Finset.sum_mul ];
+    exact Finset.sum_comm.trans ( Finset.sum_congr rfl fun _ _ => Finset.sum_comm )
+  rw [h_inner]
+  simp_all [Matrix.one_apply]
+
+
+
+
 --thanks aristotle
 theorem unitary_norm_preserve {k : Type*} [Fintype k] [DecidableEq k] (U : 𝐔[k]) (v: k → ℂ) :
   ∑ x, ‖(U.1.toLin' v) x‖ ^ 2 = ∑ x, ‖v x‖ ^ 2 := by
@@ -83,6 +98,19 @@ noncomputable def pstate_n_kron {n : ℕ} (m : Fin n → PState 1) : PState n :=
 match n with
 | 0 => PState.trivial
 | n₀+1 => ((pstate_n_kron (λ (x : Fin n₀) => m ⟨x.val + 1, by simp [x.isLt]⟩)).kron (m 0))
+
+
+lemma PState.kron_val (n₁ n₂) {ψ₁ : PState n₁} {ψ₂ : PState n₂} {x : BitVec (n₁ + n₂)} :
+  (ψ₁ ⊗ₚ ψ₂) x = (ψ₁ (bits_cat.symm x).1) * (ψ₂ (bits_cat.symm x).2) := by
+  simp [PState.kron, ket_prod, toMat, normalized_kron]
+  rfl
+
+lemma PState.kron_assoc {ψ₁ ψ₂ ψ₃ : PState 1} : (ψ₁ ⊗ₚ ψ₂) ⊗ₚ ψ₃ = ψ₁ ⊗ₚ (ψ₂ ⊗ₚ ψ₃) := by
+  ext x
+  rw [@PState.kron_val 2 1, PState.kron_val]
+  rw [@PState.kron_val 1 2, PState.kron_val]
+  rw [mul_assoc]
+  fin_cases x <;> rfl
 
 noncomputable section
 open ComplexConjugate
@@ -157,3 +185,30 @@ def PState.sum {n : ℕ} (ψ₁ ψ₂ : PState n) (a b : ℂ) (hab: ‖a‖^2+�
     simp [ -Complex.add_re, -Complex.mul_re, ←Complex.normSq_eq_conj_mul_self, ←Complex.sq_norm, sq,
     -Complex.ofReal_mul, ←Complex.ofReal_add]
     simp [←sq, hab]
+
+lemma PState.apply_eq {n : ℕ} {ψ : PState n} {U : 𝐔ₙ[n]} {i : BitVec n} : (ψ.apply U) i = (U.val.mulVec ψ) i := by rfl
+
+
+lemma PState.apply_orth {n : ℕ} {ψ φ : PState n} (h_orth : ψ.orth φ) {U : 𝐔ₙ[n]} :
+  (ψ.apply U).orth (φ.apply U) := by
+  unfold Ket.orth
+  have h_dot : Ket.dot (ψ.apply U) (φ.apply U) = Ket.dot ψ φ := by
+    unfold Ket.dot dotProduct
+    simp_rw [Pi.conj_apply, PState.apply_eq]
+    refine (unitary_inner_preserve _ _ _)
+  rw [h_dot]
+  exact h_orth
+
+
+lemma PState.sum_coe {n : ℕ} {ψ φ : PState n} {a b : ℂ} (hab : ‖a‖^2 + ‖b‖^2 = 1) (h_orth : ψ.orth φ) :
+  ((PState.sum ψ φ a b hab h_orth) : (BitVec n → ℂ)) = a • ψ + b • φ := by rfl
+
+lemma PState.sum_apply {n : ℕ} {ψ φ : PState n} {a b : ℂ} (hab : ‖a‖^2 + ‖b‖^2 = 1) (h_orth : ψ.orth φ) (U : 𝐔ₙ[n]) :
+  (PState.sum ψ φ a b hab h_orth).apply U = PState.sum (ψ.apply U) (φ.apply U) a b hab (PState.apply_orth h_orth) := by
+  ext i
+  rw [PState.apply_eq, PState.sum_coe, Matrix.mulVec_add, PState.sum_coe,
+  Matrix.mulVec_smul, Matrix.mulVec_smul]
+  rfl
+
+@[simp]
+lemma PState.apply_id {n : ℕ} {ψ : PState n} : ψ.apply 1 = ψ := by simp

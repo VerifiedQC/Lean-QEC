@@ -15,3 +15,5 @@ def Ket.phase_mul (ψ : Ket k) (z : phase): Ket k where
   vec := z.1 • ψ.vec
   normalized' := by
     simp [z.2, ψ.2]
+
+lemma Ket.mul_phase_id {k : Type*} [Fintype k] {ψ : Ket k} : ψ.phase_mul phase_id = ψ := by simp [Ket.phase_mul]
