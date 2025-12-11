@@ -13,6 +13,8 @@ open Function
 
 noncomputable section
 
+variable {n : ℕ} (m : Fin n → Pauli)
+
 instance {n : ℕ} : Coe (Fin n → Pauli) (Fin n → ↥𝐔ₙ[1]) where
   coe m := fun i => (m i).val
 
@@ -215,6 +217,31 @@ lemma cast_fin_append_aux {t n₁ n₂}
     rfl
   simp [Fin.cons]
 
+lemma cast_fin_append_iter1 {t n₁ n₂} (m₁ : Fin (n₁ + 1) -> t) (m₂ : Fin n₂ -> t) :
+  (cast_fin_append m₁ m₂) = Fin.cons (m₁ 0) (cast_fin_append (Fin.tail m₁) m₂) := by
+  unfold cast_fin_append
+  ext a
+  rcases a with _ | a₀
+  · simp [Fin.append, Fin.addCases, Fin.castLT]
+  by_cases H: (a₀ < n₁)
+  · simp [Fin.append, Fin.addCases, Fin.castLT]
+    rw [dif_pos] <;> try assumption
+    simp [Fin.cons]
+    rw [dif_pos] <;> try assumption
+    simp [Fin.tail]
+  simp [Fin.append, Fin.addCases, Fin.castLT]
+  rw [dif_neg] <;> try assumption
+  simp [Fin.cons]
+  intro H
+  contradiction
+
+lemma cast_fin_append_iter2 {t n₂} (m₁ : Fin 0 -> t) (m₂ : Fin (n₂ + 1) -> t) :
+  (cast_fin_append m₁ m₂) = Fin.cons (m₂ 0) (cast_fin_append m₁ (Fin.tail m₂)) := by
+  unfold cast_fin_append
+  ext a
+  rcases a with _ | a₀
+  · simp [Fin.append, Fin.addCases]
+  simp [Fin.append, Fin.addCases]
 
 lemma kron_Paulis_aux' {n₁ n₂} (z z' : pgroup_phases) (m : Fin n₁ → Pauli)
  (m' : Fin n₂ → Pauli) :
@@ -351,3 +378,61 @@ theorem kron_mem_PauliGroup_iff {n₁ n₂ : ℕ}
     rcases H with ⟨U1, U2, H'⟩
     subst H'
     apply PauliGroup_mem_kron
+
+def unfolded1 := (pgphase_1, (fun (_ : Fin n) => Pauli_I))
+
+lemma kron_of_1s {n₁ n₂} :
+  (1 : 𝐔ₙ[n₁]) ⊗ₙ (1 : 𝐔ₙ[n₂]) = 1 := by
+  simp [unitary_nkron, normalized_kron, normalize_mat]
+
+lemma foldPauli1 : @fold n unfolded1 = 1 := by
+  induction n with
+  | zero =>
+    simp [fold, fold_aux, unfolded1, unitary_n_nkron, U_phase, Pauli_I]
+  | succ n' H =>
+    rw [fold, fold_aux, unfolded1]
+    simp [unitary_n_nkron]
+    rw [<- uphase_of_kron]
+    simp [fold, fold_aux, unfolded1] at H
+    rw [H]
+    have: Pauli_I = (1 : 𝐔ₙ[1]) := by rfl
+    rw [this, kron_of_1s]
+
+lemma mem_PauliGroup_id : 1 ∈ PauliGroup n := by
+  rw [PauliGroup, Finset.mem_image, factored_Pauli_univ]
+  exists unfolded1
+  constructor
+  · simp [unfolded1, pgroup_phases]
+  · apply foldPauli1
+
+def Pauli1 : PauliGroup n := ⟨1, mem_PauliGroup_id⟩
+
+lemma Pauli1_unfold : Pauli1 = foldPauli (pgphase_1, (fun (_ : Fin n) => Pauli_I)) := by
+  unfold Pauli1; simp_rw [<- foldPauli1]
+  simp [foldPauli, foldPauli_toFun, unfolded1]
+
+def PauliGroup.map (P : PauliGroup n) : (Fin n → Pauli) :=
+  (foldPauli.symm P).2
+
+def PauliGroup.phase (P : PauliGroup n) : pgroup_phases :=
+  (foldPauli.symm P).1
+
+-- trivial now, could possibly delete
+lemma rep_unique (f₁ f₂ : factored_Pauli n) (H: foldPauli f₁ = foldPauli f₂) :
+  f₁ = f₂ := by
+  apply foldPauli.injective
+  trivial
+
+lemma map_kron_of_Pauli {n₁ n₂} -- (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
+  (P₁ : PauliGroup n₁) (P₂ : PauliGroup n₂) :
+  PauliGroup.map (kronOfPauli P₁ P₂) =
+  cast_fin_append (PauliGroup.map P₂) (PauliGroup.map P₁) := by
+  let P₁f := foldPauli.symm P₁
+  let w₁ := P₁f.1
+  let m₁ := P₁f.2
+  let P₂f := foldPauli.symm P₂
+  let w₂ := P₂f.1
+  let m₂ := P₂f.2
+  rw [kronOfPauli]
+  simp_rw [kron_PaulisE]
+  simp [factored_kron, PauliGroup.map]

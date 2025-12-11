@@ -92,6 +92,39 @@ def Pauli_Y : Pauli := ⟨pY, by simp [Pauli]⟩
 def Pauli_Z : Pauli := ⟨pZ, by simp [Pauli]⟩
 def Pauli_I : Pauli := ⟨1, by simp [Pauli]⟩
 
+@[simp] lemma pgXnepgI : Pauli_X ≠ Pauli_I := by
+  -- To show that Pauli_X ≠ Pauli_I, we can compare their entries. The (0,0) entry of Pauli_X is 0, while the (0,0) entry of Pauli_I is 1. Since these entries are different, the matrices cannot be equal.
+  have h_diff : (Pauli_X.val 0 0) ≠ (Pauli_I.val 0 0) := by
+    exact show ( 0 : ℂ ) ≠ 1 from by norm_num;
+  contrapose! h_diff; aesop;
+
+@[simp] lemma pgZnepgI : Pauli_Z ≠ Pauli_I := by
+  -- To show that Pauli_Z ≠ Pauli_I, we can compare their entries. The (0,0) entry of Pauli_X is 0, while the (0,0) entry of Pauli_I is 1. Since these entries are different, the matrices cannot be equal.
+  have h_diff : (Pauli_Z.val 1 1) ≠ (Pauli_I.val 1 1) := by
+    exact show ( -1 : ℂ ) ≠ 1 from by norm_num;
+  contrapose! h_diff; aesop;
+
+@[simp] lemma pgYnepgI : Pauli_Y ≠ Pauli_I := by
+  -- To show that Pauli_Y ≠ Pauli_I, we can compare their entries. The (0,0) entry of Pauli_X is 0, while the (0,0) entry of Pauli_I is 1. Since these entries are different, the matrices cannot be equal.
+  have h_diff : (Pauli_Y.val 0 0) ≠ (Pauli_I.val 0 0) := by
+    exact show ( 0 : ℂ ) ≠ 1 from by norm_num;
+  contrapose! h_diff; aesop;
+
+@[simp] lemma pgXnepgZ : Pauli_X ≠ Pauli_Z := by
+  -- To show that Pauli_X ≠ Pauli_Z, we can compare their entries. The (0,0) entry of Pauli_X is 0, while the (0,0) entry of Pauli_I is 1. Since these entries are different, the matrices cannot be equal.
+  have h_diff : (Pauli_X.val 0 0) ≠ (Pauli_Z.val 0 0) := by
+    exact show ( 0 : ℂ ) ≠ 1 from by norm_num;
+  contrapose! h_diff; aesop;
+
+@[simp] lemma pgXnepgY : Pauli_X ≠ Pauli_Y := by
+  -- To show that Pauli_X ≠ Pauli_Y, we can compare their entries. The (0,0) entry of Pauli_X is 0, while the (0,0) entry of Pauli_I is 1. Since these entries are different, the matrices cannot be equal.
+  have h_diff : (Pauli_X.val 1 0) ≠ (Pauli_Y.val 1 0) := by
+    exact show 1 ≠ Complex.I from by
+      intro h
+      have := congrArg Complex.im h
+      simp at this;
+  contrapose! h_diff; aesop;
+
 lemma Pauli_cases (a : Pauli) :
   a = Pauli_X ∨ a = Pauli_Y ∨ a = Pauli_Z ∨ a = Pauli_I := by
   rcases a with ⟨u, hu⟩

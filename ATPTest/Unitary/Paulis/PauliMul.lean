@@ -125,3 +125,42 @@ lemma mul_Paulis_correct {n} (P Q : PauliGroup n) :
   simp [PE, QE]
   simp [mul_Paulis]
   apply mul_factored_Paulis_correct
+
+lemma mul_Pauli1_xx (P : Pauli) :
+  mul_Pauli1 P P = (1, Pauli_I) := by
+  rw [mul_Pauli1]
+  rcases (Pauli_cases P) with rfl | rfl | rfl | rfl
+  all_goals aesop
+
+lemma pointwise_mul_Paulis_xx {n} (P : Fin n -> Pauli) :
+  pointwise_mul_Paulis P P = (λ _ => (1, Pauli_I)) := by
+  unfold pointwise_mul_Paulis
+  apply funext
+  intro x
+  apply mul_Pauli1_xx
+
+lemma collect_phases_iter {n} (P : Fin (n + 1) -> (pgroup_phases × Pauli)) :
+  collect_phases P =
+  ((P 0).1 * (collect_phases (Fin.tail P)).1, λ i => (P i).2) := by
+  rw [collect_phases, collect_phases]
+  rfl
+
+lemma mul_Pauli1_tuples_xx {n} (P : Fin n -> Pauli) :
+  mul_Pauli1_tuples P P = unfolded1 := by
+  rw [mul_Pauli1_tuples]
+  rw [pointwise_mul_Paulis_xx]
+  clear P
+  induction n with
+  | zero =>
+    simp [collect_phases, fold_pgroup_phases]
+    rfl
+  | succ n₀ IH =>
+    simp [collect_phases_iter]
+    conv =>
+      enter[1]
+      enter[1]
+      enter[1]
+      enter[1]
+      change (λ _ => (1, Pauli_I))
+    rw [IH]
+    rfl
