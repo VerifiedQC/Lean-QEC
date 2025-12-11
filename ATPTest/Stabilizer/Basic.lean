@@ -132,8 +132,6 @@ lemma neg_one_not_stab (C : QCode n k) : u_neg 1 ∉ C.stabilizers := by
   exact this
 
 
---this is untrue if k=0: If the message space is trivial, then every member of pauli group is a stabilizer.
---As pauli group is noncommutative, this is then untrue
 theorem stab_comm (C : QCode n k) : IsMulCommutative (stabilizer_group C) := by
   refine ⟨⟨by rintro ⟨a, ha⟩ ⟨b, hb⟩
               simp
@@ -152,6 +150,10 @@ theorem stab_comm (C : QCode n k) : IsMulCommutative (stabilizer_group C) := by
 
 abbrev Pauli_of_stab {k} {C : QCode n k} (S : C.stabilizers) : PauliGroup n :=
   ⟨S.1, S.2.2⟩
+
+noncomputable instance {n k} (C : QCode n k) : DecidablePred (fun (N : ↑𝐔ₙ[n]) => ∀ S ∈ C.stabilizers, N * S = S * N) := Classical.decPred _
+
+def QCode.normalizer {k : ℕ} (C : QCode n k)  := (PauliGroup n).filter (fun N => ∀ S ∈ C.stabilizers, N * S = S * N)
 
 def QCode.syndrome {k : ℕ} (C : QCode n k) (E : PauliGroup n)
    : C.stabilizers → pgroup_phases := fun U => pauli_pauli_phase E (Pauli_of_stab U)
