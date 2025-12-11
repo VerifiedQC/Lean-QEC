@@ -16,10 +16,33 @@ lemma three_qubit_encode_correct (ψ : PState 1) : three_qubit_encode ψ =
   admit
 
 @[simp]
-lemma qub_zero_Z : qub_zero.apply pZ = qub_zero := by admit
+lemma qub_zero_Z : qub_zero.apply pZ = qub_zero := by
+  simp [PState.apply]
+  simp only [qub_zero]
+  rw [Ket.mk.injEq]
+  unfold Equiv.arrowCongr
+  unfold pZ
+  simp only [unitary_fin_equiv]
+  simp [Qubit.Z]
+  simp [Matrix.submatrix_mulVec_equiv]
+  congr
+  simp [Matrix.vecHead, Matrix.vecTail]
 
 @[simp]
-lemma qub_one_Z : qub_one.apply pZ = Ket.phase_mul qub_one ⟨-1, by simp⟩ := by admit
+lemma qub_one_Z : qub_one.apply pZ = Ket.phase_mul qub_one ⟨-1, by simp⟩ := by
+  simp [PState.apply]
+  simp only [qub_one]
+  rw [Ket.mk.injEq]
+  unfold Equiv.arrowCongr
+  unfold pZ
+  simp only [unitary_fin_equiv]
+  simp [Qubit.Z]
+  simp [Matrix.submatrix_mulVec_equiv]
+  simp [Matrix.vecHead, Matrix.vecTail]
+  simp [Ket.phase_mul]
+  rw [<- Pi.neg_comp]
+  congr
+  aesop
 
 abbrev fold1 {n} (t : Fin n → Pauli) := foldPauli (1, t)
 
