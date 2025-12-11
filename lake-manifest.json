@@ -5,7 +5,7 @@
    "type": "git",
    "subDir": null,
    "scope": "",
-   "rev": "599bf86fe160a68bf67f70d93497fbc3f6f9a61c",
+   "rev": "bf347dc9538097f0b7fd4123fa21266198348020",
    "name": "quantumInfo",
    "manifestFile": "lake-manifest.json",
    "inputRev": "main",

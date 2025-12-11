@@ -172,6 +172,13 @@ lemma pauli_inv {n : ℕ} {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup n)
   : U⁻¹ ∈ PauliGroup n := by
   apply (pauli_inv' ⟨U, hU⟩)
 
+--we don't seem to get much from this...
+instance PauliGroup_group {n : ℕ} : Subgroup 𝐔ₙ[n] where
+  carrier := PauliGroup n
+  mul_mem' := by intros a b ha hb; apply pauli_mul ha hb
+  one_mem' := mem_PauliGroup_id
+  inv_mem' := by intros x hx; apply pauli_inv hx
+
 lemma pauli_commute_or_anticommute' {n} (P Q : PauliGroup n) :
   P.val * Q.val = Q.val * P.val ∨
   P.val * Q.val = - Q.val * P.val := by
