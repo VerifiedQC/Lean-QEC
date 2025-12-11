@@ -1,4 +1,5 @@
 import ATPTest.Unitary.Paulis.PauliMul
+import ATPTest.AI_Generated.NePauli
 
 noncomputable section
 
@@ -11,10 +12,19 @@ def neg_phase (c : phase) : phase where
 instance : Neg phase where
   neg := neg_phase
 
+lemma neg_phaseE (c : phase) :
+  -c = neg_phase c := by rfl
+
 def commute₁ (P P' : Pauli) := P = Pauli_I || P' = Pauli_I || P = P'
 
 lemma mem_neg_pphase (c : pgroup_phases) :
-  -c.val ∈ pgroup_phases := by sorry
+  -c.val ∈ pgroup_phases := by
+  have: -c.val = neg_phase c.val := by rfl
+  rw [this]
+  clear this
+  simp [neg_phase]
+  rcases (pgphase_cases c) with H | H | H | H
+  all_goals simp [pgroup_phases, H]
 
 def neg_pphase (c : pgroup_phases) : pgroup_phases :=
   ⟨-c.val, mem_neg_pphase c⟩
@@ -22,22 +32,51 @@ def neg_pphase (c : pgroup_phases) : pgroup_phases :=
 instance : Neg pgroup_phases where
   neg := neg_pphase
 
+lemma neg_pgphaseE (c : pgroup_phases) :
+  -c = neg_pphase c := by rfl
+
+lemma commute₁_right (P Q : Pauli) :
+  (mul_Pauli1 P Q).2 = (mul_Pauli1 Q P).2 := by
+  rcases (Pauli_cases P) with rfl | rfl | rfl | rfl
+  all_goals rcases (Pauli_cases Q) with rfl | rfl | rfl | rfl
+  all_goals simp [mul_Pauli1]
+
 lemma commute₁_correct_true (P Q : Pauli)
   (commutePQ : commute₁ P Q):
   (mul_Pauli1 P Q).1 = (mul_Pauli1 Q P).1 := by
-  sorry
+  rcases (Pauli_cases P) with rfl | rfl | rfl | rfl
+  all_goals rcases (Pauli_cases Q) with rfl | rfl | rfl | rfl
+  all_goals simp [commute₁] at commutePQ
+  all_goals try rfl
+  all_goals simp [mul_Pauli1]
 
 lemma commute₁_correct_false (P Q : Pauli)
   (commutePQ : commute₁ P Q = false):
   (mul_Pauli1 P Q).1 = -(mul_Pauli1 Q P).1 := by
-  sorry
+  rcases (Pauli_cases P) with rfl | rfl | rfl | rfl
+  all_goals rcases (Pauli_cases Q) with rfl | rfl | rfl | rfl
+  all_goals simp [commute₁] at commutePQ
+  all_goals simp [mul_Pauli1]
+  all_goals simp [pgphase_i, pgphase_ni]
+  all_goals rw [neg_pgphaseE, neg_pphase]
+  all_goals simp [neg_phaseE, neg_phase]
+
+-- too weak, maybe useless
+lemma commute₁_cases (P Q : Pauli) :
+  (mul_Pauli1 P Q).1 = (mul_Pauli1 Q P).1 ∨
+  (mul_Pauli1 P Q).1 = -(mul_Pauli1 Q P).1 := by
+  by_cases H: commute₁ P Q
+  · left
+    apply commute₁_correct_true; assumption
+  · right
+    apply commute₁_correct_false
+    simp_all [Bool.not_eq_true]
 
 lemma commute₁_sym P P' :
   commute₁ P P' ↔ commute₁ P' P := by
   rcases (Pauli_cases P) with rfl | rfl | rfl | rfl
   all_goals rcases (Pauli_cases P') with rfl | rfl | rfl | rfl
   all_goals simp [commute₁]
-  all_goals tauto
 
 lemma commute₁_xx P : commute₁ P P := by simp [commute₁]
 
@@ -46,6 +85,114 @@ def anticommuteₘ {n} (m m' : Fin n -> Pauli) :=
   | 0 => false
   | _ + 1 =>
     (!commute₁ (m 0) (m' 0)) ^^ anticommuteₘ (Fin.tail m) (Fin.tail m')
+
+lemma mul_nkrons {n₁ n₂} (U₁ U₁' : 𝐔ₙ[n₁]) (U₂ U₂' : 𝐔ₙ[n₂]) :
+  (U₁ ⊗ₙ U₂) * (U₁' ⊗ₙ U₂') =
+  (U₁ * U₁') ⊗ₙ (U₂ * U₂') := by
+  simp [unitary_nkron, normalized_kron]
+  rw [Matrix.mul_kronecker_mul]
+
+def anticommuteₘ_iter {n} (m m' : Fin (n + 1) -> Pauli) :
+  anticommuteₘ (Fin.tail m) (Fin.tail m') =
+  (anticommuteₘ m m' ^^ (!commute₁ (m 0) (m' 0))) := by
+  simp [anticommuteₘ]
+  by_cases H: commute₁ (m 0) (m' 0)
+  all_goals by_cases H': anticommuteₘ (Fin.tail m) (Fin.tail m')
+  all_goals aesop
+
+lemma unitary_n_nkron_iter {n} (m : Fin (n + 1) -> 𝐔ₙ[1]) :
+    unitary_n_nkron m =
+    unitary_n_nkron (Fin.tail m) ⊗ₙ (m 0) := by
+    rfl
+
+def phase_n1 : phase := ⟨-1, by norm_num⟩
+
+lemma neg_is_uphase {n} (U : 𝐔ₙ[n]) : -U = U_phase U phase_n1 := by
+  simp [U_phase, phase_n1]; aesop
+
+lemma uphase_of_kron_right {n₁ n₂} (z : phase) (m1 : 𝐔ₙ[n₁]) (m2 : 𝐔ₙ[n₂]) :
+  m1 ⊗ₙ U_phase m2 z = U_phase (m1 ⊗ₙ m2) z := by
+  apply unitary_ext
+  simp [U_phase, unitary_nkron]
+  simp [normalized_kron]
+  simp [Matrix.kronecker_smul, Matrix.submatrix_smul]
+
+lemma uphase_ext {n} (U U' : 𝐔ₙ[n]) c c' :
+  U = U' ->
+  c = c' ->
+  U_phase U c = U_phase U' c' := by aesop
+
+lemma phase_comm (c c' : phase) :
+  c * c' = c' * c := by
+  apply phase_ext
+  rcases c with ⟨a, b⟩
+  rcases c' with ⟨a', b'⟩
+  simp; ring
+
+-- mutual induction is fun :)
+lemma anticommuteₘ_correct {n} (m m' : Fin n -> Pauli) :
+  let kron_m := unitary_n_nkron (λ i => (m i).val)
+  let kron_m' := unitary_n_nkron (λ i => (m' i).val)
+  (anticommuteₘ m m' -> (kron_m * kron_m' = -kron_m' * kron_m)) ∧
+  (!(anticommuteₘ m m') -> (kron_m * kron_m' = kron_m' * kron_m)) := by
+  simp
+  induction n with
+  | zero =>
+    simp [unitary_n_nkron, anticommuteₘ]
+  | succ n₀ IH =>
+    have IHL m m' := (IH m m').left
+    have IHR m m' := (IH m m').right
+    clear IH
+    constructor
+    all_goals
+      intro H
+      simp only [unitary_n_nkron_iter]
+      simp only [mul_nkrons]
+      by_cases head_commute : commute₁ (m 0) (m' 0)
+    all_goals
+      simp only [mul_Pauli1_correct]
+      have Htail := H
+      simp [anticommuteₘ, head_commute] at Htail
+      have H' (A : Fin (n₀+1) -> Pauli):
+        Fin.tail (λ i => (A i).val) = Fin.tail (λ i => A i)
+      · apply funext
+        intro x
+        simp [Fin.tail]
+      rw [H' m]
+      rw [H' m']
+      clear H'
+      rw [commute₁_right]
+    · have IH := (IHL (Fin.tail m) (Fin.tail m') Htail)
+      simp at IH
+      rw [IH]
+      simp only [neg_is_uphase]
+      simp only [uphase_of_kron, uphase_of_kron_right, uphase_of_uphase]
+      rw [commute₁_correct_true] <;> try assumption
+      apply uphase_ext; try rfl
+      apply phase_comm
+    · have IH := (IHR (Fin.tail m) (Fin.tail m') Htail)
+      simp at IH
+      rw [IH]
+      rw [commute₁_correct_false]
+      swap; simp_all only [Bool.not_eq_true]
+      simp only [neg_is_uphase]
+      simp only [uphase_of_kron_right, uphase_of_uphase]
+      apply uphase_ext; try rfl
+      rw [neg_pgphaseE]
+      simp [neg_pphase, phase_n1, neg_phaseE, neg_phase]
+    · have IH := (IHR (Fin.tail m) (Fin.tail m') Htail)
+      simp at IH
+      rw [IH]
+      rw [commute₁_correct_true]; try assumption
+    · have IH := (IHL (Fin.tail m) (Fin.tail m') Htail)
+      simp at IH
+      rw [IH]
+      rw [commute₁_correct_false]
+      swap; simp_all only [Bool.not_eq_true]
+      simp only [neg_is_uphase]
+      simp only [uphase_of_kron, uphase_of_kron_right, uphase_of_uphase]
+      apply uphase_ext; try rfl
+      simp [phase_n1, neg_pgphaseE, neg_pphase, neg_phaseE, neg_phase]
 
 lemma anticommuteₘ_cat {n₁ n₂}
   (m₁ m₁' : Fin n₁ -> Pauli)
