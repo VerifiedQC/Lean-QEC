@@ -1,5 +1,4 @@
 import ATPTest.Unitary.Paulis.PauliMul
-import ATPTest.AI_Generated.NePauli
 
 noncomputable section
 
