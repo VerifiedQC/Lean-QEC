@@ -32,85 +32,80 @@ abbrev stab := QCode.stabilizers three_qubit_encode
 
 
 lemma IZZ_in_stab :
-  (fold1 ![Pauli_I, Pauli_Z, Pauli_Z]).1 ∈
+  (fold1 ![Pauli_I, Pauli_Z, Pauli_Z]) ∈
   QCode.stabilizers three_qubit_encode := by
-  constructor
-  · intro ψ
-    rw [three_qubit_encode_correct]
-    unfold stabilizes
-    rw [PState.sum_apply]
-    have hz : (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero).apply ↑(fold1 ![Pauli_I, Pauli_Z, Pauli_Z]) = (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
-    · unfold fold1 foldPauli
-      simp [-PState.apply]
-      unfold fold fold_aux
-      simp [-PState.apply, U_phase, phase_id_coe, unitary_n_nkron]
-      rw [unitary1_kron_assoc, kron_mul_kron, kron_mul_kron]
-      simp_rw [Pauli_Z, Pauli_I, qub_zero_Z]
-      rw [PState.apply_id]
-    have ho : (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply ↑(fold1 ![Pauli_I, Pauli_Z, Pauli_Z]) = (qub_one ⊗ₚ qub_one ⊗ₚ qub_one)
-    · unfold fold1 foldPauli
-      simp [-PState.apply]
-      unfold fold fold_aux
-      simp [-PState.apply, U_phase, phase_id_coe, unitary_n_nkron]
-      rw [unitary1_kron_assoc, kron_mul_kron, kron_mul_kron]
-      simp_rw [Pauli_Z, Pauli_I, qub_one_Z]
-      simp_rw [←PState.kron_assoc, PState.phase_prod_phase]
-      simp [Ket.phase_mul]
-    simp_rw [hz, ho]
-  simp only [Finset.coe_mem]
+  intro ψ
+  rw [three_qubit_encode_correct]
+  unfold stabilizes
+  rw [PState.sum_apply]
+  have hz : (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero).apply ↑(fold1 ![Pauli_I, Pauli_Z, Pauli_Z]) = (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
+  · unfold fold1 foldPauli
+    simp [-PState.apply]
+    unfold fold fold_aux
+    simp [-PState.apply, U_phase, phase_id_coe, unitary_n_nkron]
+    rw [unitary1_kron_assoc, kron_mul_kron, kron_mul_kron]
+    simp_rw [Pauli_Z, Pauli_I, qub_zero_Z]
+    rw [PState.apply_id]
+  have ho : (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply ↑(fold1 ![Pauli_I, Pauli_Z, Pauli_Z]) = (qub_one ⊗ₚ qub_one ⊗ₚ qub_one)
+  · unfold fold1 foldPauli
+    simp [-PState.apply]
+    unfold fold fold_aux
+    simp [-PState.apply, U_phase, phase_id_coe, unitary_n_nkron]
+    rw [unitary1_kron_assoc, kron_mul_kron, kron_mul_kron]
+    simp_rw [Pauli_Z, Pauli_I, qub_one_Z]
+    simp_rw [←PState.kron_assoc, PState.phase_prod_phase]
+    simp [Ket.phase_mul]
+  simp_rw [hz, ho]
 
-lemma ZIZ_in_stab : (fold1 ![Pauli_Z, Pauli_I, Pauli_Z]).1 ∈ stab := by
-  constructor
-  · intro ψ
-    rw [three_qubit_encode_correct]
-    unfold stabilizes
-    rw [PState.sum_apply]
-    have hz : (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero).apply ↑(fold1 ![Pauli_Z, Pauli_I, Pauli_Z]) = (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
-    · unfold fold1 foldPauli
-      simp [-PState.apply]
-      unfold fold fold_aux
-      simp [-PState.apply, U_phase, phase_id_coe, unitary_n_nkron]
-      rw [unitary1_kron_assoc, kron_mul_kron, kron_mul_kron]
-      simp_rw [Pauli_Z, Pauli_I, qub_zero_Z]
-      simp
-    have ho : (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply ↑(fold1 ![Pauli_Z, Pauli_I, Pauli_Z]) = (qub_one ⊗ₚ qub_one ⊗ₚ qub_one)
-    · unfold fold1 foldPauli
-      simp [-PState.apply]
-      unfold fold fold_aux
-      simp [-PState.apply, U_phase, phase_id_coe, unitary_n_nkron]
-      rw [unitary1_kron_assoc, kron_mul_kron, kron_mul_kron]
-      simp_rw [Pauli_Z, Pauli_I, qub_one_Z]
-      simp_rw [←PState.kron_assoc, PState.apply_id]
-      nth_rewrite 2 [←@Ket.mul_phase_id _ _ qub_one]
-      simp_rw [PState.phase_prod_phase]
-      simp [Ket.phase_mul]
-    simp_rw [hz, ho]
-  simp only [Finset.coe_mem]
-lemma ZZI_in_stab : (fold1 ![Pauli_Z, Pauli_Z, Pauli_I]).1 ∈ stab := by
-  constructor
-  · intro ψ
-    rw [three_qubit_encode_correct]
-    unfold stabilizes
-    rw [PState.sum_apply]
-    have hz : (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero).apply ↑(fold1 ![Pauli_Z, Pauli_Z, Pauli_I]) = (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
-    · unfold fold1 foldPauli
-      simp [-PState.apply]
-      unfold fold fold_aux
-      simp [-PState.apply, U_phase, phase_id_coe, unitary_n_nkron]
-      rw [unitary1_kron_assoc, kron_mul_kron, kron_mul_kron]
-      simp_rw [Pauli_Z, Pauli_I, qub_zero_Z]
-      simp
-    have ho : (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply ↑(fold1 ![Pauli_Z, Pauli_Z, Pauli_I]) = (qub_one ⊗ₚ qub_one ⊗ₚ qub_one)
-    · unfold fold1 foldPauli
-      simp [-PState.apply]
-      unfold fold fold_aux
-      simp [-PState.apply, U_phase, phase_id_coe, unitary_n_nkron]
-      rw [unitary1_kron_assoc, kron_mul_kron, kron_mul_kron]
-      simp_rw [Pauli_Z, Pauli_I, qub_one_Z]
-      simp_rw [PState.phase_prod_phase]
-      simp [Ket.phase_mul]
-    simp_rw [hz, ho]
-  simp only [Finset.coe_mem]
+lemma ZIZ_in_stab : (fold1 ![Pauli_Z, Pauli_I, Pauli_Z]) ∈ stab := by
+  intro ψ
+  rw [three_qubit_encode_correct]
+  unfold stabilizes
+  rw [PState.sum_apply]
+  have hz : (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero).apply ↑(fold1 ![Pauli_Z, Pauli_I, Pauli_Z]) = (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
+  · unfold fold1 foldPauli
+    simp [-PState.apply]
+    unfold fold fold_aux
+    simp [-PState.apply, U_phase, phase_id_coe, unitary_n_nkron]
+    rw [unitary1_kron_assoc, kron_mul_kron, kron_mul_kron]
+    simp_rw [Pauli_Z, Pauli_I, qub_zero_Z]
+    simp
+  have ho : (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply ↑(fold1 ![Pauli_Z, Pauli_I, Pauli_Z]) = (qub_one ⊗ₚ qub_one ⊗ₚ qub_one)
+  · unfold fold1 foldPauli
+    simp [-PState.apply]
+    unfold fold fold_aux
+    simp [-PState.apply, U_phase, phase_id_coe, unitary_n_nkron]
+    rw [unitary1_kron_assoc, kron_mul_kron, kron_mul_kron]
+    simp_rw [Pauli_Z, Pauli_I, qub_one_Z]
+    simp_rw [←PState.kron_assoc, PState.apply_id]
+    nth_rewrite 2 [←@Ket.mul_phase_id _ _ qub_one]
+    simp_rw [PState.phase_prod_phase]
+    simp [Ket.phase_mul]
+  simp_rw [hz, ho]
+
+lemma ZZI_in_stab : (fold1 ![Pauli_Z, Pauli_Z, Pauli_I]) ∈ stab := by
+  intro ψ
+  rw [three_qubit_encode_correct]
+  unfold stabilizes
+  rw [PState.sum_apply]
+  have hz : (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero).apply ↑(fold1 ![Pauli_Z, Pauli_Z, Pauli_I]) = (qub_zero ⊗ₚ qub_zero ⊗ₚ qub_zero)
+  · unfold fold1 foldPauli
+    simp [-PState.apply]
+    unfold fold fold_aux
+    simp [-PState.apply, U_phase, phase_id_coe, unitary_n_nkron]
+    rw [unitary1_kron_assoc, kron_mul_kron, kron_mul_kron]
+    simp_rw [Pauli_Z, Pauli_I, qub_zero_Z]
+    simp
+  have ho : (qub_one ⊗ₚ qub_one ⊗ₚ qub_one).apply ↑(fold1 ![Pauli_Z, Pauli_Z, Pauli_I]) = (qub_one ⊗ₚ qub_one ⊗ₚ qub_one)
+  · unfold fold1 foldPauli
+    simp [-PState.apply]
+    unfold fold fold_aux
+    simp [-PState.apply, U_phase, phase_id_coe, unitary_n_nkron]
+    rw [unitary1_kron_assoc, kron_mul_kron, kron_mul_kron]
+    simp_rw [Pauli_Z, Pauli_I, qub_one_Z]
+    simp_rw [PState.phase_prod_phase]
+    simp [Ket.phase_mul]
+  simp_rw [hz, ho]
 
 lemma commute₁_XZ : commute₁ Pauli_X Pauli_Z = false := by simp [commute₁]
 
