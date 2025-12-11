@@ -194,6 +194,26 @@ lemma anticommuteₘ_correct {n} (m m' : Fin n -> Pauli) :
       apply uphase_ext; try rfl
       simp [phase_n1, neg_pgphaseE, neg_pphase, neg_phaseE, neg_phase]
 
+lemma anticommuteₘ_correct_true {n} (m m' : Fin n -> Pauli)
+  (H: anticommuteₘ m m') :
+  let kron_m := unitary_n_nkron (λ i => (m i).val)
+  let kron_m' := unitary_n_nkron (λ i => (m' i).val)
+  (kron_m * kron_m' = -kron_m' * kron_m) := by
+  have H' := anticommuteₘ_correct m m'
+  simp at H'
+  have H'' := (H'.left H)
+  simp [H'']
+
+lemma anticommuteₘ_correct_false {n} (m m' : Fin n -> Pauli)
+  (H: anticommuteₘ m m' = false) :
+  let kron_m := unitary_n_nkron (λ i => (m i).val)
+  let kron_m' := unitary_n_nkron (λ i => (m' i).val)
+  (kron_m * kron_m' = kron_m' * kron_m) := by
+  have H' := anticommuteₘ_correct m m'
+  simp at H'
+  have H'' := (H'.right H)
+  simp [H'']
+
 lemma anticommuteₘ_cat {n₁ n₂}
   (m₁ m₁' : Fin n₁ -> Pauli)
   (m₂ m₂' : Fin n₂ -> Pauli) :
@@ -235,6 +255,7 @@ lemma anticommuteₘ_xx (m : Fin n -> Pauli) :
     simp [IH]
     rw [commute₁_xx]
 
+
 def anticommute (U₁ U₂ : PauliGroup n) :=
   anticommuteₘ (PauliGroup.map U₁) (PauliGroup.map U₂)
 
@@ -258,3 +279,72 @@ lemma anticommute_xx (P : PauliGroup n) :
   anticommute P P = false := by
   unfold anticommute
   rw [anticommuteₘ_xx]
+
+lemma uphase_mul_left {n} c (P Q : 𝐔ₙ[n]) :
+  U_phase P c * Q = U_phase (P * Q) c := by
+  rcases Q with ⟨Q₀, HQ⟩
+  simp [U_phase]
+
+lemma anticommute_correct_true {n} (P Q : PauliGroup n)
+  (H: anticommute P Q) :
+  P.val * Q.val = -Q.val * P.val := by
+  let FP := foldPauli.symm P
+  let FQ := foldPauli.symm Q
+  have PE : P = foldPauli FP := by
+    rw [Equiv.apply_symm_apply]
+  have QE : Q = foldPauli FQ := by
+    rw [Equiv.apply_symm_apply]
+  simp [PE, QE]
+  clear PE QE
+  let cP := FP.1
+  let mP := FP.2
+  have FPE : FP = (cP, mP) := by rfl
+  let cQ := FQ.1
+  let mQ := FQ.2
+  have FQE : FQ = (cQ, mQ) := by rfl
+  simp [FPE, FQE]
+  clear FPE FQE
+  simp [foldPauli, fold, fold_aux]
+  simp only [<- mul_Uphases]
+  rw [anticommuteₘ_correct_true]
+  swap
+  · simp [anticommute] at H
+    rw [PauliGroup.map] at H
+    aesop
+  simp only [neg_is_uphase]
+  rw [uphase_mul_left]
+  simp only [uphase_of_uphase]
+  apply uphase_ext <;> try rfl
+  rw [phase_comm]
+  suffices: cP.val * cQ.val = cQ.val * cP.val
+  · rw [this]
+  rw [phase_comm]
+
+lemma anticommute_correct_false {n} (P Q : PauliGroup n)
+  (H: anticommute P Q = false) :
+  P.val * Q.val = Q.val * P.val := by
+  let FP := foldPauli.symm P
+  let FQ := foldPauli.symm Q
+  have PE : P = foldPauli FP := by
+    rw [Equiv.apply_symm_apply]
+  have QE : Q = foldPauli FQ := by
+    rw [Equiv.apply_symm_apply]
+  simp [PE, QE]
+  clear PE QE
+  let cP := FP.1
+  let mP := FP.2
+  have FPE : FP = (cP, mP) := by rfl
+  let cQ := FQ.1
+  let mQ := FQ.2
+  have FQE : FQ = (cQ, mQ) := by rfl
+  simp [FPE, FQE]
+  clear FPE FQE
+  simp [foldPauli, fold, fold_aux]
+  simp only [<- mul_Uphases]
+  rw [anticommuteₘ_correct_false]
+  swap
+  · simp [anticommute] at H
+    rw [PauliGroup.map] at H
+    aesop
+  apply uphase_ext <;> try rfl
+  rw [phase_comm]
