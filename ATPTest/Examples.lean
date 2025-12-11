@@ -218,7 +218,7 @@ lemma pauli_only_X_contra_Z {n : ℕ} {E : PauliGroup n}
   exact fun hf => pgXnepgZ (hx.symm.trans hf)
 
 
-theorem three_qub_corrects_one_x : Qcode.unique_corrects_P_error_of_weight three_qubit_encode 1
+theorem three_qub_corrects_one_x : QCode.unique_corrects_P_error_of_weight three_qubit_encode 1
  ⟨pX, by simp[Pauli]⟩ := by
   intros E₁ E₂ only_E₁ only_E₂ p1_E₁ p1_E₂ hW₁ hW₂ hne
   have h_or :

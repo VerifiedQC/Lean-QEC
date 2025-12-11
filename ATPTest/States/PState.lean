@@ -25,8 +25,6 @@ theorem unitary_inner_preserve {k : Type*} [Fintype k] [DecidableEq k] (v₁ v�
   simp_all [Matrix.one_apply]
 
 
-
-
 --thanks aristotle
 theorem unitary_norm_preserve {k : Type*} [Fintype k] [DecidableEq k] (U : 𝐔[k]) (v: k → ℂ) :
   ∑ x, ‖(U.1.toLin' v) x‖ ^ 2 = ∑ x, ‖v x‖ ^ 2 := by

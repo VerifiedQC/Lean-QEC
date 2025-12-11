@@ -132,8 +132,6 @@ lemma neg_one_not_stab (C : QCode n k) : u_neg 1 ∉ C.stabilizers := by
   exact this
 
 
---this is untrue if k=0: If the message space is trivial, then every member of pauli group is a stabilizer.
---As pauli group is noncommutative, this is then untrue
 theorem stab_comm (C : QCode n k) : IsMulCommutative (stabilizer_group C) := by
   refine ⟨⟨by rintro ⟨a, ha⟩ ⟨b, hb⟩
               simp
@@ -153,24 +151,41 @@ theorem stab_comm (C : QCode n k) : IsMulCommutative (stabilizer_group C) := by
 abbrev Pauli_of_stab {k} {C : QCode n k} (S : C.stabilizers) : PauliGroup n :=
   ⟨S.1, S.2.2⟩
 
+noncomputable instance {n k} (C : QCode n k) : DecidablePred (fun (N : ↑𝐔ₙ[n]) => ∀ S ∈ C.stabilizers, N * S = S * N) := Classical.decPred _
+
+def QCode.normalizer {k : ℕ} (C : QCode n k)  := {N : PauliGroup n | ∀ S ∈ C.stabilizers, S * N = N * S}
+
+lemma not_mem_normalizer_iff {k : ℕ} (C : QCode n k) (E : PauliGroup n) : E ∉ C.normalizer ↔ ∃ S ∈ C.stabilizers, S * E ≠ E * S := by
+  unfold QCode.normalizer
+  constructor <;> simp
+
+def QCode.normalizer' {k : ℕ} (C : QCode n k) := {N : PauliGroup n | ∀ S ∈ C.stabilizers, S * N = N * S ∧ PauliGroup.phase N = pgphase_1}
+
+def QCode.undetectable {k : ℕ} (C : QCode n k) (E : PauliGroup n) := E ∈ C.normalizer ∧ ↑E ∉ C.stabilizers
+
+def QCode.detectable {k : ℕ} (C : QCode n k) (E : PauliGroup n) := ¬ C.undetectable E
+
+def QCode.corrects_error_set {k : ℕ} (C : QCode n k) (E_set : Finset (PauliGroup n)) :=
+  ∀ E F : (PauliGroup n), E ∈ E_set → F ∈ E_set → ⟨(E.1)⁻¹ * F.1, pauli_mul (pauli_inv (by aesop)) (by aesop)⟩ ∉ C.normalizer
+
 def QCode.syndrome {k : ℕ} (C : QCode n k) (E : PauliGroup n)
    : C.stabilizers → pgroup_phases := fun U => pauli_pauli_phase E (Pauli_of_stab U)
 
 def QCode.distinguishes (C : QCode n k) (E₁ : PauliGroup n) (E₂ : PauliGroup n) := C.syndrome E₁ ≠ C.syndrome E₂
 
 --to detect errors, it suffices to distinguish an error and the I pauli
-def Qcode.unique_detects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ (E : PauliGroup n),
+def QCode.unique_detects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ (E : PauliGroup n),
   pauli_weight E ≤ w → E ≠ Pauli1 → C.distinguishes E Pauli1
 
-def Qcode.unique_corrects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ (E₁ E₂ : PauliGroup n),
+def QCode.unique_corrects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ (E₁ E₂ : PauliGroup n),
   (PauliGroup.phase E₁).1 = ⟨1, by norm_num⟩ → (PauliGroup.phase E₂).1 = ⟨1, by norm_num⟩ →
   pauli_weight E₁ ≤ w → pauli_weight E₂ ≤ w → E₁ ≠ E₂ → C.distinguishes E₁ E₂
 
-def Qcode.unique_detects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli):= ∀ (E : PauliGroup n),
+def QCode.unique_detects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli):= ∀ (E : PauliGroup n),
   (pauli_only E P) → pauli_weight E ≤ w → E ≠ Pauli1 → C.distinguishes E Pauli1
 
 --unique distinguishing
-def Qcode.unique_corrects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli) := ∀ (E₁ E₂ : PauliGroup n),
+def QCode.unique_corrects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli) := ∀ (E₁ E₂ : PauliGroup n),
   (pauli_only E₁ P) → (pauli_only E₂ P) →
   PauliGroup.phase E₁ = 1 → PauliGroup.phase E₂ = 1 →
   pauli_weight E₁ ≤ w → pauli_weight E₂ ≤ w → E₁ ≠ E₂ → C.distinguishes E₁ E₂
@@ -180,18 +195,51 @@ theorem QCode.distinguishes_of_exists_dist_stab {k : ℕ} (C : QCode n k) (E₁ 
   ∃ S : C.stabilizers,
     let SP : PauliGroup n := Pauli_of_stab S
     pauli_pauli_phase E₁ SP ≠ pauli_pauli_phase E₂ SP := by
-  constructor
-  · -- aesop?
-    sorry
-  -- TODO FIX
-  /-
-  constructor
-  · intro hD
-    rcases (Function.ne_iff.1 hD) with ⟨S, hS⟩
-    refine ⟨S, hS⟩
-  rintro ⟨S, hS⟩
-  apply Function.ne_iff.2 ⟨S, hS⟩
-  -/
+  unfold distinguishes syndrome
+  rw [Function.ne_iff]
+
+lemma pphase_Pauli1_left {P : PauliGroup n} : pauli_pauli_phase Pauli1 P = pgphase_1 := by
+  sorry
+
+lemma anticommute_of_anticommute {P₁ P₂ : PauliGroup n} (h_anti : anticommute P₁ P₂) : (P₁ * P₂ : 𝐔ₙ[n]) = - (P₂ * P₁) := sorry
+
+lemma Matrix.unitaryGroup.neg_ne {k : Type*} [Fintype k] [DecidableEq k] [Inhabited k] {M : Matrix.unitaryGroup k ℂ} : -M ≠ M := by
+  intros h_f
+  have hm : M * M⁻¹ = -1
+  · nth_rw 1 [←h_f]
+    simp
+  rw [mul_inv_cancel] at hm
+  obtain i : k := default
+  have:= congrArg (fun M => M i i) hm
+  simp only [OneMemClass.coe_one, one_apply_eq, neg_unitary_val, neg_apply] at this
+  norm_num at this
+
+
+theorem QCode.detectable_of_distinguishes_Pauli1 (C : QCode n k) (E : PauliGroup n) (hd : C.distinguishes E Pauli1) : C.detectable E := by
+  unfold detectable undetectable
+  apply not_and_of_not_left
+  rw [not_mem_normalizer_iff]
+  rw [C.distinguishes_of_exists_dist_stab] at hd
+  rcases hd with ⟨S, hS⟩
+  refine ⟨S, ⟨by aesop, ?_⟩⟩
+  simp_rw [pphase_Pauli1_left] at hS
+  unfold pauli_pauli_phase at hS
+  by_cases h: anticommute E (Pauli_of_stab S)
+  · suffices h_anti : (E * S : 𝐔ₙ[n]) = - (S * E : 𝐔ₙ[n])
+    · rw [h_anti]
+      symm
+      apply Matrix.unitaryGroup.neg_ne
+    convert anticommute_of_anticommute h
+  simp [←Bool.ne_false_iff, h] at hS
+
+theorem QCode.corrects_of_distinguishes (C : QCode n k) (E_set : Finset (PauliGroup n))
+(hd : ∀ E₁ E₂, E₁ ∈ E_set → E₂ ∈ E_set → C.distinguishes E₁ E₂) :
+  C.corrects_error_set E_set := by
+  unfold corrects_error_set normalizer
+  intros E F hE hF
+  have hdef := hd E F hE hF
+  rw [C.distinguishes_of_exists_dist_stab] at hdef
+  rcases hdef with ⟨S, hS⟩
   sorry
 
 --theorem that says pauli X, Z errors on stabilized vectors result
