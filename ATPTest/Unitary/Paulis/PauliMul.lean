@@ -8,18 +8,6 @@ def pointwise_mul_Paulis {n} (P Q : Fin n -> Pauli) (i : Fin n) :=
 def fold_Paulis_with_phases {n} (P : Fin n -> (pgroup_phases × Pauli)) :=
   unitary_n_nkron (λ i => U_phase (P i).2 (P i).1)
 
--- TODO move
-lemma mul_unitary_n_nkrons {n} (U₁ : Fin n -> 𝐔ₙ[1]) (U₂ : Fin n -> 𝐔ₙ[1]) :
-  unitary_n_nkron (λ i => (U₁ i) * (U₂ i)) =
-  (unitary_n_nkron U₁) * (unitary_n_nkron U₂) := by
-  induction n with
-  | zero =>
-    simp [unitary_n_nkron]
-  | succ n₀ IH =>
-    simp [unitary_n_nkron, unitary_nkron, normalized_kron, Matrix.kronecker]
-    rw [<- Matrix.mul_kronecker_mul]
-    aesop
-
 lemma pointwise_mul_Paulis_correct {n} (P Q : Fin n -> Pauli) :
   fold_Paulis_with_phases (pointwise_mul_Paulis P Q) =
   unitary_n_nkron P * unitary_n_nkron Q := by
@@ -38,15 +26,6 @@ lemma fold_pgroup_phases_empty (lst : Fin 0 -> pgroup_phases) :
 def collect_phases {n} (P : Fin n -> (pgroup_phases × Pauli)) : factored_Pauli n :=
   (fold_pgroup_phases (λ i => (P i).1), (λ i => (P i).2))
 
-/-
-lemma singleton_eq {t} (P Q : Fin 0 -> t) : P = Q := by
-  convert rfl
-
-lemma collect_phases_empty (P : Fin 0 -> (pgroup_phases × Pauli)) :
-  collect_phases P = (1, (λ i => (P i).2)) := by
-  simp [collect_phases, fold_pgroup_phases]
-  -/
-
 def zip {n t u} (x : Fin n -> t) (y : Fin n -> u) (i : Fin n) : t × u :=
   (x i, y i)
 
@@ -55,8 +34,7 @@ def unzipL {n t u} (xy : Fin n -> (t × u)) (i : Fin n) : t := (xy i).1
 def unzipR {n t u} (xy : Fin n -> (t × u)) (i : Fin n) : u := (xy i).2
 
 lemma unzipL_zip {n t u} (x : Fin n -> t) (y : Fin n -> u) i :
-  (zip x y i).1 = x i := by
-  rfl
+  (zip x y i).1 = x i := by rfl
 
 lemma fold_collect_iter {n} (c : Fin (n + 1) -> pgroup_phases) (m : Fin (n + 1) -> Pauli) :
   (foldPauli (collect_phases (zip c m))).val =
@@ -77,8 +55,7 @@ lemma fold_Paulis_with_phases_iter {n} (P : Fin (n + 1) -> pgroup_phases × Paul
   rfl
 
 lemma unitary_n_nkron_empty (P : Fin 0 -> 𝐔ₙ[1]) :
-  unitary_n_nkron P = 1 := by
-  rw [unitary_n_nkron]
+  unitary_n_nkron P = 1 := by rw [unitary_n_nkron]
 
 lemma collect_phases_correct_aux {n}
   (c : Fin n -> pgroup_phases) (m : Fin n -> Pauli) :
@@ -123,13 +100,6 @@ def scale_factored_Pauli {n} (c : pgroup_phases) (P : factored_Pauli n) :=
 
 def mul_factored_Paulis {n} (P Q : factored_Pauli n) :=
   scale_factored_Pauli (P.1 * Q.1) (mul_Pauli1_tuples P.2 Q.2)
-
-lemma mul_Uphases {n} (z₁ z₂) (U₁ U₂ : 𝐔ₙ[n]) :
-  U_phase (U₁ * U₂) (z₁ * z₂) = U_phase U₁ z₁ * U_phase U₂ z₂ := by
-  simp [U_phase]; module
-
-lemma mul_comm_pgroup_phases (a b : pgroup_phases) :
-  a * b = b * a := by simp; group
 
 lemma mul_factored_Paulis_correct {n} (P Q : factored_Pauli n) :
   foldPauli (mul_factored_Paulis P Q) =

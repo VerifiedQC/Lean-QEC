@@ -70,6 +70,13 @@ instance PauliPhases : Group pgroup_phases where
     rcases (pgphase_cases a) with ha | ha | ha | ha
     all_goals simp [ha]
 
+@[simp]
+lemma pgp_mul_eq (p1 : pgroup_phases) (p2 : pgroup_phases) : p1 * p2 = ⟨p1.1 * p2.1, pgroup_phases_closed_under_mul _ _⟩ := by
+  rfl
+
+lemma mul_comm_pgroup_phases (a b : pgroup_phases) :
+  a * b = b * a := by simp; group
+
 def pX := (unitary_fin_equiv beq) X
 def pY := (unitary_fin_equiv beq) Y
 def pZ := (unitary_fin_equiv beq) Z
@@ -159,7 +166,6 @@ lemma pgphase_id_1 (a : pgroup_phases) :
   a * pgphase_1 = a := by
   rcases a with ⟨a₀, ha⟩
   simp [pgphase_1]
-  rfl
 
 lemma uphase_injective (z z' : pgroup_phases) (p p' : Pauli)
   (eq: U_phase p.val z = U_phase p'.val z') :

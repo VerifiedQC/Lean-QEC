@@ -93,10 +93,15 @@ lemma U_phase_id {k : Type*} [Fintype k] [DecidableEq k] {U : 𝐔[k]} : U_phase
 
 def phase.unitary_of (z : phase) (n : ℕ) : 𝐔ₙ[n] := U_phase 1 z
 
+-- unused
+-- maybe intended for `U_phase_tensor`, but actually unnecessary?
 lemma phase_tensor_mul  (z₁ z₂ : phase) {n₁ n₂ : ℕ} : z₁.unitary_of n₁ ⊗ₙ z₂.unitary_of n₂ = (z₁ * z₂).unitary_of (n₁+n₂) := by
   admit
 
-lemma U_phase_tensor {n₁ n₂ : ℕ} (U₁ : 𝐔ₙ[n₁]) (U₂ : 𝐔ₙ[n₂]) (z₁ z₂ : phase) : (U_phase U₁ z₁) ⊗ₙ (U_phase U₂ z₂) = U_phase (U₁ ⊗ₙ U₂) (z₁ * z₂) := sorry
+lemma U_phase_tensor {n₁ n₂ : ℕ} (U₁ : 𝐔ₙ[n₁]) (U₂ : 𝐔ₙ[n₂]) (z₁ z₂ : phase) :
+  (U_phase U₁ z₁) ⊗ₙ (U_phase U₂ z₂) = U_phase (U₁ ⊗ₙ U₂) (z₁ * z₂) := by
+  simp [U_phase, unitary_nkron, normalized_kron, kroneckerMap]
+  ext i j; simp; ring
 
 def u_neg {n : ℕ} (U : 𝐔ₙ[n]) : 𝐔ₙ[n] := (U_phase U ⟨-1, by norm_num⟩)
 
@@ -154,3 +159,18 @@ lemma uphase_of_uphase (U : 𝐔ₙ[n]) z z' :
   U_phase (U_phase U z) z' = U_phase U (z * z') := by
   simp [U_phase]
   module
+
+lemma mul_unitary_n_nkrons {n} (U₁ : Fin n -> 𝐔ₙ[1]) (U₂ : Fin n -> 𝐔ₙ[1]) :
+  unitary_n_nkron (λ i => (U₁ i) * (U₂ i)) =
+  (unitary_n_nkron U₁) * (unitary_n_nkron U₂) := by
+  induction n with
+  | zero =>
+    simp [unitary_n_nkron]
+  | succ n₀ IH =>
+    simp [unitary_n_nkron, unitary_nkron, normalized_kron, Matrix.kronecker]
+    rw [<- Matrix.mul_kronecker_mul]
+    aesop
+
+lemma mul_Uphases {n} (z₁ z₂) (U₁ U₂ : 𝐔ₙ[n]) :
+  U_phase (U₁ * U₂) (z₁ * z₂) = U_phase U₁ z₁ * U_phase U₂ z₂ := by
+  simp [U_phase]; module

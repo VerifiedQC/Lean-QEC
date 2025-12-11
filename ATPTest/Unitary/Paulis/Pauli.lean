@@ -7,6 +7,7 @@ import ATPTest.AI_Generated.PauliBruteForce
 -- import ATPTest.AI_Generated.TediousLinearAlgebra
 import ATPTest.Unitary.Paulis.Pauli1
 import ATPTest.Unitary.Paulis.PauliFolding
+import ATPTest.Unitary.Paulis.PauliMul
 
 open Qubit
 open Function
@@ -251,14 +252,115 @@ lemma pphase_id_left (U : PauliGroup 1) :
   rw [pauli_pauli_phase_symm]
   exact pphase_id_right
 
+lemma pauli_mul' {n : ℕ} (U₁ U₂ : PauliGroup n) :
+  U₁.val * U₂.val ∈ PauliGroup n := by
+  rw [<- mul_Paulis_correct]
+  aesop
+
 lemma pauli_mul {n : ℕ} {U₁ U₂ : 𝐔ₙ[n]}
  (hP₁ : U₁ ∈ PauliGroup n) (hP₂ : U₂ ∈ PauliGroup n) :
- U₁ * U₂ ∈ PauliGroup n := by sorry
+ U₁ * U₂ ∈ PauliGroup n := by
+ apply (pauli_mul' ⟨U₁, hP₁⟩ ⟨U₂, hP₂⟩)
+
+def factored_inv {n : ℕ} (U : factored_Pauli n) : factored_Pauli n :=
+  (pgroup_phases.inv U.1, U.2)
+
+lemma scale1_factored_Pauli {n} (P : factored_Pauli n) :
+  scale_factored_Pauli pgphase_1 P = P := by
+  rw [scale_factored_Pauli]
+  have: pgphase_1 = 1 := by rfl
+  rw [this]
+  rw [PauliPhases.one_mul]
+
+lemma mul_Pauli1_xx (P : Pauli) :
+  mul_Pauli1 P P = (1, Pauli_I) := by
+  rw [mul_Pauli1]
+  rcases (Pauli_cases P) with rfl | rfl | rfl | rfl
+  all_goals aesop
+
+lemma eq_empty_tuples {t} (P Q : Fin 0 -> t) :
+  P = Q := by convert rfl
+
+lemma pointwise_mul_Paulis_xx {n} (P : Fin n -> Pauli) :
+  pointwise_mul_Paulis P P = (λ _ => (1, Pauli_I)) := by
+  unfold pointwise_mul_Paulis
+  apply funext
+  intro x
+  apply mul_Pauli1_xx
+
+lemma collect_phases_iter {n} (P : Fin (n + 1) -> (pgroup_phases × Pauli)) :
+  collect_phases P =
+  ((P 0).1 * (collect_phases (Fin.tail P)).1, λ i => (P i).2) := by
+  rw [collect_phases, collect_phases]
+  rfl
+
+lemma mul_Pauli1_tuples_xx {n} (P : Fin n -> Pauli) :
+  mul_Pauli1_tuples P P = unfolded1 := by
+  rw [mul_Pauli1_tuples]
+  rw [pointwise_mul_Paulis_xx]
+  clear P
+  induction n with
+  | zero =>
+    simp [collect_phases, fold_pgroup_phases]
+    rfl
+  | succ n₀ IH =>
+    simp [collect_phases_iter]
+    conv =>
+      enter[1]
+      enter[1]
+      enter[1]
+      enter[1]
+      change (λ _ => (1, Pauli_I))
+    rw [IH]
+    rfl
+
+lemma factored_inv_correct {n} (U : factored_Pauli n) :
+  foldPauli (factored_inv U) = ((foldPauli U).val)⁻¹ := by
+  symm; rw [DivisionMonoid.inv_eq_of_mul]
+  rw [<-mul_Paulis_correct]
+  simp [factored_inv, mul_Paulis]
+  simp [mul_factored_Paulis]
+  have: (U.1).val.z * ((pgroup_phases.inv U.1)).val.z = 1 := by
+    suffices: U.1 * pgroup_phases.inv U.1 = 1
+    · have H := congrArg (λx => x.val.z) this
+      simp at H
+      rw [H]
+      rfl
+    apply mul_inv_cancel
+  simp_rw [this]
+  conv =>
+    enter[1]
+    enter[1]
+    enter[2]
+    enter[1]
+    change pgphase_1
+  rw [scale1_factored_Pauli]
+  rw [mul_Pauli1_tuples_xx]
+  rw [unfolded1]
+  rw [<- Pauli1_unfold]
+  rfl
+
+lemma pauli_inv' {n : ℕ} (U: PauliGroup n) :
+  (U.val)⁻¹ ∈ PauliGroup n := by
+  let FU := foldPauli.symm U
+  have: U = foldPauli FU := by aesop
+  rw [this]
+  rw [<- factored_inv_correct]
+  aesop
 
 --maybe tedious proof?
 lemma pauli_inv {n : ℕ} {U : 𝐔ₙ[n]} (hU : U ∈ PauliGroup n)
-  : U⁻¹ ∈ PauliGroup n := by sorry
+  : U⁻¹ ∈ PauliGroup n := by
+  apply (pauli_inv' ⟨U, hU⟩)
+
+-- TODO
+lemma pauli_commute_or_anticommute' {n} (P Q : PauliGroup n) :
+  P.val * Q.val = Q.val * P.val ∨
+  P.val * Q.val = - Q.val * P.val := by
+  sorry
 
 --want to prove this one soon
 lemma pauli_commute_or_anticommute {n : ℕ}{U₁ U₂ : 𝐔ₙ[n]}
-  (hU₁ : U₁ ∈ PauliGroup n) (hU₂ : U₂ ∈ PauliGroup n) : U₁ * U₂ = U₂ * U₁ ∨ U₁ * U₂ = - U₂ * U₁ := sorry
+  (hU₁ : U₁ ∈ PauliGroup n) (hU₂ : U₂ ∈ PauliGroup n) :
+  U₁ * U₂ = U₂ * U₁ ∨ U₁ * U₂ = - U₂ * U₁ := by
+  apply (pauli_commute_or_anticommute' ⟨U₁, hU₁⟩ ⟨U₂, hU₂⟩)

@@ -49,11 +49,6 @@ def has_pauli_eigenvalues {a : Type*} [Fintype a] [DecidableEq a] {A : Matrix a 
 
 def is_pauli_product (U : 𝐔ₙ[n]) := ∃ (m : Fin n → Pauli), unitary_n_nkron m = U
 
-
-@[simp]
-lemma pgp_mul_eq (p1 : pgroup_phases) (p2 : pgroup_phases) : p1 * p2 = ⟨p1.1 * p2.1, pgroup_phases_closed_under_mul _ _⟩ := by
-  rfl
-
 noncomputable def pauli_n_univ : Finset (Fin n → Pauli) := Finset.univ
 
 noncomputable def pauli_products_n : Finset (𝐔ₙ[n]) := Finset.image (λ m => unitary_n_nkron m) (Finset.univ : Finset (Fin n → Pauli))
