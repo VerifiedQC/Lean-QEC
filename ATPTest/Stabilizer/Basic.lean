@@ -93,26 +93,22 @@ noncomputable section
 variable {n : ℕ} {k : ℕ} (hn : 0 < n)
 
 def QCode.stabilizers (C : QCode n k) :=
-  {U | (∀ ψ, stabilizes U (C ψ)) ∧ U ∈ PauliGroup n}
+  {U : PauliGroup n | (∀ ψ, stabilizes U (C ψ))}
 
 
-lemma QCode.stabilizer_closed_under_mul (C : QCode n k) {a b : 𝐔ₙ[n]} (ha : a ∈ C.stabilizers) (hb : b ∈ C.stabilizers)
-  : a * b ∈ C.stabilizers := by
-  rcases ha with ⟨a_stab, a_pauli⟩
-  rcases hb with ⟨b_stab, b_pauli⟩
-  constructor
-  · intros ψ
-    exact mul_stab (a_stab _) (b_stab _)
-  exact pauli_mul a_pauli b_pauli
+lemma QCode.stabilizer_closed_under_mul (C : QCode n k) {a b : PauliGroup n} (ha : a ∈ C.stabilizers) (hb : b ∈ C.stabilizers)
+  : ⟨(a : 𝐔ₙ[n]) * b, pauli_mul' _ _⟩  ∈ C.stabilizers := by
+  intros ψ
+  exact mul_stab (ha _) (hb _)
 
-lemma QCode.stabilizer_closed_under_inv (C : QCode n k) {x : 𝐔ₙ[n]} (hx : x ∈ C.stabilizers) : x⁻¹ ∈ C.stabilizers := by
-  rcases hx with ⟨x_stab, x_pauli⟩
-  refine ⟨fun ψ => inv_stab (x_stab ψ), pauli_inv x_pauli⟩
+lemma QCode.stabilizer_closed_under_inv (C : QCode n k) {x : PauliGroup n} (hx : x ∈ C.stabilizers) : ⟨x⁻¹, pauli_inv (by aesop)⟩ ∈ C.stabilizers := by
+  intros ψ
+  exact inv_stab (hx ψ)
 
-def stabilizer_group (C : QCode n k) : Subgroup (𝐔ₙ[n]) where
+def stabilizer_group (C : QCode n k) : Subgroup (@PauliGroup_group n) where
   carrier := C.stabilizers
   mul_mem' := by intros a b ha hb; exact C.stabilizer_closed_under_mul ha hb
-  one_mem' := by refine ⟨fun ψ => one_stab_all _, mem_PauliGroup_id⟩
+  one_mem' := fun ψ => one_stab_all (C ψ)
   inv_mem' := by intros x hx; exact C.stabilizer_closed_under_inv hx
 
 def PState.zero {n : ℕ} := pstate_n_kron (fun (_ : Fin n) => qub_zero)
@@ -121,7 +117,10 @@ def PState.zero {n : ℕ} := pstate_n_kron (fun (_ : Fin n) => qub_zero)
 --easy proof, see if aristotle can do this
 lemma PState.ne_zero {n : ℕ} {ψ : PState n} : ψ.vec ≠ 0 := sorry
 
-lemma neg_one_not_stab (C : QCode n k) : u_neg 1 ∉ C.stabilizers := by
+
+--oops it's not actually easy to state -1 as a pauli
+/-
+lemma neg_one_not_stab (C : QCode n k) : U_neg 1 ∉ C.stabilizers := by
   rintro ⟨h_stab, h_pauli⟩
   have:= h_stab PState.zero
   unfold stabilizes PState.apply u_neg U_phase at this
@@ -130,13 +129,15 @@ lemma neg_one_not_stab (C : QCode n k) : u_neg 1 ∉ C.stabilizers := by
   apply PState.ne_zero
   rw [←neg_eq_self]
   exact this
+-/
 
+--i messed this one up too
 
+/-
 theorem stab_comm (C : QCode n k) : IsMulCommutative (stabilizer_group C) := by
-  refine ⟨⟨by rintro ⟨a, ha⟩ ⟨b, hb⟩
-              simp
-              rcases pauli_commute_or_anticommute ha.2 hb.2 with comm | anticomm
-              · assumption
+  refine ⟨⟨by intro a b
+              rcases pauli_commute_or_anticommute a.1.2 b.1.2 with comm | anticomm
+              ·
               have abstab := ((stabilizer_group C).mul_mem' ha hb).1 PState.zero
               rw [anticomm] at abstab
               unfold stabilizes PState.apply at abstab
@@ -147,29 +148,33 @@ theorem stab_comm (C : QCode n k) : IsMulCommutative (stabilizer_group C) := by
                 ] at abstab
               apply absurd (neg_eq_self.1 abstab) (PState.ne_zero)
   ⟩⟩
+-/
 
+/-
 abbrev Pauli_of_stab {k} {C : QCode n k} (S : C.stabilizers) : PauliGroup n :=
   ⟨S.1, S.2.2⟩
+-/
+
 
 noncomputable instance {n k} (C : QCode n k) : DecidablePred (fun (N : ↑𝐔ₙ[n]) => ∀ S ∈ C.stabilizers, N * S = S * N) := Classical.decPred _
 
-def QCode.normalizer {k : ℕ} (C : QCode n k)  := {N : PauliGroup n | ∀ S ∈ C.stabilizers, S * N = N * S}
+def QCode.normalizer {k : ℕ} (C : QCode n k)  := {N : PauliGroup n | ∀ S ∈ C.stabilizers, (S : 𝐔ₙ[n]) * N = N * S}
 
-lemma not_mem_normalizer_iff {k : ℕ} (C : QCode n k) (E : PauliGroup n) : E ∉ C.normalizer ↔ ∃ S ∈ C.stabilizers, S * E ≠ E * S := by
+lemma not_mem_normalizer_iff {k : ℕ} (C : QCode n k) (E : PauliGroup n) : E ∉ C.normalizer ↔ ∃ S ∈ C.stabilizers, (S : 𝐔ₙ[n]) * E ≠ E * S := by
   unfold QCode.normalizer
   constructor <;> simp
 
-def QCode.normalizer' {k : ℕ} (C : QCode n k) := {N : PauliGroup n | ∀ S ∈ C.stabilizers, S * N = N * S ∧ PauliGroup.phase N = pgphase_1}
+def QCode.normalizer' {k : ℕ} (C : QCode n k) := {N : PauliGroup n | ∀ S ∈ C.stabilizers, (S : 𝐔ₙ[n]) * N = N * S ∧ PauliGroup.phase N = pgphase_1}
 
 def QCode.undetectable {k : ℕ} (C : QCode n k) (E : PauliGroup n) := E ∈ C.normalizer ∧ ↑E ∉ C.stabilizers
 
 def QCode.detectable {k : ℕ} (C : QCode n k) (E : PauliGroup n) := ¬ C.undetectable E
 
 def QCode.corrects_error_set {k : ℕ} (C : QCode n k) (E_set : Finset (PauliGroup n)) :=
-  ∀ E F : (PauliGroup n), E ∈ E_set → F ∈ E_set → ⟨(E.1)⁻¹ * F.1, pauli_mul (pauli_inv (by aesop)) (by aesop)⟩ ∉ C.normalizer
+  ∀ E F : (PauliGroup n), E ∈ E_set → F ∈ E_set → ⟨(E.1)⁻¹ * F.1, pauli_mul (pauli_inv (by aesop)) (by aesop)⟩ ∉ (C.normalizer \ C.stabilizers)
 
 def QCode.syndrome {k : ℕ} (C : QCode n k) (E : PauliGroup n)
-   : C.stabilizers → pgroup_phases := fun U => pauli_pauli_phase E (Pauli_of_stab U)
+   : C.stabilizers → pgroup_phases := fun U => pauli_pauli_phase E U
 
 def QCode.distinguishes (C : QCode n k) (E₁ : PauliGroup n) (E₂ : PauliGroup n) := C.syndrome E₁ ≠ C.syndrome E₂
 
@@ -193,8 +198,7 @@ def QCode.unique_corrects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli
 theorem QCode.distinguishes_of_exists_dist_stab {k : ℕ} (C : QCode n k) (E₁ E₂ : PauliGroup n) :
   C.distinguishes E₁ E₂ ↔
   ∃ S : C.stabilizers,
-    let SP : PauliGroup n := Pauli_of_stab S
-    pauli_pauli_phase E₁ SP ≠ pauli_pauli_phase E₂ SP := by
+    pauli_pauli_phase E₁ S ≠ pauli_pauli_phase E₂ S := by
   unfold distinguishes syndrome
   rw [Function.ne_iff]
 
@@ -224,8 +228,8 @@ theorem QCode.detectable_of_distinguishes_Pauli1 (C : QCode n k) (E : PauliGroup
   refine ⟨S, ⟨by aesop, ?_⟩⟩
   simp_rw [pphase_Pauli1_left] at hS
   unfold pauli_pauli_phase at hS
-  by_cases h: anticommute E (Pauli_of_stab S)
-  · suffices h_anti : (E * S : 𝐔ₙ[n]) = - (S * E : 𝐔ₙ[n])
+  by_cases h: anticommute E S
+  · suffices h_anti : E * (S : 𝐔ₙ[n]) = - (S * E)
     · rw [h_anti]
       symm
       apply Matrix.unitaryGroup.neg_ne

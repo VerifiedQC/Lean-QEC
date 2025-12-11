@@ -40,6 +40,7 @@ lemma commute₁_right (P Q : Pauli) :
   all_goals rcases (Pauli_cases Q) with rfl | rfl | rfl | rfl
   all_goals simp [mul_Pauli1]
 
+
 lemma commute₁_correct_true (P Q : Pauli)
   (commutePQ : commute₁ P Q):
   (mul_Pauli1 P Q).1 = (mul_Pauli1 Q P).1 := by
@@ -48,6 +49,7 @@ lemma commute₁_correct_true (P Q : Pauli)
   all_goals simp [commute₁] at commutePQ
   all_goals try rfl
   all_goals simp [mul_Pauli1]
+
 
 lemma commute₁_correct_false (P Q : Pauli)
   (commutePQ : commute₁ P Q = false):
