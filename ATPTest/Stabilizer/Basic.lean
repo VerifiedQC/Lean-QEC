@@ -198,8 +198,35 @@ theorem QCode.distinguishes_of_exists_dist_stab {k : ℕ} (C : QCode n k) (E₁ 
   unfold distinguishes syndrome
   rw [Function.ne_iff]
 
+lemma commuteₘ_1x {n} (P : Fin n -> Pauli) :
+  !anticommuteₘ (λ _ => Pauli_I) P := by
+  induction n with
+  | zero => rfl
+  | succ n₀ IH =>
+    rw [anticommuteₘ]
+    have: (Fin.tail (λ _ => Pauli_I)) = (λ _ => Pauli_I)
+    · apply funext
+      intro x
+      simp [Fin.tail]
+    rw [this]
+    have IH' := IH (Fin.tail P)
+    simp at IH'
+    rw [IH']
+    simp [commute₁]
+
+lemma commute_1x (P : PauliGroup n) : !(anticommute Pauli1 P) := by
+  rw [anticommute]
+  have: PauliGroup.map (Pauli1 (n := n)) = λ i => Pauli_I
+  · rw [Pauli1_unfold]
+    simp [PauliGroup.map]
+  rw [this]
+  apply commuteₘ_1x
+
 lemma pphase_Pauli1_left {P : PauliGroup n} : pauli_pauli_phase Pauli1 P = pgphase_1 := by
-  sorry
+  rw [pauli_pauli_phase]
+  have: !anticommute Pauli1 P := commute_1x P
+  simp at this
+  simp [this]
 
 lemma anticommute_of_anticommute {P₁ P₂ : PauliGroup n} (h_anti : anticommute P₁ P₂) : (P₁ * P₂ : 𝐔ₙ[n]) = - (P₂ * P₁) := sorry
 
