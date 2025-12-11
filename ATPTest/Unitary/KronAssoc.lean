@@ -108,3 +108,46 @@ lemma kron_assoc {n₁ n₂ n₃} (U₁ : 𝐔ₙ[n₁]) (U₂ : 𝐔ₙ[n₂]) 
     rw [<- bits_split_eq2]
   · rw [<- bits_split_eq3]
     rw [<- bits_split_eq3]
+
+lemma unitary_nkron_zero_id_left {n : ℕ} (U : 𝐔ₙ[n]) : unitary_nkron (1 : 𝐔ₙ[0]) U ≍ U := by
+  apply heq_of_eq_cast
+  swap
+  rw [zero_add]
+  apply unitary_ext
+  ext i j
+  simp [unitary_nkron, normalized_kron, unitary_cast_coe, <- matrix_entry_of_cast]
+  simp [bits_cat]
+  have h_1 : (1 : (Matrix (BitVec 0) (BitVec 0) ℂ)) (bits_cat.symm i).1 (bits_cat.symm j).1 = 1
+  · show (((OfNat.ofNat 1) : Matrix (BitVec 0) (BitVec 0) ℂ)
+    (bits_cat.invFun i).1 (bits_cat.invFun j).1 = 1)
+    unfold bits_cat
+    simp only [BitVec.extractLsb'_eq_zero, Matrix.one_apply_eq]
+  rw [h_1, one_mul]
+  congr! --just congr doesn't work, couldn't possibly imagine why
+  all_goals --??????
+    ext x i h
+    rw [cast_to_bvcast]
+    swap
+    rw [zero_add]
+    simp only [BitVec.getElem_extractLsb', zero_add, BitVec.getElem_cast]
+    rfl
+
+--much easier because defeq, typechecks
+lemma unitary_nkron_zero_id_right {n : ℕ} (U : 𝐔ₙ[n]) : unitary_nkron U (1 : 𝐔ₙ[0]) = U := by
+  apply unitary_ext
+  ext i j
+  simp [unitary_nkron, normalized_kron, normalize_mat, bits_cat]
+
+/-This can be stated, general form cannot due to typechecking reasons. Found in Unitary.KronAssoc.lean -/
+lemma unitary1_kron_assoc {U₁ U₂ U₃ : 𝐔ₙ[1]}  :
+  (U₁ ⊗ₙ U₂) ⊗ₙ U₃ = U₁ ⊗ₙ (U₂ ⊗ₙ U₃) := by
+  ext i j;
+  simp [ unitary_nkron, normalized_kron ];
+  ring_nf
+  fin_cases i <;> fin_cases j <;> rfl
+
+
+@[simp]
+lemma zero_tensor_one_id {U : 𝐔ₙ[1]} : (1 : 𝐔ₙ[0]) ⊗ₙ U = U := by
+  rw [←heq_iff_eq]
+  exact (unitary_nkron_zero_id_left _)

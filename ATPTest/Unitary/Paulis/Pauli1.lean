@@ -77,6 +77,9 @@ lemma pgp_mul_eq (p1 : pgroup_phases) (p2 : pgroup_phases) : p1 * p2 = ⟨p1.1 *
 lemma mul_comm_pgroup_phases (a b : pgroup_phases) :
   a * b = b * a := by simp; group
 
+lemma phase_id_coe : (↑(1 : pgroup_phases) : phase).z = 1 := by
+  rfl
+
 def pX := (unitary_fin_equiv beq) X
 def pY := (unitary_fin_equiv beq) Y
 def pZ := (unitary_fin_equiv beq) Z
