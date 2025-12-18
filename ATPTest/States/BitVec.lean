@@ -83,6 +83,26 @@ def ket_prod {n₁ n₂}
     (v2 : BitVec n₂ → ℂ) :=
   toMat.symm (normalized_kron (toMat v1) (toMat v2))
 
+lemma ket_prod_linear_left {n m} (v1 v2 : BitVec n → ℂ) (w : BitVec m → ℂ) (a b : ℂ) :
+  ket_prod (a • v1 + b • v2) w = a • ket_prod v1 w + b • ket_prod v2 w := by
+    simp [ket_prod, -Pi.add_apply];
+    simp [normalized_kron];
+    ext; simp [Matrix.kroneckerMap];
+    unfold toMat at * ;
+    simp_all only [BitVec.ofNat_eq_ofNat, Equiv.coe_fn_mk, Pi.add_apply, Pi.smul_apply, smul_eq_mul,
+      Equiv.coe_fn_symm_mk, submatrix_apply, of_apply]
+    ring
+
+  lemma ket_prod_linear_right {n m} (v1 v2 : BitVec n → ℂ) (w : BitVec m → ℂ) (a b : ℂ) :
+  ket_prod w (a • v1 + b • v2) = a • ket_prod w v1 + b • ket_prod w v2 := by
+    simp [ket_prod, -Pi.add_apply];
+    simp [normalized_kron];
+    ext; simp [Matrix.kroneckerMap];
+    unfold toMat at * ;
+    simp_all only [BitVec.ofNat_eq_ofNat, Equiv.coe_fn_mk, Pi.add_apply, Pi.smul_apply, smul_eq_mul,
+      Equiv.coe_fn_symm_mk, submatrix_apply, of_apply]
+    ring
+
 lemma kron_prod {n₁ m₁ n₂ m₂}
     (U₁ : Matrix (BitVec m₁) (BitVec n₁) ℂ)
     (U₂ : Matrix (BitVec m₂) (BitVec n₂) ℂ)
