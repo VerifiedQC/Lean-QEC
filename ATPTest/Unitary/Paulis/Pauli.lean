@@ -49,12 +49,19 @@ lemma pauli_pauli_phase_self (U : PauliGroup n) :
   simp [pauli_pauli_phase, anticommute_xx]
 
 def pgX := foldPauli (pgphase_1, fun (_ : Fin 1) => Pauli_X)
-def pgY := foldPauli (pgphase_1, fun (_ : Fin 1) => Pauli_X)
-def pgZ := foldPauli (pgphase_1, fun (_ : Fin 1) => Pauli_X)
-def pg1 := foldPauli (pgphase_1, fun (_ : Fin 1) => Pauli_X)
+def pgY := foldPauli (pgphase_1, fun (_ : Fin 1) => Pauli_Y)
+def pgZ := foldPauli (pgphase_1, fun (_ : Fin 1) => Pauli_Z)
+def pg1 := foldPauli (pgphase_1, fun (_ : Fin 1) => Pauli_I)
 
 @[simp]
-lemma pphase_XZ : pauli_pauli_phase pgX pgZ = pgphase_n1 := by admit
+lemma pphase_XZ : pauli_pauli_phase pgX pgZ = pgphase_n1 := by
+  simp only [pauli_pauli_phase]
+  simp only [anticommute]
+  simp only [anticommuteₘ]
+  suffices: !(commute₁ (PauliGroup.map pgX 0) (PauliGroup.map pgZ 0))
+  · simp_rw [this]
+    simp
+  simp [commute₁, PauliGroup.map, pgX, pgZ]
 
 @[simp]
 lemma pphase_ZX : pauli_pauli_phase pgZ pgX = pgphase_n1 := by
@@ -62,7 +69,14 @@ lemma pphase_ZX : pauli_pauli_phase pgZ pgX = pgphase_n1 := by
   exact pphase_XZ
 
 @[simp]
-lemma pphase_XY : pauli_pauli_phase pgX pgY = pgphase_n1 := by admit
+lemma pphase_XY : pauli_pauli_phase pgX pgY = pgphase_n1 := by
+  simp only [pauli_pauli_phase]
+  simp only [anticommute]
+  simp only [anticommuteₘ]
+  suffices: !(commute₁ (PauliGroup.map pgX 0) (PauliGroup.map pgY 0))
+  · simp_rw [this]
+    simp
+  simp [commute₁, PauliGroup.map, pgX, pgY]
 
 @[simp]
 lemma pphase_YX : pauli_pauli_phase pgY pgX = pgphase_n1 := by
@@ -70,7 +84,14 @@ lemma pphase_YX : pauli_pauli_phase pgY pgX = pgphase_n1 := by
   exact pphase_XY
 
 @[simp]
-lemma pphase_YZ : pauli_pauli_phase pgY pgZ = pgphase_n1 := by admit
+lemma pphase_YZ : pauli_pauli_phase pgY pgZ = pgphase_n1 := by
+  simp only [pauli_pauli_phase]
+  simp only [anticommute]
+  simp only [anticommuteₘ]
+  suffices: !(commute₁ (PauliGroup.map pgY 0) (PauliGroup.map pgZ 0))
+  · simp_rw [this]
+    simp
+  simp [commute₁, PauliGroup.map, pgZ, pgY]
 
 @[simp]
 lemma pphase_ZY : pauli_pauli_phase pgZ pgY = pgphase_n1 := by
@@ -79,7 +100,13 @@ lemma pphase_ZY : pauli_pauli_phase pgZ pgY = pgphase_n1 := by
 
 @[simp]
 lemma pphase_id_right {U : PauliGroup 1} :
-  pauli_pauli_phase pg1 U = pgphase_1 := by admit
+  pauli_pauli_phase pg1 U = pgphase_1 := by
+  simp only [pauli_pauli_phase]
+  simp only [anticommute, anticommuteₘ]
+  have: PauliGroup.map pg1 0 = Pauli_I := by
+    simp [PauliGroup.map, pg1]
+  simp_rw [this]
+  simp [commute₁]
 
 @[simp]
 lemma pphase_id_left (U : PauliGroup 1) :
