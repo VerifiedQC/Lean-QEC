@@ -47,18 +47,18 @@ lemma control_one_apply {n : ℕ} (U : 𝐔ₙ[n]) (ψ : PState n) :
     unfold unitary_fin_equiv ket_prod; aesop;
     unfold normalized_kron; aesop;
     simp +decide [ Matrix.mulVec, dotProduct, Finset.sum_ite ];
-    simp +decide [ Finset.filter_eq', Finset.filter_and, Matrix.mulVec, dotProduct ];
-    split_ifs <;> simp +decide [ *, Finset.sum_ite ];
+    simp +decide [ Finset.filter_and ];
+    split_ifs <;> simp +decide [ * ];
     · aesop;
     · rw [ Finset.sum_eq_single x ] <;> aesop;
       · simp_all +decide [ Matrix.submatrix, Matrix.kroneckerMap ];
         simp +decide [ toMat, Matrix.of_apply ];
         simp_all +decide [ fin2prodbitvec_equiv, bits_cat ];
       · cases a_1 ( fin2prodbitvec_equiv.symm.injective <| Prod.ext ( by aesop ) ( by aesop ) );
-    · simp_all +decide [ Matrix.submatrix, Matrix.mulVec ];
+    · simp_all +decide [ Matrix.submatrix ];
       simp_all +decide [ toMat, Matrix.mulVec, dotProduct, Finset.sum_ite ];
       rw [ Finset.mul_sum _ _ _ ];
-      refine' Finset.sum_bij ( fun y hy => ( fin2prodbitvec_equiv.symm y ).2 ) _ _ _ _ <;> simp_all +decide [ Finset.sum_ite ];
+      refine' Finset.sum_bij ( fun y hy => ( fin2prodbitvec_equiv.symm y ).2 ) _ _ _ _ <;> simp_all +decide;
       · aesop;
         exact fin2prodbitvec_equiv.symm.injective ( Prod.ext ( by aesop ) ( by aesop ) );
       · intro b; use fin2prodbitvec_equiv ( 1, b ) ; aesop;
@@ -104,9 +104,9 @@ lemma qub_zero_apply_X : qub_zero.apply pX = qub_one := by
       field_simp;
       erw [ Matrix.cons_val_zero, Matrix.cons_val_one ] ; norm_num;
   · unfold qub_zero qub_one PState.apply; norm_num [ Matrix.mulVec ] ;
-    unfold pX; norm_num [ Matrix.mulVec ] ;
+    unfold pX;
     unfold Qubit.X;
-    simp ( config := { decide := true } ) [ Matrix.mulVec ];
+    simp ( config := { decide := true } );
     exact show ( Matrix.mulVec ( Matrix.of ![![0, 1], ![1, 0]] ) ![1, 0] ) 1 = 1 by simp ( config := { decide := Bool.true } ) [ Matrix.mulVec ] ;
 
 /-
@@ -116,11 +116,11 @@ open Qubit Function Matrix
 
 lemma helper_step_encode_one : (qub_one ⊗ₚ qub_zero).apply (p1 ⊗ₙ pX) = qub_one ⊗ₚ qub_one := by
   have h_step : (qub_one ⊗ₚ qub_zero).apply (p1 ⊗ₙ pX) = (qub_one.apply p1) ⊗ₚ (qub_zero.apply pX) := by
-    exact?;
+    exact kron_mul_kron qub_one qub_zero p1 pX;
   have h_p1 : qub_one.apply p1 = qub_one := by
     exact one_stab_all _
   have h_pX : qub_zero.apply pX = qub_one := by
-    exact?
+    exact qub_zero_apply_X
   rw [h_step, h_p1, h_pX]
 
 /-
@@ -140,7 +140,7 @@ lemma three_qubit_encode_one : three_qubit_encode qub_one = (qub_one ⊗ₚ qub_
       ext ; norm_num [ p1 ];
     -- Apply the definition of `apply` to split the operation.
     have h_split : ((qub_one ⊗ₚ qub_zero) ⊗ₚ qub_zero).apply ((Cₙ[pX]) ⊗ₙ p1) = ((qub_one ⊗ₚ qub_zero).apply (Cₙ[pX])) ⊗ₚ (qub_zero.apply p1) := by
-      exact?;
+      exact kron_mul_kron (qub_one ⊗ₚ qub_zero) qub_zero Cₙ[pX] p1;
     rw [ h_split, h1, h2 ];
   -- The state after applying the second operation is `(qub_one ⊗ₚ qub_one) ⊗ₚ qub_one`.
   have h_second_op : ((qub_one ⊗ₚ qub_one) ⊗ₚ qub_zero).apply (Cₙ[p1 ⊗ₙ pX]) = (qub_one ⊗ₚ (qub_one ⊗ₚ qub_one)) := by
@@ -149,7 +149,7 @@ lemma three_qubit_encode_one : three_qubit_encode qub_one = (qub_one ⊗ₚ qub_
     exact congr_arg _ ( helper_step_encode_one );
   -- By the associativity of the tensor product, we can rewrite the right-hand side to match the left-hand side.
   have h_assoc : (qub_one ⊗ₚ qub_one) ⊗ₚ qub_one = qub_one ⊗ₚ (qub_one ⊗ₚ qub_one) := by
-    exact?;
+    exact PState.kron_assoc;
   exact h_assoc ▸ h_second_op ▸ h_first_op ▸ rfl
 
 /-
@@ -230,10 +230,32 @@ lemma beq_eq : (beq.symm 0#1) = 0 := by
 
 @[simp]
 lemma qub_zero_Z : qub_zero.apply pZ = qub_zero := by
-  admit
+  simp [PState.apply]
+  simp only [qub_zero]
+  rw [Ket.mk.injEq]
+  unfold Equiv.arrowCongr
+  unfold pZ
+  simp only [unitary_fin_equiv]
+  simp [Qubit.Z]
+  simp [Matrix.submatrix_mulVec_equiv]
+  congr
+  simp [Matrix.vecHead, Matrix.vecTail]
 
 @[simp]
-lemma qub_one_Z : qub_one.apply pZ = Ket.phase_mul qub_one ⟨-1, by simp⟩ := by admit
+lemma qub_one_Z : qub_one.apply pZ = Ket.phase_mul qub_one ⟨-1, by simp⟩ := by
+  simp [PState.apply]
+  simp only [qub_one]
+  rw [Ket.mk.injEq]
+  unfold Equiv.arrowCongr
+  unfold pZ
+  simp only [unitary_fin_equiv]
+  simp [Qubit.Z]
+  simp [Matrix.submatrix_mulVec_equiv]
+  simp [Matrix.vecHead, Matrix.vecTail]
+  simp [Ket.phase_mul]
+  rw [<- Pi.neg_comp]
+  congr
+  aesop
 
 abbrev fold1 {n} (t : Fin n → Pauli) := foldPauli (1, t)
 
