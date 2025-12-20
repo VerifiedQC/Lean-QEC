@@ -33,7 +33,9 @@ def CodeSpace.distance (C : CodeSpace n) (nt : C.nontrivial) : ℕ :=
 
 variable {α : Type*} [Fintype α]
 
-lemma injective_of_linearIndependent {ι} {s : ι → (Fin n → ZMod 2)} (hlin : LinearIndependent (ZMod 2) s) : Function.Injective s := sorry
+lemma injective_of_linearIndependent {ι} {s : ι → (Fin n → ZMod 2)}
+  (hlin : LinearIndependent (ZMod 2) s) : Function.Injective s := by
+  apply (LinearIndependent.injective hlin)
 
 def CodeSpace.generatorMatrixOf (C : CodeSpace n) (G : Matrix α (Fin n) (ZMod 2))
   : Prop := (LinearIndependent (ZMod 2) (fun r => G r)) ∧ Submodule.span (ZMod 2) (Finset.image (fun r => G r) Finset.univ) = C
@@ -47,7 +49,10 @@ def CodeSpace.parityCheckMatrixOf (C : CodeSpace n) (G : Matrix α (Fin n) (ZMod
   : Prop := C.dualCode.generatorMatrixOf G
 
 
-lemma Finset.mem_map_univ {ι τ : Type*} [Fintype ι] [DecidableEq τ] {a : ι} {f : ι ↪ τ} : f a ∈ Finset.map f Finset.univ := sorry
+lemma Finset.mem_map_univ {ι τ : Type*} [Fintype ι] [DecidableEq τ] {a : ι} {f : ι ↪ τ} : f a ∈ Finset.map f Finset.univ := by
+  rw [Finset.mem_map]
+  exists a
+  simp
 
 theorem generatorMatrix_image_eq_CodeSpace (C : CodeSpace n) (G : Matrix α (Fin n) (ZMod 2))
   (hgen : C.generatorMatrixOf G) (x : Fin n → ZMod 2) : x ∈ C ↔ ∃ v, G.transpose.mulVec v = x := by
