@@ -275,3 +275,87 @@ theorem QCode.corrects_of_distinguishes (C : QCode n k) (E_set : Finset (PauliGr
 
 --theorem that says pauli X, Z errors on stabilized vectors result
 --in either U stabilizing or U_neg stabilizing?
+
+def commute {n : ℕ} (U₁ U₂ : PauliGroup n) : Prop := ¬ anticommute U₁ U₂
+
+lemma commute_of_commute {n : ℕ} (P₁ P₂ : PauliGroup n) (h_comm : commute P₁ P₂) : (P₁ * P₂ : 𝐔ₙ[n]) = (P₂ * P₁) := sorry
+
+--If i define the codespace as a submodule ℂ (BitVec n → ℂ), it fails the additivity due
+--to the normalization condition... so just a set then?
+abbrev QCodeSpace (n : ℕ) := Set (PState n)
+
+structure StabCode (n : ℕ) where
+  space : QCodeSpace n
+  stabs : Subgroup (@PauliGroup_group n)
+  h_comm : CommGroup stabs
+
+
+--the way this is defined, the commutativity of the stabilizer isn't necessary
+--how to square this?
+def StabCode_of_StabSet {n : ℕ} (S : Finset (PauliGroup n)) (h_comm : ∀ s₁ ∈ S, ∀ s₂ ∈ S, commute s₁ s₂)
+ : StabCode n where
+   space := {ψ | ∀ s ∈ S, stabilizes s ψ}
+   stabs := Subgroup.closure (S : Set (PauliGroup n))
+   h_comm := by
+    apply Subgroup.closureCommGroupOfComm
+    intros x hx y hy
+    show (x : PauliGroup n) * (y : PauliGroup n) = (y : PauliGroup n) * x
+    convert commute_of_commute _ _ (h_comm x hx y hy)
+    simp_all only [Subtype.forall, Finset.mem_coe]
+    obtain ⟨val, property⟩ := x
+    obtain ⟨val_1, property_1⟩ := y
+    obtain ⟨val, property⟩ := val
+    obtain ⟨val_1, property_1⟩ := val_1
+    simp_all only [MulMemClass.mk_mul_mk, Subtype.mk.injEq] --hey this works nice
+
+def isStabSet {n : ℕ} (C : StabCode n) (S : Finset (PauliGroup n)) : Prop := (Subgroup.closure (S : Set (PauliGroup n)) : Subgroup ↥(PauliGroup_group n)) = C.stabs
+
+def StabSet_isCommuting {n : ℕ} (S : Finset (PauliGroup n)) : Prop := ∀ s₁ ∈ S, ∀ s₂ ∈ S, commute s₁ s₂
+
+
+--define binary symplectic representation, yielding Finset of PauliGroup n from matrix
+
+def BinSympPauli (n : ℕ) := (Fin n → (ZMod 2)) × (Fin n → (ZMod 2))
+
+def Z2Z2_Pauli_equiv : ((ZMod 2) × (ZMod 2)) ≃ Pauli where
+  toFun := fun
+  | (0, 0) => Pauli_I
+  | (1, 0) => Pauli_X
+  | (0, 1) => Pauli_Z
+  | (1, 1) => Pauli_Y
+  invFun := fun P => --this sucks. This is what i get for not defining paulis as a type
+   if h : P = Pauli_I then (0, 0) else
+  if h2 : P = Pauli_X then (1, 0) else
+  if h3 : P = Pauli_Z then (0, 1) else (1, 1)
+  left_inv := by
+    intro x
+    fin_cases x <;> simp
+  right_inv := by
+    intro x
+    rcases Pauli_cases x with h | h | h | h <;> simp [h]
+
+def BinSympPauli_toPauli {n : ℕ} (bs : BinSympPauli n) : PauliGroup n :=
+  let pm := fun n => Z2Z2_Pauli_equiv (bs.1 n, bs.2 n)
+  ⟨_, mem_fold (pgphase_1, pm)⟩
+
+structure BinSympMatrix (n k : ℕ) where
+  X : Matrix (Fin k) (Fin n) (ZMod 2)
+  Z : Matrix (Fin k) (Fin n) (ZMod 2)
+
+def symplecticProd {n : ℕ} (bp₁ bp₂ : BinSympPauli n) : (ZMod 2) :=
+  dotProduct bp₁.1 bp₂.2 + dotProduct bp₁.2 bp₂.1
+
+def BinSympMatrix.row {n k : ℕ} (bsm : BinSympMatrix n k) (r : Fin k) : BinSympPauli n :=
+  (bsm.X r, bsm.Z r)
+
+def BinSympMatrix.rowProd {n k : ℕ} (bsm : BinSympMatrix n k) (r₁ r₂ : Fin k) : (ZMod 2) :=
+  symplecticProd (bsm.row r₁) (bsm.row r₂)
+
+def BinSympMatrix.isCommuting {n k : ℕ} (bsm : BinSympMatrix n k) : Prop :=
+  ∀ r₁ r₂, bsm.rowProd r₁ r₂ = 0
+
+def BinSympMatrix.toStabSet {n k : ℕ} (bsm : BinSympMatrix n k) : Finset (PauliGroup n) :=
+  Finset.image (fun i => BinSympPauli_toPauli (bsm.row i)) Finset.univ
+
+theorem commutes_of_sympProd_zero {n : ℕ} {bp₁ bp₂ : BinSympPauli n}
+  (h_prod : symplecticProd bp₁ bp₂ = 0) : commute (BinSympPauli_toPauli bp₁) (BinSympPauli_toPauli bp₂) := sorry

@@ -33,6 +33,7 @@ def CodeSpace.distance (C : CodeSpace n) (nt : C.nontrivial) : ℕ :=
 
 variable {α : Type*} [Fintype α]
 
+--pass to aristotle later
 lemma injective_of_linearIndependent {ι} {s : ι → (Fin n → ZMod 2)} (hlin : LinearIndependent (ZMod 2) s) : Function.Injective s := sorry
 
 def CodeSpace.generatorMatrixOf (C : CodeSpace n) (G : Matrix α (Fin n) (ZMod 2))
@@ -59,9 +60,9 @@ theorem generatorMatrix_image_eq_CodeSpace (C : CodeSpace n) (G : Matrix α (Fin
     let v := fun (a : α) => f (G a)
     exists v
     convert hfx
-    rw [Matrix.mulVec_eq_sum, Matrix.transpose_transpose]
     unfold v
-    rw [Finset.sum_map]
+    rw [Matrix.mulVec_eq_sum, Matrix.transpose_transpose,
+    Finset.sum_map]
     congr --it just works
     simp
   rcases v with ⟨v, hv⟩
@@ -80,8 +81,7 @@ theorem generatorMatrix_image_eq_CodeSpace (C : CodeSpace n) (G : Matrix α (Fin
       exists y
     unfold f at ha
     simp [arange] at ha
-  rw [←hv]
-  rw [Finset.sum_map]
+  rw [←hv, Finset.sum_map]
   congr
   ext1 a
   simp only [Function.Embedding.coeFn_mk, op_smul_eq_smul]
@@ -89,7 +89,17 @@ theorem generatorMatrix_image_eq_CodeSpace (C : CodeSpace n) (G : Matrix α (Fin
   have hw : G a ∈ Set.range mmap := by
     use a
     rfl
-  simp [hw]
+  simp only [hw, ↓reduceDIte]
   congr
   have:= mmap.right_inv_of_invOfMemRange a
   convert this
+
+theorem genMatrix_size_eq {k : ℕ} (C : CodeSpace n) (G : Matrix (Fin k) (Fin n) (ZMod 2))
+  (hgen : C.generatorMatrixOf G) : Module.finrank (ZMod 2) C = k := by
+  have:= hgen.2
+  rw [←this]
+  have:= (finrank_span_eq_card hgen.1) --just converting this got me something really weird
+  rw [Fintype.card_fin] at this
+  have h : Set.range (fun r => G r) = (Finset.image (fun r => G r) Finset.univ) := by simp
+  rw [h] at this
+  exact this
