@@ -34,7 +34,9 @@ def CodeSpace.distance (C : CodeSpace n) (nt : C.nontrivial) : ℕ :=
 variable {α : Type*} [Fintype α]
 
 --pass to aristotle later
-lemma injective_of_linearIndependent {ι} {s : ι → (Fin n → ZMod 2)} (hlin : LinearIndependent (ZMod 2) s) : Function.Injective s := sorry
+lemma injective_of_linearIndependent {ι} {s : ι → (Fin n → ZMod 2)}
+  (hlin : LinearIndependent (ZMod 2) s) : Function.Injective s := by
+  apply (LinearIndependent.injective hlin)
 
 def CodeSpace.generatorMatrixOf (C : CodeSpace n) (G : Matrix α (Fin n) (ZMod 2))
   : Prop := (LinearIndependent (ZMod 2) (fun r => G r)) ∧ Submodule.span (ZMod 2) (Finset.image (fun r => G r) Finset.univ) = C
@@ -47,8 +49,23 @@ lemma CodeSpace.generatorMatrixOf_span_map_eq {C : CodeSpace n} {G : Matrix α (
 def CodeSpace.parityCheckMatrixOf (C : CodeSpace n) (G : Matrix α (Fin n) (ZMod 2))
   : Prop := C.dualCode.generatorMatrixOf G
 
+lemma CodeSpace.pc_prod_mem_dual (C : CodeSpace n) {H : Matrix α (Fin n) (ZMod 2)} (x : α) (hpc : C.parityCheckMatrixOf H) : H x ∈ C.dualCode := by
+  unfold CodeSpace.parityCheckMatrixOf CodeSpace.generatorMatrixOf at hpc
+  rw [←hpc.2]
+  simp only [Finset.coe_image, Finset.coe_univ, Set.image_univ]
+  apply Submodule.mem_span_of_mem (Set.mem_range_self _)
 
-lemma Finset.mem_map_univ {ι τ : Type*} [Fintype ι] [DecidableEq τ] {a : ι} {f : ι ↪ τ} : f a ∈ Finset.map f Finset.univ := sorry
+lemma CodeSpace.gm_prod_mem (C : CodeSpace n) {G : Matrix α (Fin n) (ZMod 2)} (x : α) (hgm : C.generatorMatrixOf G) : G x ∈ C := by
+  unfold CodeSpace.generatorMatrixOf at hgm
+  rw [←hgm.2]
+  simp only [Finset.coe_image, Finset.coe_univ, Set.image_univ]
+  apply Submodule.mem_span_of_mem (Set.mem_range_self _)
+
+
+lemma Finset.mem_map_univ {ι τ : Type*} [Fintype ι] [DecidableEq τ] {a : ι} {f : ι ↪ τ} : f a ∈ Finset.map f Finset.univ := by
+  rw [Finset.mem_map]
+  exists a
+  simp
 
 theorem generatorMatrix_image_eq_CodeSpace (C : CodeSpace n) (G : Matrix α (Fin n) (ZMod 2))
   (hgen : C.generatorMatrixOf G) (x : Fin n → ZMod 2) : x ∈ C ↔ ∃ v, G.transpose.mulVec v = x := by
@@ -103,3 +120,5 @@ theorem genMatrix_size_eq {k : ℕ} (C : CodeSpace n) (G : Matrix (Fin k) (Fin n
   have h : Set.range (fun r => G r) = (Finset.image (fun r => G r) Finset.univ) := by simp
   rw [h] at this
   exact this
+
+--theorem that dual dual is same code
