@@ -135,6 +135,9 @@ def commute {n : ℕ} (U₁ U₂ : PauliGroup n) : Prop := ¬ anticommute U₁ U
 
 lemma commute_of_commute {n : ℕ} (P₁ P₂ : PauliGroup n) (h_comm : commute P₁ P₂) : (P₁ * P₂ : 𝐔ₙ[n]) = (P₂ * P₁) := sorry
 
+--wait, should i be declaring things in PauliGroup_group then?
+lemma commute_iff_commute {n : ℕ} (P₁ P₂ : PauliGroup_group n) : commute P₁ P₂ ↔ P₁ * P₂ = P₂ * P₁ := sorry
+
 --If i define the codespace as a submodule ℂ (BitVec n → ℂ), it fails the additivity due
 --to the normalization condition... so just a set then?
 abbrev QCodeSpace (n : ℕ) := Set (PState n)
@@ -143,27 +146,40 @@ structure StabCode (n : ℕ) where
   space : QCodeSpace n
   stabs : Subgroup (@PauliGroup_group n)
   h_comm : CommGroup stabs
-  hstab : ∀ ψ ∈ space, ∀ S ∈ stabs, stabilizes S ψ
---add stab condition
+  hstab₁ : ∀ ψ ∈ space, ∀ S ∈ stabs, stabilizes S ψ
+  hstab₂ : ∀ S ∈ stabs, PauliGroup.phase S = pgphase_1
+--stab condition of pauli normalization
+
+theorem PauliGroup.phase_mul_of_commutes {n : ℕ} (P₁ P₂ : ↥(PauliGroup_group n)) (hcomm : commute P₁ P₂) :
+  PauliGroup.phase (P₁ * P₂) = (PauliGroup.phase P₁) * (PauliGroup.phase P₂) := sorry
+
+
+theorem PauliGroup.inv_one {n : ℕ} (P : PauliGroup_group n) (h_norm : PauliGroup.phase P = pgphase_1)
+  : PauliGroup.phase (P⁻¹ : PauliGroup_group n) = pgphase_1 := by
+  show PauliGroup.phase ⟨(P.1)⁻¹, pauli_inv (by aesop)⟩ = pgphase_1
+  let FP := foldPauli.symm P
+  have: P = foldPauli FP := by aesop
+  rw [this]
+  simp_rw [<- factored_inv_correct]
+  unfold factored_inv
+  have hfp1 : FP.1 = pgphase_1 := h_norm
+  have inv1 : pgroup_phases.inv pgphase_1 = pgphase_1 := by simp [pgroup_phases.inv, Phase.phase_star]
+  simp_rw [hfp1, inv1]
+  simp [phase]
 
 --the way this is defined, the commutativity of the stabilizer isn't necessary
 --how to square this?
-def StabCode_of_StabSet {n : ℕ} (S : Finset (PauliGroup n)) (h_comm : ∀ s₁ ∈ S, ∀ s₂ ∈ S, commute s₁ s₂)
+def StabCode_of_StabSet {n : ℕ} (S : Finset (PauliGroup_group n)) (h_comm : ∀ s₁ ∈ S, ∀ s₂ ∈ S, commute s₁ s₂)
+  (h_norm : ∀ s ∈ S, PauliGroup.phase s = pgphase_1)
  : StabCode n where
    space := {ψ | ∀ s ∈ S, stabilizes s ψ}
-   stabs := Subgroup.closure (S : Set (PauliGroup n))
+   stabs := Subgroup.closure S
    h_comm := by
     apply Subgroup.closureCommGroupOfComm
     intros x hx y hy
-    show (x : PauliGroup n) * (y : PauliGroup n) = (y : PauliGroup n) * x
-    convert commute_of_commute _ _ (h_comm x hx y hy)
-    simp_all only [Subtype.forall, Finset.mem_coe]
-    obtain ⟨val, property⟩ := x
-    obtain ⟨val_1, property_1⟩ := y
-    obtain ⟨val, property⟩ := val
-    obtain ⟨val_1, property_1⟩ := val_1
-    simp_all only [MulMemClass.mk_mul_mk, Subtype.mk.injEq] --hey this works nice
-   hstab := by
+    rw [←commute_iff_commute]
+    exact h_comm _ hx _ hy
+   hstab₁ := by
     intros ψ hs stab stab_mem
     revert stab_mem stab
     apply Subgroup.closure_induction --glad this works
@@ -175,6 +191,24 @@ def StabCode_of_StabSet {n : ℕ} (S : Finset (PauliGroup n)) (h_comm : ∀ s₁
       apply mul_stab xstab ystab
     intros x _ xstab
     apply inv_stab xstab
+   hstab₂ := by
+    apply Subgroup.closure_induction
+    · exact h_norm
+    · show PauliGroup.phase (Pauli1) = pgphase_1
+      rw [Pauli1_unfold, PauliGroup.phase]
+      simp only [pgphase_1, phase_id, Equiv.symm_apply_apply]
+    · intros x y hx hy hpx hpy
+      rw [PauliGroup.phase_mul_of_commutes, hpx, hpy]
+      · simp only [pgphase_1, phase_id, pgp_mul_eq, Phase.phase_mul_eq, mul_one]
+      rw [commute_iff_commute]
+      have hxy:= (Subgroup.closureCommGroupOfComm ?_).mul_comm ⟨x, hx⟩ ⟨y, hy⟩
+      · simp only [MulMemClass.mk_mul_mk, Subtype.mk.injEq] at hxy
+        exact hxy
+      exact fun x hx y hy => (commute_iff_commute _ _).1 (h_comm x hx y hy)
+    intros x hx hp
+    apply PauliGroup.inv_one x hp
+
+
 
 def isStabSet {n : ℕ} (C : StabCode n) (S : Finset (PauliGroup n)) : Prop := (Subgroup.closure (S : Set (PauliGroup n)) : Subgroup ↥(PauliGroup_group n)) = C.stabs
 
@@ -211,7 +245,7 @@ def Z2Z2_Pauli_equiv : ((ZMod 2) × (ZMod 2)) ≃ Pauli where
 
 def BinSympPauli_toPauli {n : ℕ} (bs : BinSympPauli n) : PauliGroup n :=
   let pm := fun n => Z2Z2_Pauli_equiv (bs.1 n, bs.2 n)
-  ⟨_, mem_fold (pgphase_1, pm)⟩
+  foldPauli (pgphase_1, pm)
 
 
 
@@ -246,6 +280,12 @@ def StabCode_of_BinSympMatrix {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bs
   simp_rw [Finset.mem_image]
   rintro s₁ ⟨r₁, ⟨_, rfl⟩⟩ s₂ ⟨r₂, ⟨_, rfl⟩⟩
   apply commutes_of_sympProd_zero (h_comm _ _)
+  ) (by
+  unfold BinSympMatrix.toStabSet BinSympPauli_toPauli
+  simp_rw [Finset.mem_image]
+  rintro s ⟨r₁, ⟨_, rfl⟩⟩
+  unfold PauliGroup.phase
+  simp only [Equiv.symm_apply_apply]
   )
 
 
@@ -270,6 +310,9 @@ def StabCode.distance {n : ℕ} (SC : StabCode n) (hnt : SC.nontrivial) : ℕ :=
 rw [Finset.image_nonempty]
 exact StabCode.undetectable_set_nonempty SC hnt
 )
+
+--theorem StabCode.undetectable_normalized
+
 
 end
 
