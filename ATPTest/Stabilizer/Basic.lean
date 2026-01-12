@@ -294,7 +294,7 @@ noncomputable instance {n : ℕ} (SC : StabCode n) : DecidablePred fun N => ∀ 
 
 def StabCode.normalizer {n : ℕ} (SC : StabCode n) : Finset (PauliGroup n) := {N | ∀ s ∈ SC.stabs, commute N s}
 
-def StabCode.undetectable {n : ℕ} (SC : StabCode n) (E : PauliGroup n) : Prop := E ∈ SC.normalizer ∧ E ∉ SC.stabs
+def StabCode.undetectable {n : ℕ} (SC : StabCode n) (E : PauliGroup n) : Prop := E ∈ SC.normalizer ∧ normalize_pauli E ∉ SC.stabs
 
 noncomputable instance {n : ℕ} (SC : StabCode n) : DecidablePred fun E => SC.undetectable E
  := Classical.decPred _
@@ -311,7 +311,20 @@ rw [Finset.image_nonempty]
 exact StabCode.undetectable_set_nonempty SC hnt
 )
 
---theorem StabCode.undetectable_normalized
+lemma commute_iff_norm_commute {n : ℕ} (P₁ P₂ : PauliGroup n) : commute P₁ P₂ ↔ commute (normalize_pauli P₁) P₂ := by
+  simp [commute, anticommute_iff_normalize_anticommute P₁ P₂]
+
+lemma mem_normalizer_iff_norm_mem {n : ℕ} (SC : StabCode n) (E : PauliGroup n) : E ∈ SC.normalizer ↔ normalize_pauli E ∈ SC.normalizer := by
+  unfold StabCode.normalizer
+  simp_rw [Finset.mem_filter_univ, ←commute_iff_norm_commute]
+
+
+theorem StabCode.undetectable_iff_normalized_undetectable {n : ℕ} (SC : StabCode n) (E : PauliGroup n) :
+  SC.undetectable E ↔ SC.undetectable (normalize_pauli E) := by
+  unfold undetectable
+  simp_rw [←mem_normalizer_iff_norm_mem, normalize_pauli_idem]
+
+
 
 
 end
