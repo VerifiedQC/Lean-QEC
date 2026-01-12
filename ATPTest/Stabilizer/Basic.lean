@@ -273,7 +273,16 @@ exact StabCode.undetectable_set_nonempty SC hnt
 
 end
 
---theory of code size
+--TODO:
+
+--can i just define the code size as n - number of stabilizer generators? This requires
+
+--theory of code size: how to do this without subspace rep due to pstate normalization condition?
+
+--order of stabilizer subgroup?
+
+--reduce to phase 1 case: lemma that says an undetectable error is still undetectable if phase is set
+--to 1
 
 --theory of codespace distance
 

@@ -121,4 +121,58 @@ theorem genMatrix_size_eq {k : ℕ} (C : CodeSpace n) (G : Matrix (Fin k) (Fin n
   rw [h] at this
   exact this
 
---theorem that dual dual is same code
+--thanks aristotle
+lemma dual_finrank_eq {C : CodeSpace n} : Module.finrank (ZMod 2) C.dualCode = n - (Module.finrank (ZMod 2) C) := by
+  -- By definition of dual code, we know that its dimension is equal to the dimension of the original code.
+  have h_dual_dim : Module.finrank (ZMod 2) C.dualCode + Module.finrank (ZMod 2) C = n := by
+    rw [ add_comm, CodeSpace.dualCode ];
+    have := Submodule.finrank_quotient_add_finrank C;
+    -- By definition of quotient space, we know that the dimension of the quotient space is equal to the dimension of the original space minus the dimension of the subspace.
+    have h_quotient_dim : Module.finrank (ZMod 2) ((Fin n → ZMod 2) ⧸ C) = Module.finrank (ZMod 2) (↥(Submodule.orthogonalBilin C (dotProductBilin (ZMod 2) (ZMod 2)))) := by
+      have h_quotient_dim : Module.finrank (ZMod 2) ((Fin n → ZMod 2) ⧸ C) = Module.finrank (ZMod 2) (↥(Submodule.dualAnnihilator C)) := by
+        have h_quotient_dim : (C.dualAnnihilator ≃ₗ[ZMod 2] ((Fin n → ZMod 2) ⧸ C) →ₗ[ZMod 2] ZMod 2) := by
+          exact (Submodule.dualQuotEquivDualAnnihilator C).symm;
+        have := h_quotient_dim.finrank_eq; aesop;
+      convert h_quotient_dim using 1;
+      fapply LinearEquiv.finrank_eq;
+      refine' ( LinearEquiv.ofBijective _ ⟨ _, _ ⟩ );
+      refine' { toFun := fun x => ⟨ _, _ ⟩, map_add' := _, map_smul' := _ };
+      exact ( dotProductBilin ( ZMod 2 ) ( ZMod 2 ) ).flip x;
+      all_goals simp_all +decide [ Function.Injective ];
+      · exact fun w hw => by simpa [ dotProduct_comm ] using x.2 w hw;
+      · intro a ha b hb hab; ext i; replace hab := congr_arg ( fun f => f ( Pi.single i 1 ) ) hab; aesop;
+      · simp only [Function.Surjective, Subtype.exists, Submodule.mem_orthogonalBilin_iff,
+        Subtype.forall, Submodule.mem_dualAnnihilator, Subtype.mk.injEq, exists_prop]
+        intro a ha;
+        -- By definition of dot product, we know that every linear functional can be represented as a dot product with some vector.
+        obtain ⟨v, hv⟩ : ∃ v : Fin n → ZMod 2, ∀ w : Fin n → ZMod 2, a w = dotProduct w v := by
+          use fun i => a ( Pi.single i 1 );
+          intro w; rw [ show w = ∑ i, w i • Pi.single i 1 from by ext i; simp +decide [ Pi.single_apply ] ] ; simp +decide [ Finset.sum_apply, dotProduct ] ;
+          simp +decide [ Pi.single_apply ];
+        refine' ⟨ v, _, _ ⟩
+        · intros n₁ hn₁
+          unfold LinearMap.IsOrtho dotProductBilin
+          simp only [LinearMap.coe_mk, AddHom.coe_mk]
+          rw [← (hv n₁), (ha n₁ hn₁)]
+        aesop
+    rw [ add_comm, h_quotient_dim ] at this ; aesop;
+  exact eq_tsub_of_add_eq h_dual_dim
+
+theorem dual_dual_eq {C : CodeSpace n} : (C.dualCode).dualCode = C := by
+  symm
+  apply Submodule.eq_of_le_of_finrank_eq
+  · apply Submodule.le_orthogonalBilin_orthogonalBilin
+    intros a b
+    simp only [dotProductBilin_apply_apply, dotProduct_comm]
+    exact fun x => x
+  rw [dual_finrank_eq, dual_finrank_eq]
+  have h_rank : Module.finrank (ZMod 2) C ≤ n := le_of_le_of_eq
+    (Submodule.finrank_le _) (Module.finrank_fin_fun _)
+  symm
+  exact Nat.sub_sub_self h_rank
+
+  theorem pc_size_eq {k : ℕ} (C : CodeSpace n) (H : Matrix (Fin k) (Fin n) (ZMod 2)) (hpc : C.parityCheckMatrixOf H)
+   : k = n - Module.finrank (ZMod 2) C := by
+   unfold CodeSpace.parityCheckMatrixOf at hpc
+   rw [←genMatrix_size_eq C.dualCode H hpc]
+   exact dual_finrank_eq
