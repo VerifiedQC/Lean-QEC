@@ -45,13 +45,28 @@ def CNOTgate : 𝐔ₙ[2] := (unitary_fin_equiv beq2) CNOT
 
 /- Gates on certain wires -/
 
--- Permute qubits
--- TODO Some kind of tricky re-indexing...
-#check reindex_unitary
+def permute_bitvec {n} (π : Fin n -> Fin n) (s : BitVec n) :=
+  BitVec.ofFnLE (fun i => s.getLsb (π i))
+
+lemma bijective_permute_bitvec {n} (π : Fin n -> Fin n)
+  (bijective_π : Bijective π) :
+  Bijective (permute_bitvec π) := by
+  sorry
+
+def equiv_permute_bitvec {n} (π : Fin n -> Fin n) (bijective_π : Bijective π ) :
+  BitVec n ≃ BitVec n where
+  toFun := (permute_bitvec π)
+  invFun := surjInv (Bijective.surjective (bijective_permute_bitvec π bijective_π))
+  left_inv := by
+    apply Function.leftInverse_surjInv
+    apply bijective_permute_bitvec
+    assumption
+  right_inv := by apply Function.rightInverse_surjInv
 
 def permute_qubits {n} (π : Fin n -> Fin n)
-  (is_bij: Function.Bijective π)
-  (U : 𝐔ₙ[n]) : 𝐔ₙ[n] := sorry
+  (is_bij: Bijective π)
+  (U : 𝐔ₙ[n]) : 𝐔ₙ[n] :=
+  reindex_unitary' (equiv_permute_bitvec π is_bij) U
 
 def swapᵢⱼ {n} (i j : Fin n) (x : Fin n) : Fin n :=
   if x == i then j else

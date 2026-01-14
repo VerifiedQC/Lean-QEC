@@ -20,6 +20,10 @@ theorem reindex_unitary {a b : Type*} [Fintype a] [Fintype b] [DecidableEq a] [D
   rw [star_eq_conjTranspose, conjTranspose_submatrix]
   simp [←star_eq_conjTranspose, h_mem]
 
+def reindex_unitary' {a b : Type*} [Fintype a] [Fintype b] [DecidableEq a] [DecidableEq b]
+  (e : a ≃ b) (U : 𝐔[a]) : 𝐔[b] :=
+  ⟨_, reindex_unitary e U⟩
+
 def unitary_fin_equiv {a b : Type*} [Fintype a] [Fintype b] [DecidableEq a] [DecidableEq b]
  (h: a ≃ b) :(𝐔[a] ≃ 𝐔[b]) where
   toFun U := ⟨(reindex h h) U.1, reindex_unitary _ _⟩
