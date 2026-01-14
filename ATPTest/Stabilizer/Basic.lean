@@ -145,7 +145,8 @@ abbrev QCodeSpace (n : ℕ) := Set (PState n)
 structure StabCode (n : ℕ) where
   space : QCodeSpace n
   stabs : Subgroup (@PauliGroup_group n)
-  h_comm : CommGroup stabs
+  --h_comm : CommGroup stabs --DONT SAY THIS
+  h_comm : IsMulCommutative stabs --SAY THIS INSTEAD
   hstab₁ : ∀ ψ ∈ space, ∀ S ∈ stabs, stabilizes S ψ
   hstab₂ : ∀ S ∈ stabs, PauliGroup.phase S = pgphase_1
 --stab condition of pauli normalization
@@ -167,18 +168,74 @@ theorem PauliGroup.inv_one {n : ℕ} (P : PauliGroup_group n) (h_norm : PauliGro
   simp_rw [hfp1, inv1]
   simp [phase]
 
+--should be pretty easy to prove
+theorem PauliGroup.norm_self_inv {n : ℕ} (P : PauliGroup_group n) (h_norm : PauliGroup.phase P = pgphase_1)
+  : P⁻¹ = P := sorry
+
+structure StabSet (n : ℕ) where
+  stabs : Finset (PauliGroup_group n)
+  comm : ∀ s₁ ∈ stabs, ∀ s₂ ∈ stabs, commute s₁ s₂
+  norm : ∀ s ∈ stabs, PauliGroup.phase s = pgphase_1
+
+
+instance {n : ℕ} {S : StabSet n} : IsMulCommutative (Subgroup.closure S.stabs.toSet) := by
+  constructor
+  constructor
+  suffices h : ∀ a b, a ∈ Subgroup.closure (S.stabs.toSet) → b ∈ Subgroup.closure (S.stabs.toSet) → a * b = b * a
+  · intros a b
+    have:= h a.1 b.1 a.2 b.2
+    rwa [←Subgroup.coe_mul, ←Subgroup.coe_mul, ←Subtype.ext_iff] at this
+  apply Subgroup.closure_induction₂
+  · intros x y hx hy
+    rw [←commute_iff_commute]
+    exact S.comm _ hx _ hy
+  · simp only [one_mul, mul_one, implies_true]
+  · simp only [mul_one, one_mul, implies_true]
+  · intros x y z hx hy hz hcomm₁ hcomm₂
+    rw [←mul_assoc, ←hcomm₁, mul_assoc x z y, ←hcomm₂, mul_assoc]
+  · intros x y z hx hy hz hc₁ hc₂
+    rw [←mul_assoc, hc₁, mul_assoc, hc₂, mul_assoc]
+  · intros x y hx hy hcomm
+    apply Commute.inv_left ((commute_iff_eq _ _).2 hcomm)
+  intros x y hx hy hcomm
+  apply Commute.inv_right ((commute_iff_eq _ _).2 hcomm)
+
+lemma stab_closure_mul_self_eq_one {n : ℕ} {S : StabSet n} {P : (Subgroup.closure S.stabs.toSet)} : P * P = 1 := sorry
+
+--also don't do this, apparently
+/-
+instance {n : ℕ} {S : StabSet n} : Monoid (Subgroup.closure S.stabs.toSet) := by
+  apply Submonoid.toMonoid
+
+instance {n : ℕ} {S : StabSet n} : CommMonoid (Subgroup.closure S.stabs.toSet) := by
+  apply CommMonoid.ofIsMulCommutative
+-/
+
+
+lemma StabSet_closure_phase_one {n : ℕ} (S : StabSet n) : ∀ s ∈ (Subgroup.closure S.stabs.toSet), PauliGroup.phase s = pgphase_1 := by
+  apply Subgroup.closure_induction
+  · exact S.norm
+  · show PauliGroup.phase (Pauli1) = pgphase_1
+    rw [Pauli1_unfold, PauliGroup.phase]
+    simp only [pgphase_1, phase_id, Equiv.symm_apply_apply]
+  · intros x y hx hy hpx hpy
+    rw [PauliGroup.phase_mul_of_commutes, hpx, hpy]
+    · simp only [pgphase_1, phase_id, pgp_mul_eq, Phase.phase_mul_eq, mul_one]
+    rw [commute_iff_commute]
+    have hxy:= (Subgroup.closureCommGroupOfComm ?_).mul_comm ⟨x, hx⟩ ⟨y, hy⟩
+    · simp only [MulMemClass.mk_mul_mk, Subtype.mk.injEq] at hxy
+      exact hxy
+    exact fun x hx y hy => (commute_iff_commute _ _).1 (S.comm x hx y hy)
+  intros x hx hp
+  apply PauliGroup.inv_one x hp
+
 --the way this is defined, the commutativity of the stabilizer isn't necessary
 --how to square this?
-def StabCode_of_StabSet {n : ℕ} (S : Finset (PauliGroup_group n)) (h_comm : ∀ s₁ ∈ S, ∀ s₂ ∈ S, commute s₁ s₂)
-  (h_norm : ∀ s ∈ S, PauliGroup.phase s = pgphase_1)
+def StabCode_of_StabSet {n : ℕ} (S : StabSet n)
  : StabCode n where
-   space := {ψ | ∀ s ∈ S, stabilizes s ψ}
-   stabs := Subgroup.closure S
-   h_comm := by
-    apply Subgroup.closureCommGroupOfComm
-    intros x hx y hy
-    rw [←commute_iff_commute]
-    exact h_comm _ hx _ hy
+   space := {ψ | ∀ s ∈ S.stabs, stabilizes s ψ}
+   stabs := Subgroup.closure S.stabs.toSet
+   h_comm := by infer_instance
    hstab₁ := by
     intros ψ hs stab stab_mem
     revert stab_mem stab
@@ -191,28 +248,171 @@ def StabCode_of_StabSet {n : ℕ} (S : Finset (PauliGroup_group n)) (h_comm : �
       apply mul_stab xstab ystab
     intros x _ xstab
     apply inv_stab xstab
-   hstab₂ := by
-    apply Subgroup.closure_induction
-    · exact h_norm
-    · show PauliGroup.phase (Pauli1) = pgphase_1
-      rw [Pauli1_unfold, PauliGroup.phase]
-      simp only [pgphase_1, phase_id, Equiv.symm_apply_apply]
-    · intros x y hx hy hpx hpy
-      rw [PauliGroup.phase_mul_of_commutes, hpx, hpy]
-      · simp only [pgphase_1, phase_id, pgp_mul_eq, Phase.phase_mul_eq, mul_one]
-      rw [commute_iff_commute]
-      have hxy:= (Subgroup.closureCommGroupOfComm ?_).mul_comm ⟨x, hx⟩ ⟨y, hy⟩
-      · simp only [MulMemClass.mk_mul_mk, Subtype.mk.injEq] at hxy
-        exact hxy
-      exact fun x hx y hy => (commute_iff_commute _ _).1 (h_comm x hx y hy)
-    intros x hx hp
-    apply PauliGroup.inv_one x hp
+   hstab₂ := StabSet_closure_phase_one _
 
 
 
-def isStabSet {n : ℕ} (C : StabCode n) (S : Finset (PauliGroup n)) : Prop := (Subgroup.closure (S : Set (PauliGroup n)) : Subgroup ↥(PauliGroup_group n)) = C.stabs
+def isStabSet {n : ℕ} (C : StabCode n) (S : StabSet n) : Prop := (Subgroup.closure S.stabs.toSet) = C.stabs
 
 def StabSet_isCommuting {n : ℕ} (S : Finset (PauliGroup n)) : Prop := ∀ s₁ ∈ S, ∀ s₂ ∈ S, commute s₁ s₂
+
+def to_closure_map {n : ℕ} {S : Set (PauliGroup_group n)}
+  (x : (PauliGroup_group n)) (hx : x ∈ S) : ↥(Subgroup.closure S) := ⟨x, Subgroup.subset_closure hx⟩
+
+noncomputable def finset_subset_to_closure_map {n : ℕ} {S₁ S₂ : Finset (PauliGroup_group n)}
+  (hsub : S₁ ⊆ S₂) : Finset ↥(Subgroup.closure S₂.toSet) := S₁.attach.image (fun x => to_closure_map x.1 (hsub x.2))
+
+@[simp]
+lemma Finset.attach_singleton {α : Type*} (x : α) : Finset.attach {x} = {⟨x, Finset.mem_singleton_self _⟩} := by
+  apply subset_antisymm
+  · intros x' x'_mem
+    rw [Finset.mem_singleton]
+    have hcard : (Finset.attach {x}).card ≤ 1
+    · apply le_of_eq
+      rw [Finset.card_attach, Finset.card_singleton]
+    rw [Finset.card_le_one] at hcard
+    apply hcard
+    · exact x'_mem
+    simp only [mem_attach]
+  simp only [singleton_subset_iff, mem_attach]
+
+lemma sdiff_decomp {α : Type*} [DecidableEq α] (x y : Finset α) : x = Finset.disjUnion _ _ (Finset.disjoint_sdiff_inter x y) := by
+  rw [Finset.disjUnion_eq_union]
+  apply subset_antisymm
+  · intros a hax
+    by_cases hay : a ∈ y
+    · apply Finset.mem_union_right _ (Finset.mem_inter_of_mem hax hay)
+    apply Finset.mem_union_left _ (Finset.mem_sdiff.2 ⟨hax, hay⟩)
+  intros a ha
+  rcases (Finset.mem_union.1 ha) with (ha₁ | ha₂)
+  · exact (Finset.mem_sdiff.1 ha₁).1
+  exact (Finset.mem_inter.1 ha₂).1
+
+
+lemma finset_subset_to_closure_map_union {n : ℕ} (S : StabSet n) {F A B : Finset (PauliGroup_group n)}
+  (hF : F ⊆ S.stabs) {hdisj : Disjoint A B} (hF_eq : F = Finset.disjUnion _ _ hdisj) : (finset_subset_to_closure_map hF) = (@finset_subset_to_closure_map n A S.stabs (by
+    apply subset_trans _ hF
+    rw [hF_eq]
+    exact fun a ha => Finset.mem_disjUnion.2 (Or.inl ha)
+  )) ∪ (@finset_subset_to_closure_map n B S.stabs (by
+    apply subset_trans _ hF
+    rw [hF_eq]
+    exact fun b hb => Finset.mem_disjUnion.2 (Or.inr hb) --oh god this is terrible
+  )) := by
+    apply subset_antisymm
+    · unfold finset_subset_to_closure_map
+      intro f f_mem
+      rcases (Finset.mem_image.1 f_mem) with ⟨f', hf'⟩
+      have hf'_mem : ↑f' ∈ F := by simp only [Finset.coe_mem]
+      simp_rw [hF_eq, Finset.mem_disjUnion] at hf'_mem
+      rcases hf'_mem with (hf'_a | hf'_b)
+      · apply Finset.mem_union_left
+        rw [Finset.mem_image]
+        refine ⟨⟨↑f', hf'_a⟩, ⟨by simp, ?_⟩⟩
+        rw [←hf'.2]
+      apply Finset.mem_union_right
+      rw [Finset.mem_image]
+      refine ⟨⟨↑f', hf'_b⟩, ⟨by simp, ?_⟩⟩
+      rw [←hf'.2]
+    unfold finset_subset_to_closure_map
+    intro f f_mem
+    rw [Finset.mem_image]
+    rcases (Finset.mem_union.1 f_mem) with (hfa | hfb)
+    · rcases (Finset.mem_image.1 hfa) with ⟨f', hf'⟩
+      refine ⟨⟨↑f', ?_⟩, ?_⟩
+      · rw [hF_eq, Finset.mem_disjUnion]
+        exact Or.inl (by simp)
+      rw [←hf'.2]
+      simp
+    rcases (Finset.mem_image.1 hfb) with ⟨f', hf'⟩
+    refine ⟨⟨↑f', ?_⟩, ?_⟩
+    · rw [hF_eq, Finset.mem_disjUnion]
+      exact Or.inr (by simp)
+    rw [←hf'.2]
+    simp
+
+theorem list_map_union_of_is_comm {G : Type*} [Group G] {H : Subgroup G} [IsMulCommutative H] {A B : Finset H}
+  (hd : Disjoint A B) : (Finset.disjUnion A B hd).toList.prod = A.toList.prod * B.toList.prod := sorry
+
+ --instructive example: delete later. Don't redefine group structure for a subgroup and you will end up
+   --with two different multiplications and lose your mind, use IsMulCommutative instead
+theorem lets_break_closure_induction {G : Type*} [Group G] (H : Subgroup G) {F : Set H} (s : H) [IsMulCommutative (Subgroup.closure F)]:
+  s ∈ Subgroup.closure F → ∃ t : Subgroup.closure F, t = s := by
+  revert s
+  apply Subgroup.closure_induction
+  · sorry
+  · sorry
+  · rintro x y x_mem y_mem ⟨tx, htx⟩ ⟨ty, hty⟩
+    rw [←htx, ←hty, ←Subgroup.coe_mul]
+    use ty * tx
+    congr 1
+    rw [IsMulCommutative.is_comm.comm]
+  sorry
+
+
+--can't use Finset.prod anymore, since ambient group is noncommutative...
+theorem mem_stab_iff_prod_subset_stabSet {n : ℕ} (S : StabSet n) (s :  PauliGroup_group n) :
+  s ∈ (StabCode_of_StabSet S).stabs ↔ ∃ F, ∃ h : F ⊆ S.stabs, (List.prod (finset_subset_to_closure_map h).toList : (Subgroup.closure S.stabs.toSet)).1 = s := by
+  constructor
+  · revert s
+    unfold StabCode_of_StabSet
+    simp only
+    apply Subgroup.closure_induction
+    · intros x x_mem
+      refine ⟨{x}, ⟨Finset.singleton_subset_iff.2 x_mem, ?_⟩⟩
+      unfold finset_subset_to_closure_map to_closure_map
+      simp only [Finset.attach_singleton, Finset.image_singleton, Finset.toList_singleton, List.prod]
+      unfold List.foldr List.foldr
+      have hx : x = ↑(⟨x, Subgroup.mem_closure_of_mem x_mem⟩ : (Subgroup.closure S.stabs.toSet))
+      · rfl
+      rw [Subgroup.coe_mul, ←hx, Subgroup.coe_one, mul_one]
+    · refine ⟨∅, ⟨Finset.empty_subset _, ?_⟩⟩
+      unfold finset_subset_to_closure_map to_closure_map
+      simp
+    · rintro x y x_mem y_mem ⟨fx, hfx₁, hfx₂⟩ ⟨fy, hfy₁, hfy₂⟩
+      let F := symmDiff fx fy
+      refine ⟨F, ⟨subset_trans Finset.symmDiff_subset_union ?_, ?_⟩⟩
+      · apply Finset.union_subset hfx₁ hfy₁
+      --hard case
+
+      rw [←hfx₂, ←hfy₂, ←Subgroup.coe_mul] --the culprit!
+      --congr --maybe don't congr so we can move back to the ambient group for associativity?
+      --rw [IsMulCommutative.is_comm.comm] works, but how do i do like, associativity?
+      --lean no longer recognizes any group structure on ↥(Subgroup.closure ↑S.stabs)
+      --despite the fact that an instance declares it a CommGroup earlier and also its
+      --literally a closure
+
+      have sd1:= sdiff_decomp fx fy
+      have sd2:= sdiff_decomp fy fx
+      simp_rw [Finset.disjUnion_comm _ (fy ∩ fx), Finset.inter_comm fy fx] at sd2
+      rw [finset_subset_to_closure_map_union S hfx₁ sd1]
+      rw [finset_subset_to_closure_map_union S hfy₁ sd2]
+      nth_rw 3 [←Finset.disjUnion_eq_union _ _ sorry]
+      nth_rw 2 [←Finset.disjUnion_eq_union _ _ sorry]
+      rw [list_map_union_of_is_comm, list_map_union_of_is_comm]
+      rw [Subgroup.coe_mul, Subgroup.coe_mul, mul_assoc]
+      rw [Subgroup.coe_mul]
+      nth_rw 2 [←mul_assoc] --canceling prods now next to each other
+      rw [←Subgroup.coe_mul, stab_closure_mul_self_eq_one, Subgroup.coe_one, one_mul]
+      have hf : F = Finset.disjUnion (fx \ fy) (fy \ fx) (disjoint_sdiff_sdiff) := by
+        unfold F symmDiff
+        rw [Finset.disjUnion_eq_union]
+        rfl
+      simp only [hf]
+      rw [finset_subset_to_closure_map_union S sorry sorry]
+      rw [←Finset.disjUnion_eq_union _ _ sorry, list_map_union_of_is_comm]
+      · rfl
+      exact disjoint_sdiff_sdiff
+    rintro x x_mem hx
+    rw [PauliGroup.norm_self_inv]
+    · assumption
+    apply StabSet_closure_phase_one S x x_mem
+  rintro ⟨F, hF₁, rfl⟩
+  unfold StabCode_of_StabSet finset_subset_to_closure_map to_closure_map
+  have h_mem : ∀ {x : ↥(Subgroup.closure S.stabs.toSet)}, (x : ↥(PauliGroup_group n)) ∈ (Subgroup.closure S.stabs.toSet)
+  · aesop --???
+  exact h_mem
+
 
 
 --define binary symplectic representation, yielding Finset of PauliGroup n from matrix
@@ -288,6 +488,12 @@ def StabCode_of_BinSympMatrix {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bs
   simp only [Equiv.symm_apply_apply]
   )
 
+--should depend on theorem linking members of closure
+theorem BinSympCode_stab_eq_rowSpace {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) (s : ↥(PauliGroup_group n)) :
+  s ∈ (StabCode_of_BinSympMatrix bsm h_comm).stabs ↔ ∃ x z, BinSympPauli_toPauli (bsm.X.transpose.mulVec x, bsm.Z.transpose.mulVec z) = s := by
+  unfold StabCode_of_BinSympMatrix BinSympMatrix.toStabSet StabCode_of_StabSet
+  simp only [Finset.coe_image, Finset.coe_univ, Set.image_univ]
+  sorry
 
 noncomputable instance {n : ℕ} (SC : StabCode n) : DecidablePred fun N => ∀ s ∈ SC.stabs, commute N s
  := Classical.decPred _
