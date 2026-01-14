@@ -289,16 +289,38 @@ lemma sdiff_decomp {α : Type*} [DecidableEq α] (x y : Finset α) : x = Finset.
   exact (Finset.mem_inter.1 ha₂).1
 
 
+noncomputable section
+
+lemma subset_to_closure_map_disj {n : ℕ} (S : StabSet n) {A B : Finset (PauliGroup_group n)}
+  (hA : A ⊆ S.stabs) (hB : B ⊆ S.stabs) (hdisj : Disjoint A B) : Disjoint (finset_subset_to_closure_map hA) (finset_subset_to_closure_map hB) := by
+  rw [Finset.disjoint_iff_ne] at ⊢ hdisj
+  unfold finset_subset_to_closure_map
+  simp_rw [Finset.mem_image]
+  rintro a ⟨a', ha'⟩ b ⟨b', hb'⟩
+  rw [←ha'.2, ←hb'.2]
+  unfold to_closure_map
+  rw [ne_eq, Subtype.mk.injEq, ←ne_eq]
+  apply hdisj _ (by exact Finset.coe_mem _) _ (by exact Finset.coe_mem _)
+
 lemma finset_subset_to_closure_map_union {n : ℕ} (S : StabSet n) {F A B : Finset (PauliGroup_group n)}
-  (hF : F ⊆ S.stabs) {hdisj : Disjoint A B} (hF_eq : F = Finset.disjUnion _ _ hdisj) : (finset_subset_to_closure_map hF) = (@finset_subset_to_closure_map n A S.stabs (by
+  (hF : F ⊆ S.stabs) {hdisj : Disjoint A B} (hF_eq : F = Finset.disjUnion _ _ hdisj) : (finset_subset_to_closure_map hF) = Finset.disjUnion (@finset_subset_to_closure_map n A S.stabs (by
     apply subset_trans _ hF
     rw [hF_eq]
     exact fun a ha => Finset.mem_disjUnion.2 (Or.inl ha)
-  )) ∪ (@finset_subset_to_closure_map n B S.stabs (by
+  )) (@finset_subset_to_closure_map n B S.stabs (by
+    apply subset_trans _ hF
+    rw [hF_eq]
+    exact fun b hb => Finset.mem_disjUnion.2 (Or.inr hb)
+  )) (subset_to_closure_map_disj S (by
+    apply subset_trans _ hF
+    rw [hF_eq]
+    exact fun a ha => Finset.mem_disjUnion.2 (Or.inl ha)
+  ) (by
     apply subset_trans _ hF
     rw [hF_eq]
     exact fun b hb => Finset.mem_disjUnion.2 (Or.inr hb) --oh god this is terrible
-  )) := by
+  ) hdisj) := by
+    rw [Finset.disjUnion_eq_union]
     apply subset_antisymm
     · unfold finset_subset_to_closure_map
       intro f f_mem
@@ -331,8 +353,44 @@ lemma finset_subset_to_closure_map_union {n : ℕ} (S : StabSet n) {F A B : Fins
     rw [←hf'.2]
     simp
 
-theorem list_map_union_of_is_comm {G : Type*} [Group G] {H : Subgroup G} [IsMulCommutative H] {A B : Finset H}
-  (hd : Disjoint A B) : (Finset.disjUnion A B hd).toList.prod = A.toList.prod * B.toList.prod := sorry
+--seems useful
+theorem list_prod_eq_perm_of_is_comm {G : Type*} [Group G] {H : Subgroup G} [DecidableEq H] [IsMulCommutative H]
+  {L₁ L₂ : List H} (hperm: L₁.Perm L₂) : L₁.prod = L₂.prod := by
+  revert L₂
+  induction L₁ with
+  | nil => simp only [List.nil_perm, List.prod_nil, forall_eq]
+  | cons a t ih =>
+    intros L₂ hp
+    rw [List.prod_cons]
+    have h_a_mem : a ∈ L₂ := by
+      rw [←List.Perm.mem_iff hp, List.mem_cons]
+      exact Or.inl rfl
+    rw [List.mem_iff_append] at h_a_mem
+    rcases h_a_mem with ⟨j, k, rfl⟩
+    rw [List.prod_append, List.prod_cons, ←mul_assoc, mul_comm j.prod]
+    rw [mul_assoc, ←List.prod_append, mul_right_inj]
+    apply ih
+    exact (hp.trans List.perm_middle).cons_inv
+
+lemma Finset.insert_disjUnion {α : Type*} [DecidableEq α] {A B : Finset α} (a : α) {hdisj : Disjoint (insert a A) B}
+ : Finset.disjUnion _ _ hdisj = insert a (Finset.disjUnion A B (Finset.disjoint_of_subset_left (Finset.subset_insert _ _) hdisj)) := by
+  rw [disjUnion_eq_union, disjUnion_eq_union]
+  simp only [insert_union]
+
+theorem list_map_union_of_is_comm {G : Type*} [Group G] {H : Subgroup G} [DecidableEq H] [IsMulCommutative H] {A B : Finset H}
+  (hd : Disjoint A B) : (Finset.disjUnion A B hd).toList.prod = A.toList.prod * B.toList.prod := by
+  revert hd
+  induction A using Finset.induction_on with
+  | empty =>
+    intro _
+    simp
+  | @insert a s ha ih =>
+    intro hd
+    rw [list_prod_eq_perm_of_is_comm (Finset.toList_insert ha), List.prod_cons, mul_assoc, ←List.prod_cons, Finset.insert_disjUnion]
+    rw [list_prod_eq_perm_of_is_comm (Finset.toList_insert _), List.prod_cons, mul_right_inj]
+    · apply ih
+    rw [Finset.disjUnion_eq_union, Finset.notMem_union]
+    refine ⟨ha, Disjoint.notMem_of_mem_left_finset hd (Finset.mem_insert_self _ _)⟩
 
  --instructive example: delete later. Don't redefine group structure for a subgroup and you will end up
    --with two different multiplications and lose your mind, use IsMulCommutative instead
@@ -346,6 +404,7 @@ theorem lets_break_closure_induction {G : Type*} [Group G] (H : Subgroup G) {F :
     rw [←htx, ←hty, ←Subgroup.coe_mul]
     use ty * tx
     congr 1
+    rw [←one_mul ty]
     rw [IsMulCommutative.is_comm.comm]
   sorry
 
@@ -373,22 +432,17 @@ theorem mem_stab_iff_prod_subset_stabSet {n : ℕ} (S : StabSet n) (s :  PauliGr
       let F := symmDiff fx fy
       refine ⟨F, ⟨subset_trans Finset.symmDiff_subset_union ?_, ?_⟩⟩
       · apply Finset.union_subset hfx₁ hfy₁
-      --hard case
-
       rw [←hfx₂, ←hfy₂, ←Subgroup.coe_mul] --the culprit!
       --congr --maybe don't congr so we can move back to the ambient group for associativity?
       --rw [IsMulCommutative.is_comm.comm] works, but how do i do like, associativity?
       --lean no longer recognizes any group structure on ↥(Subgroup.closure ↑S.stabs)
       --despite the fact that an instance declares it a CommGroup earlier and also its
       --literally a closure
-
       have sd1:= sdiff_decomp fx fy
       have sd2:= sdiff_decomp fy fx
       simp_rw [Finset.disjUnion_comm _ (fy ∩ fx), Finset.inter_comm fy fx] at sd2
       rw [finset_subset_to_closure_map_union S hfx₁ sd1]
       rw [finset_subset_to_closure_map_union S hfy₁ sd2]
-      nth_rw 3 [←Finset.disjUnion_eq_union _ _ sorry]
-      nth_rw 2 [←Finset.disjUnion_eq_union _ _ sorry]
       rw [list_map_union_of_is_comm, list_map_union_of_is_comm]
       rw [Subgroup.coe_mul, Subgroup.coe_mul, mul_assoc]
       rw [Subgroup.coe_mul]
@@ -398,11 +452,13 @@ theorem mem_stab_iff_prod_subset_stabSet {n : ℕ} (S : StabSet n) (s :  PauliGr
         unfold F symmDiff
         rw [Finset.disjUnion_eq_union]
         rfl
-      simp only [hf]
-      rw [finset_subset_to_closure_map_union S sorry sorry]
-      rw [←Finset.disjUnion_eq_union _ _ sorry, list_map_union_of_is_comm]
-      · rfl
-      exact disjoint_sdiff_sdiff
+      have hfsub : F ⊆ S.stabs := by
+        rw [hf, Finset.disjUnion_eq_union, Finset.union_subset_iff]
+        refine ⟨subset_trans Finset.sdiff_subset hfx₁, subset_trans Finset.sdiff_subset hfy₁⟩
+      rw [finset_subset_to_closure_map_union S hfsub hf]
+      · rw [list_map_union_of_is_comm]
+        · rfl
+
     rintro x x_mem hx
     rw [PauliGroup.norm_self_inv]
     · assumption
@@ -462,11 +518,6 @@ def BinSympMatrix.rowProd {n k : ℕ} (bsm : BinSympMatrix k n) (r₁ r₂ : Fin
 def BinSympMatrix.isCommuting {n k : ℕ} (bsm : BinSympMatrix k n) : Prop :=
   ∀ r₁ r₂, bsm.rowProd r₁ r₂ = 0
 
-def BinSympMatrix.toStabSet {n k : ℕ} (bsm : BinSympMatrix k n) : Finset (PauliGroup n) :=
-  Finset.image (fun i => BinSympPauli_toPauli (bsm.row i)) Finset.univ
-
-
-
 theorem binSympAdd_eq_mul {n : ℕ} {bp₁ bp₂ : BinSympPauli n} :
   BinSympPauli_toPauli (BinSympPauli_add bp₁ bp₂) = ((BinSympPauli_toPauli bp₁) : 𝐔ₙ[n]) * (BinSympPauli_toPauli bp₂) := sorry
 
@@ -474,19 +525,20 @@ theorem commutes_of_sympProd_zero {n : ℕ} {bp₁ bp₂ : BinSympPauli n}
   (h_prod : symplecticProd bp₁ bp₂ = 0) : commute (BinSympPauli_toPauli bp₁) (BinSympPauli_toPauli bp₂) := by
   sorry
 
+def BinSympMatrix.toStabSet {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) : StabSet n where
+  stabs := Finset.image (fun i => BinSympPauli_toPauli (bsm.row i)) Finset.univ
+  comm := by
+    simp_rw [Finset.mem_image]
+    rintro s₁ ⟨r₁, ⟨_, rfl⟩⟩ s₂ ⟨r₂, ⟨_, rfl⟩⟩
+    apply commutes_of_sympProd_zero (h_comm _ _)
+  norm := by
+    simp_rw [Finset.mem_image]
+    rintro s ⟨r₁, ⟨_, rfl⟩⟩
+    unfold PauliGroup.phase
+    simp only [BinSympPauli_toPauli, Equiv.symm_apply_apply]
+
 def StabCode_of_BinSympMatrix {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) : StabCode n :=
-  StabCode_of_StabSet bsm.toStabSet (by
-  unfold BinSympMatrix.toStabSet
-  simp_rw [Finset.mem_image]
-  rintro s₁ ⟨r₁, ⟨_, rfl⟩⟩ s₂ ⟨r₂, ⟨_, rfl⟩⟩
-  apply commutes_of_sympProd_zero (h_comm _ _)
-  ) (by
-  unfold BinSympMatrix.toStabSet BinSympPauli_toPauli
-  simp_rw [Finset.mem_image]
-  rintro s ⟨r₁, ⟨_, rfl⟩⟩
-  unfold PauliGroup.phase
-  simp only [Equiv.symm_apply_apply]
-  )
+  StabCode_of_StabSet (bsm.toStabSet h_comm)
 
 --should depend on theorem linking members of closure
 theorem BinSympCode_stab_eq_rowSpace {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) (s : ↥(PauliGroup_group n)) :
