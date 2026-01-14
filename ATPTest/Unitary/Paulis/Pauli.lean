@@ -18,6 +18,15 @@ noncomputable section
 -- variable {l : ℕ} (m_test : Fin l → Pauli)
 variable {n : ℕ} (m : Fin n → Pauli)
 
+def normalize_pauli (U : PauliGroup n) : PauliGroup n :=
+  (foldPauli (pgphase_1, (PauliGroup.map U)))
+
+lemma normalize_pauli_idem (U : PauliGroup n) : normalize_pauli (normalize_pauli U) = normalize_pauli U := by
+  simp [normalize_pauli, PauliGroup.map]
+
+lemma normalize_pauli_map_eq (U : PauliGroup n) : PauliGroup.map U = PauliGroup.map (normalize_pauli U) := by
+  simp [normalize_pauli, PauliGroup.map]
+
 def pauli_weight (U : PauliGroup n) : ℕ :=
   (Finset.univ.filter (fun i => (PauliGroup.map U) i ≠ Pauli_I)).card
 
@@ -189,7 +198,12 @@ lemma pauli_commute_or_anticommute' {n} (P Q : PauliGroup n) :
     apply anticommute_correct_false
     simp_all [Bool.not_eq_true]
 
---want to prove this one soon
+lemma anticommute_iff_normalize_anticommute {n : ℕ} (P Q : PauliGroup n)
+ : anticommute P Q ↔ anticommute (normalize_pauli P) Q := by
+  unfold anticommute
+  rw [normalize_pauli_map_eq Q]
+  nth_rw 1 [normalize_pauli_map_eq P]
+
 lemma pauli_commute_or_anticommute {n : ℕ}{U₁ U₂ : 𝐔ₙ[n]}
   (hU₁ : U₁ ∈ PauliGroup n) (hU₂ : U₂ ∈ PauliGroup n) :
   U₁ * U₂ = U₂ * U₁ ∨ U₁ * U₂ = - U₂ * U₁ := by
