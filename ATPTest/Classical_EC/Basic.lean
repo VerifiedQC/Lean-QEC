@@ -9,8 +9,6 @@ Submodule.span (ZMod 2) G
 
 def CodeSpace.dualCode (C : CodeSpace n) : CodeSpace n := (C.orthogonalBilin (dotProductBilin _ _))
 
-def weight (w : Fin n → ZMod 2) : ℕ := hammingNorm w
-
 def zeroVec : Fin n → ZMod 2 := 0
 
 noncomputable section
@@ -29,7 +27,7 @@ def CodeSpace.selfDual (C : CodeSpace n) : Prop := C.toFinset ⊆ C.dualCode.toF
 def CodeSpace.nontrivial (C : CodeSpace n) : Prop := Finset.Nonempty C.nonzero
 
 def CodeSpace.distance (C : CodeSpace n) (nt : C.nontrivial) : ℕ :=
-  Finset.min' (C.nonzero.image weight) (Finset.image_nonempty.2 nt)
+  Finset.min' (C.nonzero.image hammingNorm) (Finset.image_nonempty.2 nt)
 
 variable {α : Type*} [Fintype α]
 
@@ -176,3 +174,5 @@ theorem dual_dual_eq {C : CodeSpace n} : (C.dualCode).dualCode = C := by
    unfold CodeSpace.parityCheckMatrixOf at hpc
    rw [←genMatrix_size_eq C.dualCode H hpc]
    exact dual_finrank_eq
+
+--PROVE DISTANCE IS MIN WT NONZERO VEC IN PARITY CHECK KERNEL

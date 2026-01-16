@@ -516,12 +516,23 @@ theorem mem_stab_iff_prod_subset_stabSet {n : ℕ} (S : StabSet n) (s :  PauliGr
 
 --define binary symplectic representation, yielding Finset of PauliGroup n from matrix
 
-def BinSympPauli (n : ℕ) := (Fin n → (ZMod 2)) × (Fin n → (ZMod 2))
+abbrev BinSympPauli (n : ℕ) := (Fin n → (ZMod 2)) × (Fin n → (ZMod 2))
+
+--don't actually need these, right?
+def ZMod2_or (a b : ZMod 2) := a + b + (a * b)
+
+def union_weight (v₁ v₂ : Fin n → (ZMod 2)) : ℕ := hammingNorm (fun i => ZMod2_or (v₁ i) (v₂ i))
+
+def BinSympPauli.weight {n : ℕ} (bsp : BinSympPauli n) : ℕ := hammingNorm bsp.1 + hammingNorm bsp.2
 
 def symplecticProd {n : ℕ} (bp₁ bp₂ : BinSympPauli n) : (ZMod 2) :=
   dotProduct bp₁.1 bp₂.2 + dotProduct bp₁.2 bp₂.1
 
-def BinSympPauli_add {n : ℕ} (bp₁ bp₂ : BinSympPauli n) : BinSympPauli n := (bp₁.1 + bp₂.1, bp₁.2 + bp₂.2)
+--don't need this, we get comm group structure for free!
+--def BinSympPauli_add {n : ℕ} (bp₁ bp₂ : BinSympPauli n) : BinSympPauli n := (bp₁.1 + bp₂.1, bp₁.2 + bp₂.2)
+
+--wait, can't do this because Prod.fst isn't injective..
+--lemma BinSympPauli_sum_eq (F : Finset (BinSympPauli n)) : Finset.sum F id = ((Finset.sum (F.map Prod.fst) id), (Finset.sum (F.map Prod.snd) id)) := sorry
 
 noncomputable section
 
@@ -542,7 +553,7 @@ def Z2Z2_Pauli_equiv : ((ZMod 2) × (ZMod 2)) ≃ Pauli where
     intro x
     rcases Pauli_cases x with h | h | h | h <;> simp [h]
 
-def BinSympPauli_toPauli {n : ℕ} (bs : BinSympPauli n) : PauliGroup n :=
+def BinSympPauli_toPauli {n : ℕ} (bs : BinSympPauli n) : PauliGroup_group n :=
   let pm := fun n => Z2Z2_Pauli_equiv (bs.1 n, bs.2 n)
   foldPauli (pgphase_1, pm)
 
@@ -561,8 +572,9 @@ def BinSympMatrix.rowProd {n k : ℕ} (bsm : BinSympMatrix k n) (r₁ r₂ : Fin
 def BinSympMatrix.isCommuting {n k : ℕ} (bsm : BinSympMatrix k n) : Prop :=
   ∀ r₁ r₂, bsm.rowProd r₁ r₂ = 0
 
+--two big linking theorems, rest is mostly extremely painful proof massaging
 theorem binSympAdd_eq_mul {n : ℕ} {bp₁ bp₂ : BinSympPauli n} :
-  BinSympPauli_toPauli (BinSympPauli_add bp₁ bp₂) = ((BinSympPauli_toPauli bp₁) : 𝐔ₙ[n]) * (BinSympPauli_toPauli bp₂) := sorry
+  BinSympPauli_toPauli (bp₁ + bp₂) = ((BinSympPauli_toPauli bp₁) : 𝐔ₙ[n]) * (BinSympPauli_toPauli bp₂) := sorry
 
 theorem commutes_of_sympProd_zero {n : ℕ} {bp₁ bp₂ : BinSympPauli n}
   (h_prod : symplecticProd bp₁ bp₂ = 0) : commute (BinSympPauli_toPauli bp₁) (BinSympPauli_toPauli bp₂) := by
@@ -583,9 +595,7 @@ def BinSympMatrix.toStabSet {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.
 def StabCode_of_BinSympMatrix {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) : StabCode n :=
   StabCode_of_StabSet (bsm.toStabSet h_comm)
 
-#check Subgroup.subtype_apply
-
-
+--not using this anymore... delete?
 lemma list_prod_subtype_coe {G : Type*} [Group G] {H : Subgroup G} {L : List H}
   : (L.prod : G) = (L.map H.subtype).prod := by
   nth_rw 1 [←List.map_id L]
@@ -621,13 +631,26 @@ theorem coe_prod_finset_subset_to_closure_map {n : ℕ} {S : StabSet n} {F : Fin
     ext a : 1
     simp only [Finset.mem_image, Finset.mem_attach, Function.comp_apply, true_and, Subtype.exists, exists_prop,
       exists_eq_right]
-  · sorry
-  sorry
+  · apply subset_trans _ Subgroup.subset_closure
+    intro x
+    rw [Finset.mem_coe, Finset.mem_coe, List.mem_toFinset]
+    rw [List.mem_map]
+    rintro ⟨a, ⟨a_mem, rfl⟩⟩
+    apply hF
+    rw [Finset.mem_toList, finset_subset_to_closure_map, Finset.mem_image] at a_mem
+    rcases a_mem with ⟨a', ⟨ha', rfl⟩⟩
+    aesop
+  apply subset_trans _ Subgroup.subset_closure
+  intro x
+  rw [Finset.mem_coe, Finset.mem_coe, List.mem_toFinset, Finset.mem_toList]
+  apply hF
 
+theorem BinSympPauli_toPauli_prod_eq_sum {n : ℕ} (BSP_set : Finset (BinSympPauli n))
+  : ((Finset.image (fun b => BinSympPauli_toPauli b) BSP_set).toList).prod = (BinSympPauli_toPauli (BSP_set.sum id) : PauliGroup_group n) := sorry
 
 --should depend on theorem linking members of closure
 theorem BinSympCode_stab_eq_rowSpace {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) (s : ↥(PauliGroup_group n)) :
-  s ∈ (StabCode_of_BinSympMatrix bsm h_comm).stabs ↔ ∃ x z, BinSympPauli_toPauli (bsm.X.transpose.mulVec x, bsm.Z.transpose.mulVec z) = s := by
+  s ∈ (StabCode_of_BinSympMatrix bsm h_comm).stabs ↔ ∃ ind, BinSympPauli_toPauli (bsm.X.transpose.mulVec ind, bsm.Z.transpose.mulVec ind) = s := by
   unfold StabCode_of_BinSympMatrix BinSympMatrix.toStabSet
   rw [mem_stab_iff_prod_subset_stabSet]
   constructor
@@ -635,8 +658,26 @@ theorem BinSympCode_stab_eq_rowSpace {n k : ℕ} (bsm : BinSympMatrix k n) (h_co
     rintro ⟨F, ⟨hF, hF₂⟩⟩
     rw [←hF₂]
     rw [coe_prod_finset_subset_to_closure_map]
+    rcases Finset.subset_univ_image_iff.1 hF with ⟨R, rfl⟩
+    --need set of BinSympPaulis
+    let BSP_set : Finset (BinSympPauli n) := Finset.image (fun i => bsm.row i) R
+    --PROBLEMATIC: row mapping is not an embedding!
+    --solution: break into cases over whether rows are unique?
+    --or isolate all nonunique rows
+    have BSP_set_eq :  (Finset.image (fun i => BinSympPauli_toPauli (bsm.row i)) R) = Finset.image (fun b => BinSympPauli_toPauli b) BSP_set:= by
+      unfold BSP_set
+      rw [Finset.image_image]
+      rfl
+    rw [BSP_set_eq, BinSympPauli_toPauli_prod_eq_sum]
+    unfold BSP_set
+    let ind := Set.indicator R.toSet (fun _ => (1 : ZMod 2))
+    refine ⟨ind, ?_⟩
+    congr 1
+    rw [Prod.ext_iff]
+    refine ⟨?_, ?_⟩
+    · simp
+      sorry
     sorry
-
   sorry
 
 noncomputable instance {n : ℕ} (SC : StabCode n) : DecidablePred fun N => ∀ s ∈ SC.stabs, commute N s
@@ -656,10 +697,8 @@ def StabCode.nontrivial {n : ℕ} (SC : StabCode n) : Prop := ∃ ψ₁ ∈ SC.s
 --wait, why is this true again? If there are at least two code words, then the pauli error that maps one to another is undetectable
 theorem StabCode.undetectable_set_nonempty {n : ℕ} (SC : StabCode n) (hnt : SC.nontrivial) : SC.undetectable_set.Nonempty := sorry
 
-def StabCode.distance {n : ℕ} (SC : StabCode n) (hnt : SC.nontrivial) : ℕ := Finset.min' (Finset.image (fun E => pauli_weight E) (SC.undetectable_set)) (by
-rw [Finset.image_nonempty]
-exact StabCode.undetectable_set_nonempty SC hnt
-)
+def StabCode.distance {n : ℕ} (SC : StabCode n) (hnt : SC.nontrivial) : ℕ := Finset.min' (Finset.image (fun E => pauli_weight E) (SC.undetectable_set))
+ (Finset.image_nonempty.2 (StabCode.undetectable_set_nonempty SC hnt))
 
 lemma commute_iff_norm_commute {n : ℕ} (P₁ P₂ : PauliGroup n) : commute P₁ P₂ ↔ commute (normalize_pauli P₁) P₂ := by
   simp [commute, anticommute_iff_normalize_anticommute P₁ P₂]
@@ -674,9 +713,28 @@ theorem StabCode.undetectable_iff_normalized_undetectable {n : ℕ} (SC : StabCo
   unfold undetectable
   simp_rw [←mem_normalizer_iff_norm_mem, normalize_pauli_idem]
 
+def BinSympMatrix.rowSpace {k n : ℕ} (B : BinSympMatrix k n):= Submodule.span (ZMod 2) (Set.range B.row)
 
+def BinSympMatrix.undetectable {k n : ℕ} (B : BinSympMatrix k n) (bsp : BinSympPauli n) : Prop :=
+  (∀ i, symplecticProd (B.row i) bsp = 0) ∧ bsp ∉ B.rowSpace
 
+noncomputable instance {k n : ℕ} (B : BinSympMatrix k n) : DecidablePred fun E => B.undetectable E
+ := Classical.decPred _
 
+def BinSympMatrix.undetectable_set {k n : ℕ} (B : BinSympMatrix k n) : Finset (BinSympPauli n) := {bsp | B.undetectable bsp}
+
+def BinSympMatrix.undetectable_set_nonempty {k n : ℕ} (B : BinSympMatrix k n) (hk : 0 < k) : B.undetectable_set.Nonempty := sorry
+
+def BinSympMatrix.distance {k n : ℕ} (B : BinSympMatrix k n) (hk : 0 < k) : ℕ := Finset.min' (B.undetectable_set.image BinSympPauli.weight)
+(Finset.image_nonempty.2 (B.undetectable_set_nonempty hk))
+
+lemma BinSympMatrix.toStabCodeNontrivial_of_k_pos {k n : ℕ} (B : BinSympMatrix k n) (h_comm : B.isCommuting) (hk : 0 < k) :
+  (StabCode_of_BinSympMatrix B h_comm).nontrivial := sorry
+
+--ultimate theorem linking binSymp representation distance
+theorem BinSympMatrix.distance_eq_distance {k n : ℕ} (B : BinSympMatrix k n) (h_comm : B.isCommuting) (hk : 0 < k) :
+  (StabCode_of_BinSympMatrix B h_comm).distance (B.toStabCodeNontrivial_of_k_pos h_comm hk) =
+  B.distance hk := sorry
 end
 
 --TODO:
