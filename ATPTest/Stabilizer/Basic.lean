@@ -353,6 +353,45 @@ lemma finset_subset_to_closure_map_union {n : ℕ} (S : StabSet n) {F A B : Fins
     rw [←hf'.2]
     simp
 
+--harder version where your elements are members of ambient group but happen to be subset
+theorem list_prod_eq_perm_of_mem_comm_subgroup {G : Type*} [Group G] (H : Subgroup G) [DecidableEq G] [IsMulCommutative H]
+  {L₁ L₂ : List G} {hL₁ : L₁.toFinset.toSet ⊆ H} {hL₂ : L₂.toFinset.toSet ⊆ H} (hperm : L₁.Perm L₂) : L₁.prod = L₂.prod := by
+  revert L₂
+  induction L₁ with
+  | nil =>
+    intros L₂ hL₂
+    rw [List.nil_perm]
+    rintro (rfl)
+    rfl
+  | cons a L₁ ih =>
+    intros L₂ hL₂ hP
+    rw [List.prod_cons]
+    have h_a_mem : a ∈ L₂ := by
+      rw [←List.Perm.mem_iff hP, List.mem_cons]
+      exact Or.inl rfl
+    rw [List.mem_iff_append] at h_a_mem
+    rcases h_a_mem with ⟨s, t, rfl⟩
+    have h_comm : s.prod * a = a * s.prod := by
+      have a_mem : a ∈ H := by
+        apply hL₁ (by aesop)
+      have s_prod_mem : s.prod ∈ H := by
+        apply Submonoid.list_prod_mem
+        intros x hx
+        rw [Subgroup.mem_toSubmonoid]
+        apply hL₂
+        rw [Finset.mem_coe, List.mem_toFinset]
+        apply List.mem_append_left _ hx
+      have a_eq : a = ↑ (⟨a, a_mem⟩ : H) := rfl
+      have s_prod_eq : s.prod = ↑ (⟨s.prod, s_prod_mem⟩ : H) := rfl
+      rw [a_eq, s_prod_eq, ←Subgroup.coe_mul, IsMulCommutative.is_comm.comm]
+      rfl
+    rw [List.prod_append, List.prod_cons, ←mul_assoc, h_comm, mul_assoc, mul_right_inj]
+    rw [←List.prod_append, ih]
+    · exact (hP.trans List.perm_middle).cons_inv
+    apply subset_trans (by aesop) hL₁
+    apply subset_trans (by aesop) hL₂
+
+
 --seems useful
 theorem list_prod_eq_perm_of_is_comm {G : Type*} [Group G] {H : Subgroup G} [DecidableEq H] [IsMulCommutative H]
   {L₁ L₂ : List H} (hperm: L₁.Perm L₂) : L₁.prod = L₂.prod := by
@@ -371,6 +410,8 @@ theorem list_prod_eq_perm_of_is_comm {G : Type*} [Group G] {H : Subgroup G} [Dec
     rw [mul_assoc, ←List.prod_append, mul_right_inj]
     apply ih
     exact (hp.trans List.perm_middle).cons_inv
+
+
 
 lemma Finset.insert_disjUnion {α : Type*} [DecidableEq α] {A B : Finset α} (a : α) {hdisj : Disjoint (insert a A) B}
  : Finset.disjUnion _ _ hdisj = insert a (Finset.disjUnion A B (Finset.disjoint_of_subset_left (Finset.subset_insert _ _) hdisj)) := by
@@ -457,8 +498,7 @@ theorem mem_stab_iff_prod_subset_stabSet {n : ℕ} (S : StabSet n) (s :  PauliGr
         refine ⟨subset_trans Finset.sdiff_subset hfx₁, subset_trans Finset.sdiff_subset hfy₁⟩
       rw [finset_subset_to_closure_map_union S hfsub hf]
       · rw [list_map_union_of_is_comm]
-        · rfl
-
+        rfl
     rintro x x_mem hx
     rw [PauliGroup.norm_self_inv]
     · assumption
@@ -468,6 +508,9 @@ theorem mem_stab_iff_prod_subset_stabSet {n : ℕ} (S : StabSet n) (s :  PauliGr
   have h_mem : ∀ {x : ↥(Subgroup.closure S.stabs.toSet)}, (x : ↥(PauliGroup_group n)) ∈ (Subgroup.closure S.stabs.toSet)
   · aesop --???
   exact h_mem
+
+
+
 
 
 
@@ -540,11 +583,60 @@ def BinSympMatrix.toStabSet {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.
 def StabCode_of_BinSympMatrix {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) : StabCode n :=
   StabCode_of_StabSet (bsm.toStabSet h_comm)
 
+#check Subgroup.subtype_apply
+
+
+lemma list_prod_subtype_coe {G : Type*} [Group G] {H : Subgroup G} {L : List H}
+  : (L.prod : G) = (L.map H.subtype).prod := by
+  nth_rw 1 [←List.map_id L]
+  rw [←Subgroup.subtype_apply]
+  rw [←List.prod_map_hom, Function.comp_id]
+
+lemma Finset.map_subtype_toList {G : Type*} [DecidableEq G] [Group G] {H : Subgroup G} {F : Finset H}
+  : List.Perm (List.map Subtype.val F.toList) (map ⟨Subtype.val, Subtype.val_injective⟩ F).toList := by
+  induction F using Finset.induction_on with
+  | empty =>
+    simp
+  | @insert a s ha ih =>
+    have hperm:= Finset.toList_insert ha
+    rw [Finset.map_insert]
+    simp only [Function.Embedding.coeFn_mk]
+    apply List.Perm.trans _ (Finset.toList_insert _).symm
+    · have hmap:= (List.map_perm_map_iff (Subtype.val_injective)).2 hperm
+      apply hmap.trans
+      rwa [List.map_cons, List.perm_cons]
+    simpa only [mem_map_mk]
+
+#check Subgroup.val_list_prod
+
+theorem coe_prod_finset_subset_to_closure_map {n : ℕ} {S : StabSet n} {F : Finset (PauliGroup_group n)}
+  {hF : F ⊆ S.stabs}  :
+  ((finset_subset_to_closure_map hF).toList.prod : PauliGroup_group n) = F.toList.prod := by
+  rw [Submonoid.coe_list_prod]
+  apply list_prod_eq_perm_of_mem_comm_subgroup (Subgroup.closure (S.stabs.toSet))
+  · apply @List.Perm.trans _ _ ((Finset.map ⟨Subtype.val, Subtype.val_injective⟩ (finset_subset_to_closure_map hF)).toList)
+    · apply Finset.map_subtype_toList
+    simp only [finset_subset_to_closure_map, to_closure_map, Finset.map_eq_image,
+      Function.Embedding.coeFn_mk, Finset.image_image, Finset.perm_toList]
+    ext a : 1
+    simp only [Finset.mem_image, Finset.mem_attach, Function.comp_apply, true_and, Subtype.exists, exists_prop,
+      exists_eq_right]
+  · sorry
+  sorry
+
+
 --should depend on theorem linking members of closure
 theorem BinSympCode_stab_eq_rowSpace {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) (s : ↥(PauliGroup_group n)) :
   s ∈ (StabCode_of_BinSympMatrix bsm h_comm).stabs ↔ ∃ x z, BinSympPauli_toPauli (bsm.X.transpose.mulVec x, bsm.Z.transpose.mulVec z) = s := by
-  unfold StabCode_of_BinSympMatrix BinSympMatrix.toStabSet StabCode_of_StabSet
-  simp only [Finset.coe_image, Finset.coe_univ, Set.image_univ]
+  unfold StabCode_of_BinSympMatrix BinSympMatrix.toStabSet
+  rw [mem_stab_iff_prod_subset_stabSet]
+  constructor
+  · simp only
+    rintro ⟨F, ⟨hF, hF₂⟩⟩
+    rw [←hF₂]
+    rw [coe_prod_finset_subset_to_closure_map]
+    sorry
+
   sorry
 
 noncomputable instance {n : ℕ} (SC : StabCode n) : DecidablePred fun N => ∀ s ∈ SC.stabs, commute N s
