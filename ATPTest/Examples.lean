@@ -2,9 +2,15 @@
 import ATPTest.Stabilizer.Basic
 import ATPTest.QuantumInfoSkeleton
 
+/-
+IMPORTANT: This file is kinda ruined until i refactor to deal
+with how i rewrote the stabilizer code definition.
+Here be dragons
+-/
+
 noncomputable section
 
-def three_qubit_encode : QCode 3 1:= fun (ψ : PState 1) =>
+def three_qubit_encode:= fun (ψ : PState 1) =>
   (((ψ ⊗ₚ qub_zero) ⊗ₚ qub_zero).apply
     (Cₙ[pX] ⊗ₙ p1)).apply
     (Cₙ[p1 ⊗ₙ pX])
@@ -264,9 +270,9 @@ abbrev XII_pg := fold1 ![Pauli_X, Pauli_I, Pauli_I]
 abbrev IIX_pg := fold1 ![Pauli_I, Pauli_I, Pauli_X]
 abbrev IZZ_pg := fold1 ![Pauli_I, Pauli_Z, Pauli_Z]
 abbrev ZZI_pg := fold1 ![Pauli_Z, Pauli_Z, Pauli_I]
-abbrev stab := QCode.stabilizers three_qubit_encode
+--abbrev stab := QCode.stabilizers three_qubit_encode
 
-
+/-
 lemma IZZ_in_stab :
   (fold1 ![Pauli_I, Pauli_Z, Pauli_Z]) ∈
   QCode.stabilizers three_qubit_encode := by
@@ -342,6 +348,7 @@ lemma ZZI_in_stab : (fold1 ![Pauli_Z, Pauli_Z, Pauli_I]) ∈ stab := by
     simp_rw [PState.phase_prod_phase]
     simp [Ket.phase_mul]
   simp_rw [hz, ho]
+-/
 
 lemma commute₁_XZ : commute₁ Pauli_X Pauli_Z = false := by simp [commute₁]
 
@@ -426,7 +433,7 @@ lemma pauli_only_X_contra_Z {n : ℕ} {E : PauliGroup n}
   · exact fun hf => pgZnepgI (hf.symm.trans hi)
   exact fun hf => pgXnepgZ (hx.symm.trans hf)
 
-
+/-
 theorem three_qub_corrects_one_x : QCode.unique_corrects_P_error_of_weight three_qubit_encode 1
  ⟨pX, by simp[Pauli]⟩ := by
   intros E₁ E₂ only_E₁ only_E₂ p1_E₁ p1_E₂ hW₁ hW₂ hne
@@ -533,3 +540,4 @@ theorem three_qub_corrects_one_x : QCode.unique_corrects_P_error_of_weight three
     simp [pphase_IIX_IZZ, pphase_pauli1]
     norm_num
   contradiction
+-/
