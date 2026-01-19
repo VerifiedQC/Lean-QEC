@@ -1,5 +1,7 @@
 import ATPTest.Stabilizer.Basic
+import ATPTest.Stabilizer.LinAlg
 import ATPTest.Classical_EC.Basic
+
 
 variable {n k₁ k₂ : ℕ}
 
@@ -43,21 +45,9 @@ structure CSS_pair (n k₁ k₂) where
 
 def CSS_pair.toBSM (C : CSS_pair n k₁ k₂) := CSS_BSM C.H₁ C.H₂
 
-variable {M : Matrix (Fin n) (Fin n) (ZMod 2)}
+noncomputable def CSS_pair.dX (C : CSS_pair n k₁ k₂) := min_weight_ker_not_mem_rowspace _ _ (matrix_ker_sdiff_rowspace_nonempty C.nt₂ C.nt₁ C.H₂ C.H₁)
 
-#check LinearMap.ker M.toLin'
-
-lemma matrix_ker_sdiff_rowspace_nonempty {k₁ k₂ : ℕ} (hk₁ : 0 < k₁) (hk₂ : 0 < k₂) (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
-  (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) :
-  ((LinearMap.ker M₁.toLin') \ (Submodule.span (ZMod 2) (Set.range M₂.row)) : Set (Fin n → (ZMod 2))).toFinset.Nonempty := sorry
-
-noncomputable def CSS_pair.dX (C : CSS_pair n k₁ k₂) : ℕ := Finset.min' (Finset.image hammingNorm ((LinearMap.ker C.H₂.toLin') \ Submodule.span (ZMod 2) (Set.range C.H₁.row) : Set (Fin n → (ZMod 2))).toFinset)
- (Finset.image_nonempty.2 (matrix_ker_sdiff_rowspace_nonempty C.nt₂ C.nt₁ _ _))
-
-noncomputable def CSS_pair.dZ (C : CSS_pair n k₁ k₂) : ℕ := Finset.min' (Finset.image hammingNorm ((LinearMap.ker C.H₁.toLin') \ Submodule.span (ZMod 2) (Set.range C.H₂.row) : Set (Fin n → (ZMod 2))).toFinset)
- (Finset.image_nonempty.2 (matrix_ker_sdiff_rowspace_nonempty C.nt₁ C.nt₂ _ _))
-
-
+noncomputable def CSS_pair.dZ (C : CSS_pair n k₁ k₂) := min_weight_ker_not_mem_rowspace _ _ (matrix_ker_sdiff_rowspace_nonempty C.nt₁ C.nt₂ C.H₁ C.H₂)
 
 theorem CSS.toBSM_dist_eq (C : CSS_pair n k₁ k₂) :
   C.toBSM.distance (Nat.add_pos_left C.nt₁ _) = min C.dX C.dZ := sorry
