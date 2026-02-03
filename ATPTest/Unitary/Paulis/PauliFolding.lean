@@ -103,7 +103,6 @@ lemma injective_fold_aux {z z' : pgroup_phases} {m m' : Fin n → Pauli} :
   subst eq1_w
   constructor
   · simp at HHeads
-    rw [Subtype.ext_iff]
     assumption
   intro eq_m0
   apply ih
@@ -132,7 +131,7 @@ lemma mem_fold pm : fold pm ∈ PauliGroup n := by
   exists (p, m)
   rw [factored_Pauli_univ]
   constructor
-  · simp [Finset.mem_univ]
+  · apply Finset.mem_univ
   · rfl
 
 abbrev foldPauli_toFun (n : ℕ) (pm: factored_Pauli n) : PauliGroup n :=
@@ -347,7 +346,6 @@ lemma kron_mem_PauliGroup {n₁ n₂ : ℕ}
   exists foldPauli (1, a)
   rw [kron_PaulisE]
   simp [factored_kron]
-  apply congrArg
   apply foldPauli.symm.injective
   rw [<- cast_split_cat]
   rw [foldPauli.symm_apply_apply]

@@ -4,7 +4,7 @@ open System Lake DSL
 package «ATP_Test»{
 }
 
-require quantumInfo from git "https://github.com/Timeroot/Lean-QuantumInfo" @ "main"
+require smt from git "https://github.com/ufmg-smite/lean-smt" @ "main"
 
 
 @[default_target]

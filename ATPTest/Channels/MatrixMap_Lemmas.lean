@@ -1,4 +1,4 @@
-import QuantumInfo
+/-import QuantumInfo
 import ATPTest.KroneckerLemmas
 
 open Matrix
@@ -63,3 +63,4 @@ MatrixMap.of_kraus (fun (i : κ₁ × κ₂) => Matrix.kronecker (M₁ i.1) (M�
     kroneckerMap_conjTranspose, ← Matrix.mul_kronecker_mul]
   simp_rw [Matrix.sum_kronecker_left, Matrix.sum_kronecker_right, ←Finset.sum_product']
   simp
+-/

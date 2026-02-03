@@ -65,6 +65,8 @@ lemma raw_phase_star_move (a b c : ℂ)
     -- Since multiplication is commutative in the complex numbers, we have $c * b = b * c$.
 --    rw [mul_comm]
 
+#check SemigroupAction.mul_smul
+
 lemma raw_uphase_div {T U}
   [Nonempty T] [Nonempty U] [Fintype T] [Fintype U]
   (z z' : ℂ) (u u' : Matrix T U ℂ)
@@ -75,7 +77,7 @@ lemma raw_uphase_div {T U}
     convert congr_arg ( fun x => star z' • x ) eq using 1;
     · -- By the associativity of scalar multiplication, we have $(z * star z') • u = star z' • (z • u)$.
       simp [mul_comm, mul_assoc, smul_smul];
-    · simp +decide [ ← MulAction.mul_smul, norm_z' ];
+    · simp +decide [ ← SemigroupAction.mul_smul ];
       -- Since $z'$ has norm 1, we have $z' * \overline{z'} = 1$.
       have h_norm : z' * starRingEnd ℂ z' = 1 := by
         simp +decide [ Complex.mul_conj, Complex.normSq_eq_norm_sq, norm_z' ];

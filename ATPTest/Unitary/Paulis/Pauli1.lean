@@ -17,7 +17,7 @@ def pgroup_phases : Finset phase := {⟨1, by norm_num⟩, ⟨-1, by norm_num⟩
 lemma pgphase_cases (a : pgroup_phases) : a.1 = ⟨1, by norm_num⟩ ∨ a.1 = ⟨-1, by norm_num⟩ ∨
   a.1 = ⟨Complex.I, by norm_num⟩ ∨ a.1 = ⟨-Complex.I, by norm_num⟩ := by
   have:= a.2
-  simp [pgroup_phases, -Finset.coe_mem] at this
+  simp only [pgroup_phases, Finset.mem_insert, Finset.mem_singleton] at this
   exact this
 
 @[simp]
