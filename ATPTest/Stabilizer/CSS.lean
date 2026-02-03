@@ -51,3 +51,21 @@ noncomputable def CSS_pair.dZ (C : CSS_pair n k₁ k₂) := min_weight_ker_not_m
 
 theorem CSS.toBSM_dist_eq (C : CSS_pair n k₁ k₂) :
   C.toBSM.distance (Nat.add_pos_left C.nt₁ _) = min C.dX C.dZ := sorry
+
+def CSS_pair.of_matrices [NeZero k₁] [NeZero k₂] (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)) (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
+(h_dual : (CSS_BSM H₁ H₂).isCommuting) (H₁_ind : LinearIndependent (ZMod 2) (H₁.row)) (H₂_ind : LinearIndependent (ZMod 2) (H₂.row)) : CSS_pair n k₁ k₂ where
+  C₁ := H₁.toCodeSpace.dualCode
+  C₂ := H₂.toCodeSpace.dualCode
+  H_dual := sorry --do this later
+  H₁ := H₁
+  H₂ := H₂
+  hpc₁ := by
+    unfold CodeSpace.parityCheckMatrixOf
+    rw [dual_dual_eq]
+    apply CodeSpace.generatorMatrixOf_toCodeSpace H₁_ind
+  hpc₂ := by
+    unfold CodeSpace.parityCheckMatrixOf
+    rw [dual_dual_eq]
+    apply CodeSpace.generatorMatrixOf_toCodeSpace H₂_ind
+  nt₁ := NeZero.pos _
+  nt₂ := NeZero.pos _

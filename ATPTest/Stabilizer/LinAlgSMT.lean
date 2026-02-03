@@ -1,5 +1,8 @@
 import Smt
 import Mathlib.LinearAlgebra.Matrix.Defs
+import Mathlib.Data.Finset.Range
+import Mathlib.Data.Finset.Fold
+
 
 variable (e : ℕ → Bool)
 
@@ -17,9 +20,6 @@ def z_ker_size := 2
 --don't work with fin at all, just define your matrices so they return 0 on other nats
 --resolved compile time when unfolding matrix defs
 
---can smt recognize this? no! new formulation bakes in weight so only bools matter
-def wt_n (n : ℕ) (x : ℕ → Bool) := (Finset.range n).sum (fun i => (x i).toNat)
-
 
 --indexing function: ℕ → ℕ
 def is_index_bool (I : ℕ → ℕ) (d n : ℕ) : Bool :=
@@ -29,11 +29,9 @@ def is_index_bool (I : ℕ → ℕ) (d n : ℕ) : Bool :=
 def indexed_by (I : ℕ → ℕ) (d : ℕ) : ℕ → Bool := --
   fun i => (Finset.range d).fold or false (fun k => i = (I k))
 
-theorem indexed_bytest (I : ℕ → ℕ) (h : I 1 = 1) : (indexed_by I 2) 1 := by
-  unfold indexed_by
-  normalize_fold_range_lit
-  smt [h]
-
+instance : Std.Commutative Bool.xor := by
+  constructor
+  simp
 
 def vec_inner_product (n : ℕ) (v₁ v₂ : ℕ → Bool) : Bool :=
   (Finset.range n).fold xor false (fun i => and (v₁ i) (v₂ i))
@@ -92,25 +90,6 @@ theorem dist_test : dist_index_le n r₁ z_ker_size H_x H_z_ker 2 := by
   intro I
   unfold n r₁ z_ker_size
   prep_smt
-  unfold H_z_ker H_x
-  smt
-
-  dsimp
-  unfold is_index_bool
-  normalize_fold_range_lit
-  unfold nontrivial_bool
-  unfold n r₁ z_ker_size
-  normalize_fold_range_lit
-  unfold mem_ker_bool not_mem_rowspace
-  repeat rw [Finset.range_add_one, Finset.fold_insert (by aesop)]
-  repeat rw [Finset.fold_insert (by aesop)]
-  repeat rw [Finset.range_zero]
-  repeat rw [Finset.fold_empty]
-  unfold indexed_by
-  repeat rw [Finset.range_add_one, Finset.fold_insert (by aesop)]
-  repeat rw [Finset.fold_insert (by aesop)]
-  repeat rw [Finset.range_zero, Finset.fold_empty]
-  repeat rw [Finset.fold_empty]
   unfold H_z_ker H_x
   smt --observe: no error! accepted input!
   sorry

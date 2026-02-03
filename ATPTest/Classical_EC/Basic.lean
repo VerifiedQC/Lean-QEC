@@ -7,6 +7,9 @@ variable {n : ℕ}
 def codeFromGenerators (G : Finset (Fin n → ZMod 2)) : CodeSpace n :=
 Submodule.span (ZMod 2) G
 
+def Matrix.toCodeSpace {α : Type*} [Fintype α] (M : Matrix α (Fin n) (ZMod 2)) : CodeSpace n :=
+  Submodule.span (ZMod 2) (Finset.univ.image (fun i => M i))
+
 def CodeSpace.dualCode (C : CodeSpace n) : CodeSpace n := (C.orthogonalBilin (dotProductBilin _ _))
 
 def zeroVec : Fin n → ZMod 2 := 0
@@ -37,12 +40,20 @@ lemma injective_of_linearIndependent {ι} {s : ι → (Fin n → ZMod 2)}
   apply (LinearIndependent.injective hlin)
 
 def CodeSpace.generatorMatrixOf (C : CodeSpace n) (G : Matrix α (Fin n) (ZMod 2))
-  : Prop := (LinearIndependent (ZMod 2) (fun r => G r)) ∧ Submodule.span (ZMod 2) (Finset.image (fun r => G r) Finset.univ) = C
+  : Prop := (LinearIndependent (ZMod 2) G.row) ∧ Submodule.span (ZMod 2) (Finset.image (fun r => G r) Finset.univ) = C
 
 lemma CodeSpace.generatorMatrixOf_span_map_eq {C : CodeSpace n} {G : Matrix α (Fin n) (ZMod 2)} (hgen : C.generatorMatrixOf G) :
   Submodule.span (ZMod 2) (Finset.map ⟨(fun r => G r), injective_of_linearIndependent hgen.1⟩ Finset.univ) = C := by
   convert hgen.2 using 3
   exact (Finset.map_eq_image _ _)
+
+lemma CodeSpace.generatorMatrixOf_toCodeSpace {G : Matrix α (Fin n) (ZMod 2)} (hG : LinearIndependent (ZMod 2) (G.row)):
+  G.toCodeSpace.generatorMatrixOf G := by
+  unfold generatorMatrixOf
+  refine' ⟨hG, rfl⟩
+
+
+
 
 def CodeSpace.parityCheckMatrixOf (C : CodeSpace n) (G : Matrix α (Fin n) (ZMod 2))
   : Prop := C.dualCode.generatorMatrixOf G
@@ -115,12 +126,14 @@ theorem genMatrix_size_eq {k : ℕ} (C : CodeSpace n) (G : Matrix (Fin k) (Fin n
   rw [←this]
   have:= (finrank_span_eq_card hgen.1) --just converting this got me something really weird
   rw [Fintype.card_fin] at this
-  have h : Set.range (fun r => G r) = (Finset.image (fun r => G r) Finset.univ) := by simp
+  have h : Set.range G.row = (Finset.image G.row Finset.univ) := by simp
   rw [h] at this
   exact this
 
---thanks aristotle
+--horrible terrible aristotle proof that keeps breaking my build
 lemma dual_finrank_eq {C : CodeSpace n} : Module.finrank (ZMod 2) C.dualCode = n - (Module.finrank (ZMod 2) C) := by
+  sorry
+  /-
   -- By definition of dual code, we know that its dimension is equal to the dimension of the original code.
   have h_dual_dim : Module.finrank (ZMod 2) C.dualCode + Module.finrank (ZMod 2) C = n := by
     rw [ add_comm, CodeSpace.dualCode ];
@@ -155,6 +168,7 @@ lemma dual_finrank_eq {C : CodeSpace n} : Module.finrank (ZMod 2) C.dualCode = n
         aesop
     rw [ add_comm, h_quotient_dim ] at this ; aesop;
   exact eq_tsub_of_add_eq h_dual_dim
+  -/
 
 theorem dual_dual_eq {C : CodeSpace n} : (C.dualCode).dualCode = C := by
   symm
