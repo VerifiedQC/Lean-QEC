@@ -91,5 +91,5 @@ theorem dist_test : dist_index_le n r₁ z_ker_size H_x H_z_ker 2 := by
   unfold n r₁ z_ker_size
   prep_smt
   unfold H_z_ker H_x
-  smt --observe: no error! accepted input!
+  --smt --observe: no error! accepted input!
   sorry
