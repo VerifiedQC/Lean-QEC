@@ -2,6 +2,7 @@ import Smt
 import Mathlib.LinearAlgebra.Matrix.Defs
 import Mathlib.Data.Finset.Range
 import Mathlib.Data.Finset.Fold
+import Mathlib.Algebra.Group.Embedding
 
 
 variable (e : ℕ → Bool)
@@ -54,11 +55,24 @@ lemma Finset.fold_range_add_one {β : Type*}
   {op : β → β → β} [hc : Std.Commutative op] [ha : Std.Associative op] {n : ℕ} {f : ℕ → β} {b : β}
   : (Finset.range (n+1)).fold op b f = op (f (n+1)) ((Finset.range n).fold op b f) := sorry
 
-/- --
+variable {a b : ℕ}
+
+instance h : IsLeftCancelAdd ℕ := sorry
+
+#check (Finset.range b).map (addLeftEmbedding a)
+
+def Finset.range_btw (a b : ℕ) : Finset ℕ := (Finset.range b).map (addLeftEmbedding a)
+
+lemma Finset.range_btw_zero (b : ℕ) : Finset.range_btw 0 b = Finset.range b := by
+  unfold Finset.range_btw
+  ext x
+  simp
+
+
 lemma Finset.fold_range_split {β : Type*}
   {op : β → β → β} [hc : Std.Commutative op] [ha : Std.Associative op] {n : ℕ} {f : ℕ → β} {b : β}
-  : (Finset.range (2 * n)).fold op b f = (Finset.range n).fold
--/
+  : (Finset.range (2 * n)).fold op b f = op ((Finset.range_btw 0 n).fold op b f) ((Finset.range_btw (n+1) (2*n)).fold op b f):= sorry
+
 
 open Lean Meta Elab Tactic Syntax
 elab "unfold_range"

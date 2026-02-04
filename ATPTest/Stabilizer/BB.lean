@@ -153,10 +153,6 @@ theorem dist72_1 : dist_index_le 72 (6*6) 42 H_xnb H_zknb 1 := by
   unfold_range
   unfold vec_inner_product
   rw [Finset.fold_range_add_one]
-  have h₁ : H_xnb (35+1) (71+1) = false := by
-    rfl
-  rw [h₁]
-  simp?
 
 
   sorry
