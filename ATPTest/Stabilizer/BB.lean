@@ -1,6 +1,6 @@
 import ATPTest.Stabilizer.CSS
-import ATPTest.Stabilizer.LinAlgSMT
 import ATPTest.Stabilizer.LinAlg
+import ATPTest.Stabilizer.LinAlgSMT
 
 
 def cyclic_shift (n k : ℕ) [NeZero n] : Matrix (Fin n) (Fin n) (ZMod 2) :=
@@ -43,25 +43,36 @@ def BB_castfin {α : Type*} {n m : ℕ} :  (Matrix ((Fin n) × (Fin m)) ((Fin n)
 
 #check BB_castfin BB_72_A
 
-def H_x : Matrix (Fin (6*6)) (Fin (6*6) ⊕ Fin (6*6)) (ZMod 2) :=
-  fun (i : Fin 36) (j : (Fin (6*6) ⊕ (Fin (6*6)))) => match j with
-  | (Sum.inl j) => (BB_castfin BB_72_A) i j
-  | (Sum.inr j) => (BB_castfin BB_72_B) i j
+def Matrix.hstack {α β₁ β₂ γ : Type*} (M₁ : Matrix α β₁ γ) (M₂ : Matrix α β₂ γ) : Matrix α (β₁ ⊕ β₂) γ :=
+  fun i j => match j with
+  | (Sum.inl j) => M₁ i j
+  | (Sum.inr j) => M₂ i j
 
-def H_Z : Matrix (Fin (6*6)) (Fin (6*6) ⊕ Fin (6*6)) (ZMod 2) :=
-  fun (i : Fin 36) (j : (Fin (6*6) ⊕ (Fin (6*6)))) => match j with
-  | (Sum.inl j) => (BB_castfin BB_72_A) j i
-  | (Sum.inr j) => (BB_castfin BB_72_B) j i
+
+def H_x_72 : Matrix (Fin (6*6)) (Fin (6*6) ⊕ Fin (6*6)) (ZMod 2) :=
+  (BB_castfin BB_72_A).hstack (BB_castfin BB_72_B)
+
+def H_Z_72 : Matrix (Fin (6*6)) (Fin (6*6) ⊕ Fin (6*6)) (ZMod 2) :=
+  (BB_castfin BB_72_A).transpose.hstack ((BB_castfin BB_72_B).transpose)
 
 def BB_castsum {α β : Type*} {n m : ℕ} : Matrix α (Fin n ⊕ Fin m) β ≃ Matrix α (Fin (n + m)) β
   := (Equiv.refl _).arrowCongr (finSumFinEquiv.arrowCongr (Equiv.refl _))
+
+def BB_castsum' {α β : Type*} {n m : ℕ} (M : Matrix α (Fin n ⊕ Fin m) β) : Matrix α (Fin (n + m)) β := fun i j =>
+  if h : j < n then M i (Sum.inl ⟨j, h⟩) else M i (Sum.inr ⟨j-n, by
+    push_neg at h
+    apply Nat.sub_lt_right_of_lt_add h
+    simp_rw [add_comm]
+    exact j.2
+  ⟩)
+
 
 def BB_castnat {a b : ℕ} {α : Type*} [Zero α] (M : Matrix (Fin a) (Fin b) α) : Matrix ℕ ℕ α
   := fun i j => if h₁: i < a then (if h₂: j < b then M ⟨i, h₁⟩ ⟨j, h₂⟩ else 0) else 0
 
 def BB_castbool {α β : Type*} (M : Matrix α β (ZMod 2)) := fun i j => Bool.ofNat (M i j).val
 
-def H_Z_ker : Matrix (Fin 42) (Fin (6*6 + 6*6)) (ZMod 2) :=
+def H_Z_ker_72 : Matrix (Fin 42) (Fin (6*6 + 6*6)) (ZMod 2) :=
 !![
 0,0,0,1,0,0,1,0,0,0,0,0,1,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0;
 0,0,0,0,1,0,0,1,0,0,0,0,0,1,0,0,1,0,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0;
@@ -108,10 +119,10 @@ def H_Z_ker : Matrix (Fin 42) (Fin (6*6 + 6*6)) (ZMod 2) :=
 ]
 
 
-lemma BB_A_ker_ker : ∀ i j, dotProduct (H_Z_ker.row i) ((BB_castsum H_Z).row j) = 0 := sorry
+lemma BB_A_ker_ker : ∀ i j, dotProduct (H_Z_ker_72.row i) ((BB_castsum H_Z_72).row j) = 0 := sorry
 
-def H_xnb := BB_castnat (BB_castbool (BB_castsum H_x))
-def H_zknb := BB_castnat (BB_castbool H_Z_ker)
+def H_xnb_72 := BB_castnat (BB_castbool (BB_castsum H_x_72))
+def H_zknb_72 := BB_castnat (BB_castbool H_Z_ker_72)
 
 
 #check Finset.range_add_one
@@ -127,30 +138,24 @@ elab "unfold_test"
 
 set_option maxHeartbeats 0
 theorem fold_n_test : (Finset.range 70).fold xor false (fun _ => false) = false := by
-  unfold_test
+
   sorry
 
 @[simp]
 lemma ofnatzerofalse : (@OfNat.ofNat Bool 0 Zero.toOfNat0 : Bool) = false := by aesop
 
-#eval H_xnb 0 1
-
-example : (H_xnb (35+1) (71+1)) = false := by
-  reduce
-  rfl
 
 
 
 
 
-set_option diagnostics true
+
 set_option maxHeartbeats 0
 set_option maxRecDepth 2048
-theorem dist72_1 : dist_index_le 72 (6*6) 42 H_xnb H_zknb 1 := by
+theorem dist72_1 : dist_index_le 72 (6*6) 42 H_xnb_72 H_zknb_72 1 := by
   intro I
   unfold mem_ker_bool
   dsimp
-  unfold_range
   unfold vec_inner_product
   rw [Finset.fold_range_add_one]
 
@@ -159,5 +164,75 @@ theorem dist72_1 : dist_index_le 72 (6*6) 42 H_xnb H_zknb 1 := by
 
 
 
+--how about a smaller example? BB_32
+def BB_32_A :=
+  let l := 4
+  let m := 4
+  BB_castfin (BB_matrix l m (true, 3) (false, 1) (false, 2))
 
---define BB code
+def BB_32_B :=
+  let l := 4
+  let m := 4
+  BB_castfin (BB_matrix l m (false, 3) (true, 1) (true, 2))
+
+def HX_32 := BB_castnat (BB_castbool (BB_castsum' (BB_32_A.hstack BB_32_B)))
+
+def HZ_32 := BB_castnat (BB_castbool (BB_castsum' (BB_32_B.transpose.hstack (BB_32_A.transpose))))
+
+def HZ_ker_32 :=
+BB_castnat (BB_castbool !![0,0,1,1,0,1,0,0,1,0,1,1,1,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0;
+1,0,0,1,0,0,1,0,1,1,0,1,1,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0;
+1,1,0,0,0,0,0,1,1,1,1,0,1,1,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0;
+0,1,1,0,1,0,0,0,0,1,1,1,0,1,1,1,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0;
+1,0,1,1,0,0,1,1,0,1,0,0,1,0,1,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,0;
+1,1,0,1,1,0,0,1,0,0,1,0,1,1,0,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0;
+1,1,1,0,1,1,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0;
+0,1,1,1,0,1,1,0,1,0,0,0,0,1,1,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0;
+1,0,1,1,1,0,1,1,0,0,1,1,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0;
+1,1,0,1,1,1,0,1,1,0,0,1,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0;
+1,1,1,0,1,1,1,0,1,1,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0;
+0,1,1,1,0,1,1,1,0,1,1,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0;
+0,1,0,0,1,0,1,1,1,0,1,1,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0;
+0,0,1,0,1,1,0,1,1,1,0,1,1,0,0,1,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0,0;
+0,0,0,1,1,1,1,0,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,0;
+1,0,0,0,0,1,1,1,0,1,1,1,0,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1;
+])
+
+
+#eval (BB_castbool (BB_castsum' (BB_32_A.hstack BB_32_B)))
+
+def sumtest : Matrix (Fin 2) (Fin (2+2)) (ZMod 2) := BB_castsum' (!![1, 0; 0, 1].hstack !![1, 0; 0, 1])
+
+def mtest := BB_castnat (BB_castbool (!![1, 0; 0, 1]))
+
+example : mtest 0 1 = mtest 1 0 := by
+  dsimp [mtest, BB_castbool, BB_castnat]
+
+example : sumtest 0 1 = sumtest 1 0 := by
+  dsimp [sumtest, Matrix.hstack, BB_castsum']
+
+
+--goal: define matrices so reduce isn't necessary, just dsimp
+example {a : Bool} : a = HZ_ker_32 0 2 ∨ a = HZ_ker_32 0 0 := by
+  dsimp
+  smt
+
+
+set_option maxHeartbeats 0
+set_option maxRecDepth 2048
+theorem dist32_1 : dist_index_le 32 (4*4) 16 HX_32 HZ_ker_32 1 := by
+  intro I
+  dsimp
+  unfold mem_ker_bool
+  simp [Finset.fold_range_add_one, vec_inner_product]
+  dsimp [HX_32, BB_castbool, BB_castnat, Matrix.hstack, BB_castsum']
+  sorry
+  /-
+  intro I
+  dsimp
+  unfold mem_ker_bool not_mem_rowspace nontrivial_bool is_index_bool
+  simp [Finset.fold_range_add_one, vec_inner_product]
+  unfold indexed_by
+  simp
+  smt
+  -/

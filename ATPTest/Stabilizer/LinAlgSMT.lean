@@ -3,6 +3,7 @@ import Mathlib.LinearAlgebra.Matrix.Defs
 import Mathlib.Data.Finset.Range
 import Mathlib.Data.Finset.Fold
 import Mathlib.Algebra.Group.Embedding
+import Mathlib.Tactic.Linarith.Frontend
 
 
 variable (e : ℕ → Bool)
@@ -53,7 +54,7 @@ def dist_index_le (n r₁ z_ker_size : ℕ) (Hₓ H_z_ker : Matrix ℕ ℕ Bool)
 
 lemma Finset.fold_range_add_one {β : Type*}
   {op : β → β → β} [hc : Std.Commutative op] [ha : Std.Associative op] {n : ℕ} {f : ℕ → β} {b : β}
-  : (Finset.range (n+1)).fold op b f = op (f (n+1)) ((Finset.range n).fold op b f) := sorry
+  : (Finset.range (n+1)).fold op b f = op (f n) ((Finset.range n).fold op b f) := sorry
 
 variable {a b : ℕ}
 
@@ -61,17 +62,64 @@ instance h : IsLeftCancelAdd ℕ := sorry
 
 #check (Finset.range b).map (addLeftEmbedding a)
 
-def Finset.range_btw (a b : ℕ) : Finset ℕ := (Finset.range b).map (addLeftEmbedding a)
+def Finset.range_btw (a b : ℕ) : Finset ℕ := (Finset.range b) \  (Finset.range a)
 
+@[simp]
 lemma Finset.range_btw_zero (b : ℕ) : Finset.range_btw 0 b = Finset.range b := by
   unfold Finset.range_btw
   ext x
   simp
 
+@[simp]
+lemma Finset.range_btw_empty (a : ℕ) : Finset.range_btw a a = ∅ := by simp [range_btw]
 
-lemma Finset.fold_range_split {β : Type*}
-  {op : β → β → β} [hc : Std.Commutative op] [ha : Std.Associative op] {n : ℕ} {f : ℕ → β} {b : β}
-  : (Finset.range (2 * n)).fold op b f = op ((Finset.range_btw 0 n).fold op b f) ((Finset.range_btw (n+1) (2*n)).fold op b f):= sorry
+@[simp]
+lemma Finset.range_btw_one (a : ℕ) : Finset.range_btw a (a+1) = {a} := by
+  unfold Finset.range_btw
+  ext x
+  simp only [mem_sdiff, mem_range, not_lt, mem_singleton]
+  rw [le_antisymm_iff, Nat.lt_succ_iff]
+
+lemma Finset.range_btw_split (m n₁ n₂ : ℕ)  :
+  Finset.range_btw m (m + n₁ + n₂) =
+  (Finset.range_btw m (m + n₁)) ∪ (Finset.range_btw (m + n₁) (m + n₁ + n₂)) := by
+  ext x
+  simp only [range_btw, mem_sdiff, mem_range, not_lt, mem_union]
+  constructor
+  · intro h₁
+    by_cases h : x < m + n₁
+    · exact Or.inl ⟨h, h₁.2⟩
+    push_neg at h
+    exact Or.inr ⟨h₁.1, h⟩
+  rintro (⟨h₁, h₂⟩ | ⟨h₁, h₂⟩)
+  · refine ⟨?_, h₂⟩
+    apply lt_of_lt_of_le h₁ (by aesop)
+  refine ⟨h₁, ?_⟩
+  apply le_trans (by aesop) h₂
+
+lemma Finset.range_btw_disj {m₁ n₁ m₂ n₂ : ℕ} (hle : n₁ ≤ m₂) :
+  Disjoint (Finset.range_btw m₁ n₁) (Finset.range_btw m₂ n₂) := by
+  rw [Finset.disjoint_iff_ne]
+  simp [range_btw]
+  intro a ha₁ h₂ b hb₁ hb₂ rfl
+  have:= (lt_of_lt_of_le ha₁ (hle.trans hb₂))
+  simp at this
+
+lemma Finset.fold_range_split_idem {β : Type*}
+  {op : β → β → β} [hc : Std.Commutative op] [ha : Std.Associative op] {b : β} [hi : Std.LawfulCommIdentity op b] {n : ℕ} {f : ℕ → β}
+  : (Finset.range (2 * n)).fold op b f = op ((Finset.range_btw 0 n).fold op b f) ((Finset.range_btw n (2*n)).fold op b f):= by
+  rw [←Finset.range_btw_zero, Nat.two_mul, ←(@zero_add _ _ (n + n)), ←add_assoc, Finset.range_btw_split]
+  rw [←Finset.disjUnion_eq_union _ _ (Finset.range_btw_disj le_rfl)]
+  convert (Finset.fold_disjUnion _)
+  · rw [hi.left_id]
+  · rw [zero_add]
+  rw [zero_add]
+
+lemma Finset.fold_range_split' {β : Type*}
+  {op : β → β → β} [hc : Std.Commutative op] [ha : Std.Associative op] {b : β} [hi : Std.LawfulCommIdentity op b] {n : ℕ} {f : ℕ → β}
+  : (Finset.range (2 * n + 3)).fold op b f = op ((Finset.range_btw 0 (n+2)).fold op b f) ((Finset.range_btw (n+2) (2*n + 3)).fold op b f):= sorry
+
+
 
 
 open Lean Meta Elab Tactic Syntax
