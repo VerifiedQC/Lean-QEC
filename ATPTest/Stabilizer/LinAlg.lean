@@ -1,19 +1,35 @@
 import ATPTest.Classical_EC.Basic --need fintype instance for Codespace
 
+
+def Matrix.rowSpace {α β γ : Type*} [Semiring γ] (M : Matrix α β γ) := (Submodule.span γ (Set.range M.row))
+
 --this isn't true...
 lemma matrix_ker_sdiff_rowspace_nonempty {n k₁ k₂ : ℕ} (hk₁ : 0 < k₁) (hk₂ : 0 < k₂) (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
   (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) :
-  ((LinearMap.ker M₁.toLin') \ (Submodule.span (ZMod 2) (Set.range M₂.row)) : Set (Fin n → (ZMod 2))).toFinset.Nonempty := sorry
+  (((LinearMap.ker M₁.toLin') \ M₂.rowSpace : Set (Fin n → (ZMod 2))) \ {0}).toFinset.Nonempty := sorry
 
 noncomputable def min_weight_ker_not_mem_rowspace {n k₁ k₂ : ℕ} (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)) (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
-  (hne : ((LinearMap.ker M₁.toLin') \ (Submodule.span (ZMod 2) (Set.range M₂.row)) : Set (Fin n → (ZMod 2))).toFinset.Nonempty)
+  (hne : (((LinearMap.ker M₁.toLin') \ M₂.rowSpace : Set (Fin n → (ZMod 2))) \ {0}).toFinset.Nonempty)
   : ℕ := Finset.min' (Finset.image hammingNorm _) (Finset.image_nonempty.2 hne)
+
+lemma min_weight_ker_not_mem_rowspace_pos {n k₁ k₂ : ℕ} {M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)} {M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)}
+  {hne : (((LinearMap.ker M₁.toLin') \ M₂.rowSpace : Set (Fin n → (ZMod 2))) \ {0}).toFinset.Nonempty} :
+  0 < min_weight_ker_not_mem_rowspace _ _ hne := by
+  unfold min_weight_ker_not_mem_rowspace
+  by_contra
+  have hz := Nat.eq_zero_of_not_pos this
+  rw [Finset.min'_eq_iff, Finset.mem_image] at hz
+  rcases hz with ⟨⟨a, ⟨a_mem, a_norm⟩⟩, _⟩
+  rw [hammingNorm_eq_zero] at a_norm
+  rw [a_norm, Set.mem_toFinset, Set.mem_diff_singleton] at a_mem
+  apply absurd rfl a_mem.2
+
 
 lemma mem_ker_iff_dotProd_rows_eq_zero {n k : ℕ} (M : Matrix (Fin k) (Fin n) (ZMod 2)) (x : Fin n → (ZMod 2)) :
   x ∈ ((LinearMap.ker M.toLin')) ↔ ∀ i, (M.row i) ⬝ᵥ x = 0 := sorry
 
 lemma not_mem_rowspace_iff_exists_mem_ker {n k : ℕ} (M : Matrix (Fin k) (Fin n) (ZMod 2)) (x : Fin n → (ZMod 2)) :
-  x ∉ (Submodule.span (ZMod 2) (Set.range M.row)) ↔ ∃ y ∈ (LinearMap.ker M.toLin'), y ⬝ᵥ x = 1 := sorry
+  x ∉ M.rowSpace ↔ ∃ y ∈ (LinearMap.ker M.toLin'), y ⬝ᵥ x = 1 := sorry
 
 lemma ex_mem_submodule_non_orth_iff_non_orth_mem_basis {n : ℕ} (S : Set (Fin n → (ZMod 2))) (x : Fin n → (ZMod 2))
   : ∃ y ∈ (Submodule.span (ZMod 2) S), y ⬝ᵥ x = 1 ↔ ∃ s ∈ S, s ⬝ᵥ x = 1 := sorry

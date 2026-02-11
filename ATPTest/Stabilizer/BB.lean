@@ -3,17 +3,21 @@ import ATPTest.Stabilizer.LinAlg
 import ATPTest.Stabilizer.LinAlgSMT
 
 
+@[simp]
 def cyclic_shift (n k : ℕ) [NeZero n] : Matrix (Fin n) (Fin n) (ZMod 2) :=
   fun i j => if (i + k) = j then 1 else 0
 
+@[simp]
 def x (l m k : ℕ) [NeZero l] : Matrix ((Fin l) × (Fin m)) ((Fin l) × (Fin m)) (ZMod 2) :=
   Matrix.kronecker (cyclic_shift l k) 1
 
+@[simp]
 def y (l m k : ℕ) [NeZero m] : Matrix ((Fin l) × (Fin m)) ((Fin l) × (Fin m)) (ZMod 2) :=
   Matrix.kronecker 1 (cyclic_shift m k)
 
 variable (l m : ℕ) [NeZero l] [NeZero m] (M₁ M₂ M₃ : Bool × ℕ)
 
+@[simp]
 def BB_matrix (l m : ℕ) [NeZero l] [NeZero m] (M₁ M₂ M₃ : Bool × ℕ)
  : Matrix ((Fin l) × (Fin m)) ((Fin l) × (Fin m)) (ZMod 2) :=
   let N₁ := if M₁.1 then (x l m M₁.2) else (y l m M₁.2)
@@ -37,9 +41,14 @@ def BB_72_B :=
   let m := 6
   BB_matrix l m (false, 3) (true, 1) (true, 2)
 
-
+--also doesn't unfold :/
 def BB_castfin {α : Type*} {n m : ℕ} :  (Matrix ((Fin n) × (Fin m)) ((Fin n) × (Fin m)) α) ≃ Matrix (Fin (n * m)) (Fin (n * m)) α
   := finProdFinEquiv.arrowCongr (finProdFinEquiv.arrowCongr (Equiv.refl α))
+
+
+--unfolds... up to finProdFinEquiv
+def BB_castfin' {α : Type*} {n m : ℕ} (M : Matrix ((Fin n) × (Fin m)) ((Fin n) × (Fin m)) α) : Matrix (Fin (n * m)) (Fin (n * m)) α :=
+  fun i j => M (finProdFinEquiv.symm i) (finProdFinEquiv.symm j)
 
 #check BB_castfin BB_72_A
 
@@ -55,10 +64,11 @@ def H_x_72 : Matrix (Fin (6*6)) (Fin (6*6) ⊕ Fin (6*6)) (ZMod 2) :=
 def H_Z_72 : Matrix (Fin (6*6)) (Fin (6*6) ⊕ Fin (6*6)) (ZMod 2) :=
   (BB_castfin BB_72_A).transpose.hstack ((BB_castfin BB_72_B).transpose)
 
+/- --doesn't unfold ... :/
 def BB_castsum {α β : Type*} {n m : ℕ} : Matrix α (Fin n ⊕ Fin m) β ≃ Matrix α (Fin (n + m)) β
   := (Equiv.refl _).arrowCongr (finSumFinEquiv.arrowCongr (Equiv.refl _))
-
-def BB_castsum' {α β : Type*} {n m : ℕ} (M : Matrix α (Fin n ⊕ Fin m) β) : Matrix α (Fin (n + m)) β := fun i j =>
+-/
+def BB_castsum {α β : Type*} {n m : ℕ} (M : Matrix α (Fin n ⊕ Fin m) β) : Matrix α (Fin (n + m)) β := fun i j =>
   if h : j < n then M i (Sum.inl ⟨j, h⟩) else M i (Sum.inr ⟨j-n, by
     push_neg at h
     apply Nat.sub_lt_right_of_lt_add h
@@ -137,8 +147,13 @@ elab "unfold_test"
   evalTactic (← `(tactic| repeat rw [Finset.fold_empty]))
 
 set_option maxHeartbeats 0
-theorem fold_n_test : (Finset.range 70).fold xor false (fun _ => false) = false := by
+set_option maxRecDepth 8192 --can fold to depth 2000... where does stack overflow happen?
+--theorem fold_n_test : (Finset.range 2000).fold xor false (fun _ => false) = false := by
+theorem fold_n_test : (Finset.range 50).fold xor false (fun _ => false) = false := by
 
+  simp only [Finset.fold_range_add_one]
+  rw [Bool.false_xor] --doesn't stack overflow!
+  --stack overflow when attempt to rewrite on this?
   sorry
 
 @[simp]
@@ -149,7 +164,7 @@ lemma ofnatzerofalse : (@OfNat.ofNat Bool 0 Zero.toOfNat0 : Bool) = false := by 
 
 
 
-
+/-
 set_option maxHeartbeats 0
 set_option maxRecDepth 2048
 theorem dist72_1 : dist_index_le 72 (6*6) 42 H_xnb_72 H_zknb_72 1 := by
@@ -161,23 +176,23 @@ theorem dist72_1 : dist_index_le 72 (6*6) 42 H_xnb_72 H_zknb_72 1 := by
 
 
   sorry
-
+-/
 
 
 --how about a smaller example? BB_32
 def BB_32_A :=
   let l := 4
   let m := 4
-  BB_castfin (BB_matrix l m (true, 3) (false, 1) (false, 2))
+  BB_castfin' (BB_matrix l m (true, 3) (false, 1) (false, 2))
 
 def BB_32_B :=
   let l := 4
   let m := 4
-  BB_castfin (BB_matrix l m (false, 3) (true, 1) (true, 2))
+  BB_castfin' (BB_matrix l m (false, 3) (true, 1) (true, 2))
 
-def HX_32 := BB_castnat (BB_castbool (BB_castsum' (BB_32_A.hstack BB_32_B)))
+def HX_32 := BB_castnat (BB_castbool (BB_castsum (BB_32_A.hstack BB_32_B)))
 
-def HZ_32 := BB_castnat (BB_castbool (BB_castsum' (BB_32_B.transpose.hstack (BB_32_A.transpose))))
+def HZ_32 := BB_castnat (BB_castbool (BB_castsum (BB_32_B.transpose.hstack (BB_32_A.transpose))))
 
 def HZ_ker_32 :=
 BB_castnat (BB_castbool !![0,0,1,1,0,1,0,0,1,0,1,1,1,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0;
@@ -199,25 +214,29 @@ BB_castnat (BB_castbool !![0,0,1,1,0,1,0,0,1,0,1,1,1,0,1,1,1,0,0,0,0,0,0,0,0,0,0
 ])
 
 
-#eval (BB_castbool (BB_castsum' (BB_32_A.hstack BB_32_B)))
+#eval (BB_castbool (BB_castsum (BB_32_A.hstack BB_32_B)))
 
-def sumtest : Matrix (Fin 2) (Fin (2+2)) (ZMod 2) := BB_castsum' (!![1, 0; 0, 1].hstack !![1, 0; 0, 1])
+def sumtest : Matrix (Fin 2) (Fin (2+2)) (ZMod 2) := BB_castsum (!![1, 0; 0, 1].hstack !![1, 0; 0, 1])
 
 def mtest := BB_castnat (BB_castbool (!![1, 0; 0, 1]))
+
+example : BB_32_A 1 2 = BB_32_A 0 1:= by
+  dsimp [BB_32_A, BB_matrix, x, y, cyclic_shift, BB_castfin']
+  repeat rw [finProdFinEquiv_symm_apply]
+  simp [Fin.divNat, Fin.modNat]
+  --simp [finProdFinEquiv_symm_apply]
+
+  rfl
+
 
 example : mtest 0 1 = mtest 1 0 := by
   dsimp [mtest, BB_castbool, BB_castnat]
 
 example : sumtest 0 1 = sumtest 1 0 := by
-  dsimp [sumtest, Matrix.hstack, BB_castsum']
+  dsimp [sumtest, Matrix.hstack, BB_castsum]
 
 
---goal: define matrices so reduce isn't necessary, just dsimp
-example {a : Bool} : a = HZ_ker_32 0 2 ∨ a = HZ_ker_32 0 0 := by
-  dsimp
-  smt
-
-
+/-
 set_option maxHeartbeats 0
 set_option maxRecDepth 2048
 theorem dist32_1 : dist_index_le 32 (4*4) 16 HX_32 HZ_ker_32 1 := by
@@ -225,7 +244,7 @@ theorem dist32_1 : dist_index_le 32 (4*4) 16 HX_32 HZ_ker_32 1 := by
   dsimp
   unfold mem_ker_bool
   simp [Finset.fold_range_add_one, vec_inner_product]
-  dsimp [HX_32, BB_castbool, BB_castnat, Matrix.hstack, BB_castsum']
+
   sorry
   /-
   intro I
@@ -236,3 +255,4 @@ theorem dist32_1 : dist_index_le 32 (4*4) 16 HX_32 HZ_ker_32 1 := by
   simp
   smt
   -/
+-/
