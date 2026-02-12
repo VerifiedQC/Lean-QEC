@@ -65,3 +65,65 @@ theorem dist9x_3 : dist_index_le 9 6 2 q9_Z q9x_ker 3 := by
     Matrix.castnat, Matrix.castbool, ZMod.val, q9x_ker, not_mem_rowspace]
   simp_rw [@Eq.comm _ _ (I _)]
   smt
+
+def Steane_mat := Matrix.castnat (Matrix.castbool !![
+  1, 0, 0, 1, 0, 1, 1;
+  0, 1, 0, 1, 1, 0, 1;
+  0, 0, 1, 0, 1, 1, 1;
+])
+
+def Steane_ker := Matrix.castnat (Matrix.castbool !![
+  1,1,0,1,0,0,0;
+  0,1,1,0,1,0,0;
+  1,0,1,0,0,1,0;
+  1,1,1,0,0,0,1;
+])
+
+theorem dist_steane_3 : dist_index_le 7 3 4 Steane_mat Steane_ker 3 := by
+  intro I
+  dsimp
+  simp [is_index_bool,
+    indexed_by, Finset.fold_range_add_one, mem_ker_bool, vec_inner_product, Steane_ker,
+    Matrix.castnat, Matrix.castbool, ZMod.val, Steane_mat, not_mem_rowspace]
+  simp_rw [@Eq.comm _ _ (I _)]
+  smt
+
+def Golay_mat := Matrix.castnat (Matrix.castbool !![
+0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1;
+1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0;
+0, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0;
+1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0;
+1, 1, 1, 1, 0, 0, 0, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0;
+1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0;
+0, 0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0;
+0, 0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0;
+0, 1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0;
+1, 1, 1, 1, 0, 1, 1, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+1, 0, 1, 0, 0, 1, 0, 0, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0;
+
+])
+
+def Golay_ker := Matrix.castnat (Matrix.castbool !![
+  1,1,0,0,0,1,1,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0;
+0,1,1,0,0,0,1,1,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0;
+1,1,1,1,0,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0,0;
+0,1,1,1,1,0,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0,0;
+0,0,1,1,1,1,0,1,1,0,1,0,0,0,0,1,0,0,0,0,0,0,0;
+1,1,0,1,1,0,0,1,1,0,0,0,0,0,0,0,1,0,0,0,0,0,0;
+0,1,1,0,1,1,0,0,1,1,0,0,0,0,0,0,0,1,0,0,0,0,0;
+0,0,1,1,0,1,1,0,0,1,1,0,0,0,0,0,0,0,1,0,0,0,0;
+1,1,0,1,1,1,0,0,0,1,1,0,0,0,0,0,0,0,0,1,0,0,0;
+1,0,1,0,1,0,0,1,0,1,1,0,0,0,0,0,0,0,0,0,1,0,0;
+1,0,0,1,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,0;
+1,0,0,0,1,1,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,1;
+])
+
+set_option maxHeartbeats 0
+theorem dist_golay_7 : dist_index_le 23 11 12 Golay_mat Golay_ker 7 := by
+  intro I
+  dsimp
+  simp [is_index_bool,
+    indexed_by, Finset.fold_range_add_one, mem_ker_bool, vec_inner_product, Golay_ker,
+    Matrix.castnat, Matrix.castbool, ZMod.val, Golay_mat, not_mem_rowspace]
+  simp_rw [@Eq.comm _ _ (I _)]
+  smt

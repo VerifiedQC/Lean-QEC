@@ -3,6 +3,11 @@ import ATPTest.Classical_EC.Basic --need fintype instance for Codespace
 
 def Matrix.rowSpace {α β γ : Type*} [Semiring γ] (M : Matrix α β γ) := (Submodule.span γ (Set.range M.row))
 
+lemma Matrix.row_mem_rowSpace {α β γ : Type*} {i : α} [Semiring γ] {M : Matrix α β γ} :
+  M.row i ∈ M.rowSpace := by
+  apply Submodule.mem_span_of_mem (Set.mem_range_self _)
+
+
 --this isn't true...
 lemma matrix_ker_sdiff_rowspace_nonempty {n k₁ k₂ : ℕ} (hk₁ : 0 < k₁) (hk₂ : 0 < k₂) (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
   (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) :
