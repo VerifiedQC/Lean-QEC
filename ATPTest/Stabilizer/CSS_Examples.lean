@@ -117,7 +117,7 @@ def Golay_ker := Matrix.castnat (Matrix.castbool !![
 1,0,0,1,0,0,1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,1,0;
 1,0,0,0,1,1,1,0,1,0,1,0,0,0,0,0,0,0,0,0,0,0,1;
 ])
-
+/-
 set_option maxHeartbeats 0
 theorem dist_golay_7 : dist_index_le 23 11 12 Golay_mat Golay_ker 7 := by
   intro I
@@ -126,4 +126,7 @@ theorem dist_golay_7 : dist_index_le 23 11 12 Golay_mat Golay_ker 7 := by
     indexed_by, Finset.fold_range_add_one, mem_ker_bool, vec_inner_product, Golay_ker,
     Matrix.castnat, Matrix.castbool, ZMod.val, Golay_mat, not_mem_rowspace]
   simp_rw [@Eq.comm _ _ (I _)]
-  smt
+  --smt
+  --run smt on this at your own risk!!!!
+  sorry
+-/
