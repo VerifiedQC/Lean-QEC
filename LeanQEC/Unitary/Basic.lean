@@ -1,12 +1,12 @@
 --i m p o r t QuantumInfo.Finite.Unitary
 --i m p o r t QuantumInfo.Finite.Qubit.Basic
-import ATPTest.QuantumInfoSkeleton
+import LeanQEC.QuantumInfoSkeleton
 
-import ATPTest.States.BitVec
-import ATPTest.KroneckerLemmas
-import ATPTest.States.Phase
-import ATPTest.AI_Generated.TediousLinearAlgebra
-import ATPTest.AI_Generated.ne0_unitary
+import LeanQEC.States.BitVec
+import LeanQEC.KroneckerLemmas
+import LeanQEC.States.Phase
+import LeanQEC.AI_Generated.TediousLinearAlgebra
+import LeanQEC.AI_Generated.ne0_unitary
 
 open Matrix
 

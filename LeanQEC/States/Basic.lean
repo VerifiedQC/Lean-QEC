@@ -1,4 +1,4 @@
-import ATPTest.States.PState
+import LeanQEC.States.PState
 
 noncomputable section
 

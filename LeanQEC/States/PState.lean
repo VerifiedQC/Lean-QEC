@@ -1,6 +1,6 @@
-import ATPTest.States.BitVec
-import ATPTest.Unitary.Basic
-import ATPTest.Braket
+import LeanQEC.States.BitVec
+import LeanQEC.Unitary.Basic
+import LeanQEC.Braket
 
 section pstate
 

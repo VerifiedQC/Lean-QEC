@@ -1,14 +1,14 @@
-import ATPTest.Unitary.Basic
-import ATPTest.States.Phase
-import ATPTest.AI_Generated.ne0_unitary
-import ATPTest.AI_Generated.scalar_mat_is_one
-import ATPTest.AI_Generated.KronNonsense
-import ATPTest.AI_Generated.PauliBruteForce
--- import ATPTest.AI_Generated.TediousLinearAlgebra
-import ATPTest.Unitary.Paulis.Pauli1
-import ATPTest.Unitary.Paulis.PauliFolding
-import ATPTest.Unitary.Paulis.PauliMul
-import ATPTest.Unitary.Paulis.PauliCommute
+import LeanQEC.Unitary.Basic
+import LeanQEC.States.Phase
+import LeanQEC.AI_Generated.ne0_unitary
+import LeanQEC.AI_Generated.scalar_mat_is_one
+import LeanQEC.AI_Generated.KronNonsense
+import LeanQEC.AI_Generated.PauliBruteForce
+-- import LeanQEC.AI_Generated.TediousLinearAlgebra
+import LeanQEC.Unitary.Paulis.Pauli1
+import LeanQEC.Unitary.Paulis.PauliFolding
+import LeanQEC.Unitary.Paulis.PauliMul
+import LeanQEC.Unitary.Paulis.PauliCommute
 
 open Qubit
 open Function

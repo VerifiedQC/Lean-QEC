@@ -1,6 +1,6 @@
-import ATPTest.Stabilizer.Basic
-import ATPTest.Stabilizer.LinAlg
-import ATPTest.Classical_EC.Basic
+import LeanQEC.Stabilizer.Basic
+import LeanQEC.Stabilizer.LinAlg
+import LeanQEC.Classical_EC.Basic
 
 
 variable {n k₁ k₂ : ℕ}

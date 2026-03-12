@@ -1,6 +1,6 @@
 
-import ATPTest.Stabilizer.Basic
-import ATPTest.QuantumInfoSkeleton
+import LeanQEC.Stabilizer.Basic
+import LeanQEC.QuantumInfoSkeleton
 
 /-
 IMPORTANT: This file is kinda ruined until i refactor to deal

@@ -1,5 +1,5 @@
-import ATPTest.Unitary.Basic
-import ATPTest.States.Phase
+import LeanQEC.Unitary.Basic
+import LeanQEC.States.Phase
 
 lemma matrix_cast {t₁ t₁' t₂ t₂'}
   (eq_t₁ : t₁ = t₁') (eq_t₂ : t₂ = t₂') :

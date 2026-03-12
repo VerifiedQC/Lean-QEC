@@ -1,4 +1,4 @@
-import ATPTest.Stabilizer.LinAlg
-import ATPTest.Stabilizer.BB
-import ATPTest.Stabilizer.LinAlgSMT
-import ATPTest.Stabilizer.CSS_Examples
+import LeanQEC.Stabilizer.LinAlg
+import LeanQEC.Stabilizer.BB
+import LeanQEC.Stabilizer.LinAlgSMT
+import LeanQEC.Stabilizer.CSS_Examples

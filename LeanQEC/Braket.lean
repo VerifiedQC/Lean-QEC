@@ -1,6 +1,6 @@
 --import QuantumInfo.Finite.Braket
-import ATPTest.QuantumInfoSkeleton
-import ATPTest.States.Phase
+import LeanQEC.QuantumInfoSkeleton
+import LeanQEC.States.Phase
 
 variable {k : Type*} [Fintype k]
 --to deal with rewrites

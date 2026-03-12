@@ -1,5 +1,5 @@
 import Mathlib
-import ATPTest.AI_Generated.TediousLinearAlgebra
+import LeanQEC.AI_Generated.TediousLinearAlgebra
 
 noncomputable section
 

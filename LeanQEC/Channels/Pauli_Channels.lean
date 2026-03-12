@@ -1,4 +1,4 @@
-import ATPTest.Tensors
+import LeanQEC.Tensors
 -- Define multi-qubit pauli channels to model errors
 
 -- First define single-qubit bit-flip channel

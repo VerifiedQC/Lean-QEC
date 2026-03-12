@@ -1,4 +1,4 @@
-import ATPTest.States.BitVec
+import LeanQEC.States.BitVec
 
 abbrev CodeSpace (n : ℕ) := Submodule (ZMod 2) (Fin n → ZMod 2)
 

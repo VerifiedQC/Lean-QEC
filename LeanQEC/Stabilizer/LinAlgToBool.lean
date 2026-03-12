@@ -1,5 +1,5 @@
-import ATPTest.Stabilizer.LinAlgSMT
-import ATPTest.Stabilizer.CSS
+import LeanQEC.Stabilizer.LinAlgSMT
+import LeanQEC.Stabilizer.CSS
 
 
 def I_to_vec (n d : ℕ) (I : ℕ → ℕ) : Fin n → (ZMod 2) := fun i => if (∃ j, j < d ∧ I j = i) then 1 else 0

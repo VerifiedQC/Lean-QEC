@@ -1,3 +1,3 @@
-import ATPTest.Unitary.Paulis.Pauli1
-import ATPTest.Unitary.Paulis.PauliFolding
-import ATPTest.Unitary.Paulis.Pauli
+import LeanQEC.Unitary.Paulis.Pauli1
+import LeanQEC.Unitary.Paulis.PauliFolding
+import LeanQEC.Unitary.Paulis.Pauli

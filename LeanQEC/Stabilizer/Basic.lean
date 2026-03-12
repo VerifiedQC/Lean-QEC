@@ -1,5 +1,5 @@
-import ATPTest.States.Basic
-import ATPTest.Unitary.Paulis.Basic
+import LeanQEC.States.Basic
+import LeanQEC.Unitary.Paulis.Basic
 variable {n : ℕ}
 
 def stabilizes (U : 𝐔ₙ[n]) (ψ : PState n) := ψ.apply U = ψ

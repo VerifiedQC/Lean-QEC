@@ -1,6 +1,6 @@
-import ATPTest.Stabilizer.CSS
-import ATPTest.Stabilizer.LinAlg
-import ATPTest.Stabilizer.LinAlgSMT
+import LeanQEC.Stabilizer.CSS
+import LeanQEC.Stabilizer.LinAlg
+import LeanQEC.Stabilizer.LinAlgSMT
 
 
 @[simp]

@@ -1,4 +1,4 @@
-import ATPTest.Classical_EC.Basic --need fintype instance for Codespace
+import LeanQEC.Classical_EC.Basic --need fintype instance for Codespace
 
 
 def Matrix.rowSpace {α β γ : Type*} [Semiring γ] (M : Matrix α β γ) := (Submodule.span γ (Set.range M.row))

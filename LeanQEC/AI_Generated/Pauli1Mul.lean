@@ -11,10 +11,10 @@ The following was proved by Aristotle:
   let PQ
 -/
 
-import ATPTest.Unitary.Basic
-import ATPTest.States.Phase
-import ATPTest.Unitary.Paulis.Pauli1
-import ATPTest.Unitary.Paulis.PauliFolding
+import LeanQEC.Unitary.Basic
+import LeanQEC.States.Phase
+import LeanQEC.Unitary.Paulis.Pauli1
+import LeanQEC.Unitary.Paulis.PauliFolding
 
 set_option maxHeartbeats 0
 

@@ -1,4 +1,4 @@
-import ATPTest.Unitary.Paulis.PauliMul
+import LeanQEC.Unitary.Paulis.PauliMul
 
 noncomputable section
 

@@ -1,5 +1,5 @@
 /-import QuantumInfo
-import ATPTest.KroneckerLemmas
+import LeanQEC.KroneckerLemmas
 
 open Matrix
 

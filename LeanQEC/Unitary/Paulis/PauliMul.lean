@@ -1,4 +1,4 @@
-import ATPTest.AI_Generated.Pauli1Mul
+import LeanQEC.AI_Generated.Pauli1Mul
 
 noncomputable section
 
