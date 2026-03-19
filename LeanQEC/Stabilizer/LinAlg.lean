@@ -7,27 +7,31 @@ lemma Matrix.row_mem_rowSpace {α β γ : Type*} {i : α} [Semiring γ] {M : Mat
   M.row i ∈ M.rowSpace := by
   apply Submodule.mem_span_of_mem (Set.mem_range_self _)
 
+noncomputable def min_weight_ker_not_mem_rowspace {n k₁ k₂ : ℕ}
+  (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+  (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) : ℕ :=
+  let undetectable_errors : Set (Fin n → ZMod 2) :=
+    LinearMap.ker M₁.toLin' \ M₂.rowSpace
+  let nontrivial_errors := (undetectable_errors \ {0}).toFinset
+  match Finset.min (Finset.image hammingNorm nontrivial_errors) with
+  | ⊤ => n + 1
+  | some a => a
 
---this isn't true...
-lemma matrix_ker_sdiff_rowspace_nonempty {n k₁ k₂ : ℕ} (hk₁ : 0 < k₁) (hk₂ : 0 < k₂) (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
-  (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) :
-  (((LinearMap.ker M₁.toLin') \ M₂.rowSpace : Set (Fin n → (ZMod 2))) \ {0}).toFinset.Nonempty := sorry
-
-noncomputable def min_weight_ker_not_mem_rowspace {n k₁ k₂ : ℕ} (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)) (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
-  (hne : (((LinearMap.ker M₁.toLin') \ M₂.rowSpace : Set (Fin n → (ZMod 2))) \ {0}).toFinset.Nonempty)
-  : ℕ := Finset.min' (Finset.image hammingNorm _) (Finset.image_nonempty.2 hne)
-
-lemma min_weight_ker_not_mem_rowspace_pos {n k₁ k₂ : ℕ} {M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)} {M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)}
-  {hne : (((LinearMap.ker M₁.toLin') \ M₂.rowSpace : Set (Fin n → (ZMod 2))) \ {0}).toFinset.Nonempty} :
-  0 < min_weight_ker_not_mem_rowspace _ _ hne := by
+lemma min_weight_ker_not_mem_rowspace_pos {n k₁ k₂ : ℕ}
+  {M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)} {M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)} :
+  --{hne : (((LinearMap.ker M₁.toLin') \ M₂.rowSpace : Set (Fin n → (ZMod 2))) \ {0}).toFinset.Nonempty} :
+  0 < min_weight_ker_not_mem_rowspace M₁ M₂ := by
   unfold min_weight_ker_not_mem_rowspace
   by_contra
   have hz := Nat.eq_zero_of_not_pos this
+  /-
   rw [Finset.min'_eq_iff, Finset.mem_image] at hz
   rcases hz with ⟨⟨a, ⟨a_mem, a_norm⟩⟩, _⟩
   rw [hammingNorm_eq_zero] at a_norm
   rw [a_norm, Set.mem_toFinset, Set.mem_diff_singleton] at a_mem
   apply absurd rfl a_mem.2
+  -/
+  sorry
 
 
 lemma mem_ker_iff_dotProd_rows_eq_zero {n k : ℕ} (M : Matrix (Fin k) (Fin n) (ZMod 2)) (x : Fin n → (ZMod 2)) :

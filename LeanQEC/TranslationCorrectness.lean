@@ -7,7 +7,7 @@ def forget {a b : ℕ} [NeZero a] [NeZero b]
   Matrix ℕ ℕ Bool :=
   Matrix.of (fun i j =>
     if i < a && j < b then
-      M (Fin.ofNat a i) (Fin.ofNat b j) == 1
+      M (Fin.ofNat a i) (Fin.ofNat b j) = 1
     else false)
 
 def kergen_correct {a b n : ℕ}

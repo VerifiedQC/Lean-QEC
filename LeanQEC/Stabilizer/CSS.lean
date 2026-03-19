@@ -45,9 +45,9 @@ structure CSS_pair (n k₁ k₂) where
 
 def CSS_pair.toBSM (C : CSS_pair n k₁ k₂) := CSS_BSM C.H₁ C.H₂
 
-noncomputable def CSS_pair.dX (C : CSS_pair n k₁ k₂) := min_weight_ker_not_mem_rowspace _ _ (matrix_ker_sdiff_rowspace_nonempty C.nt₂ C.nt₁ C.H₂ C.H₁)
+noncomputable def CSS_pair.dX (C : CSS_pair n k₁ k₂) := min_weight_ker_not_mem_rowspace C.H₂ C.H₁
 
-noncomputable def CSS_pair.dZ (C : CSS_pair n k₁ k₂) := min_weight_ker_not_mem_rowspace _ _ (matrix_ker_sdiff_rowspace_nonempty C.nt₁ C.nt₂ C.H₁ C.H₂)
+noncomputable def CSS_pair.dZ (C : CSS_pair n k₁ k₂) := min_weight_ker_not_mem_rowspace C.H₁ C.H₂
 
 theorem CSS.toBSM_dist_eq (C : CSS_pair n k₁ k₂) :
   C.toBSM.distance (Nat.add_pos_left C.nt₁ _) = min C.dX C.dZ := sorry
