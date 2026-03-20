@@ -10,12 +10,21 @@ variable (e : ℕ → Bool)
 
 --indexing function: ℕ → ℕ
 def is_index_bool (I : ℕ → ℕ) (d n : ℕ) : Bool :=
-  ((Finset.range d).fold and true (fun i => (I i) < n)) && (Finset.range (d-1)).fold and true (fun i => (I i < I (i + 1)))
+  ((Finset.range d).fold and true (fun i => (I i) < n)) &&
+  (Finset.range (d-1)).fold and true (fun i => (I i ≤ I (i + 1)))
 
-
+lemma is_index_bool_correct I d n :
+  is_index_bool I d n = (
+    (forall i : Fin d, I i < n) &&
+    (forall i : Fin (d - 1), I i ≤ I (i + 1))) := by
+  sorry
 
 def indexed_by (I : ℕ → ℕ) (d : ℕ) : ℕ → Bool := --
   fun i => (Finset.range d).fold or false (fun k => i = (I k))
+
+lemma indexed_by_correct I d i :
+  indexed_by I d i = (exists k : Fin d, i = I k) := by
+  sorry
 
 instance : Std.Commutative Bool.xor := by
   constructor
