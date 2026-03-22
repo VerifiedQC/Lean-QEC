@@ -2,7 +2,18 @@ import LeanQEC.Stabilizer.LinAlgSMT
 import LeanQEC.Stabilizer.CSS
 
 
-def I_to_vec (n d : ℕ) (I : ℕ → ℕ) : Fin n → (ZMod 2) := fun i => if (∃ j, j < d ∧ I j = i) then 1 else 0
+def I_to_vec (n d : ℕ) (I : ℕ → ℕ) : Fin n → (ZMod 2) :=
+  fun i => if (∃ j, j < d ∧ I j = i) then 1 else 0
+
+-- need to extract the nonzero indices...
+def vec_to_I {n} [NeZero n] (v : Fin n -> ZMod 2) (i : ℕ) : ℕ := sorry
+
+lemma Finset.vec_inner_product_eq_inner_product
+  {n k d j : ℕ} {I : ℕ → ℕ}
+  {M : Matrix (Fin k) (Fin n) (ZMod 2)} (hj : j < k) :
+  vec_inner_product n (indexed_by I d) (M.castnat.castbool j) =
+  Bool.ofNat ((M.row ⟨j, hj⟩) ⬝ᵥ (I_to_vec n d I)).val := by
+  sorry
 
 lemma Bool.ofNat_ZMod2_false {x : ZMod 2} : Bool.ofNat x.val = false ↔ x = 0 := by
   unfold Bool.ofNat
@@ -55,9 +66,33 @@ lemma Finset.fold_false_to_prop {n : ℕ} {p : ℕ → Bool}:
 
 instance {n : ℕ} : Fintype ((Fin n) → (ZMod 2)) := by infer_instance
 
+lemma mem_ker_iff {n k d : ℕ}
+  {M : Matrix (Fin k) (Fin n) (ZMod 2)} {I : ℕ → ℕ} :
+  mem_ker_bool k n M.castnat.castbool (indexed_by I d) = true ↔
+  (I_to_vec n d I) ∈ LinearMap.ker M.toLin' := by
+  unfold mem_ker_bool
+  simp [Finset.fold_true_to_prop]
+  unfold Matrix.mulVec
+  simp
+  constructor
+  · intro hp
+    ext x
+    dsimp
+    have:= hp x.1 x.2
+    rw [Finset.vec_inner_product_eq_inner_product, Bool.ofNat_ZMod2_false] at this
+    exact this
+  intro hp i hi
+  rw [Finset.vec_inner_product_eq_inner_product, Bool.ofNat_ZMod2_false]
+  rw [funext_iff] at hp
+  convert (hp ⟨i, hi⟩)
+  assumption
 
-lemma Matrix.mem_rowSpace_ZMod2 {n₁ n₂ : ℕ} {M : Matrix (Fin n₁) (Fin n₂) (ZMod 2)} {x : Fin n₂ → (ZMod 2)} :
-  x ∈ M.rowSpace ↔ ∃ (S : Finset ((Fin n₂) → (ZMod 2))), S ⊆ (Finset.image M.row Finset.univ) ∧ S.sum id = x := by
+lemma Matrix.mem_rowSpace_ZMod2 {n₁ n₂ : ℕ}
+  {M : Matrix (Fin n₁) (Fin n₂) (ZMod 2)}
+  {x : Fin n₂ → (ZMod 2)} :
+  x ∈ M.rowSpace ↔
+  ∃ (S : Finset ((Fin n₂) → (ZMod 2))),
+    S ⊆ (Finset.image M.row Finset.univ) ∧ S.sum id = x := by
   unfold Matrix.rowSpace
   rw [←@Set.coe_toFinset _ (Set.range M.row)]
   rw [Submodule.mem_span_finset]
@@ -117,10 +152,11 @@ lemma Matrix.mem_rowSpace_ZMod2 {n₁ n₂ : ℕ} {M : Matrix (Fin n₁) (Fin n�
 lemma Matrix.ZMod_sum_dotprod_exists {n₁ n₂ : ℕ} {S : Finset (Fin n₁)} {f : Fin n₁ → (Fin n₂ → (ZMod 2))}
   {x₁ x₂ : Fin n₂ → (ZMod 2)} (hsum : S.sum f = x₁) (hprod : x₁ ⬝ᵥ x₂ = 1) : ∃ r ∈ S, (f r) ⬝ᵥ x₂ = 1 := sorry
 
-lemma Finset.vec_inner_product_eq_inner_product {n k d j : ℕ} {I : ℕ → ℕ} {M : Matrix (Fin k) (Fin n) (ZMod 2)} (hj : j < k):
-  vec_inner_product n (indexed_by I d) (M.castnat.castbool j) = Bool.ofNat ((M.row ⟨j, hj⟩) ⬝ᵥ (I_to_vec n d I)).val := sorry
 
-lemma not_mem_rowspace_iff {n k₁ k₂ d : ℕ} {M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)} {M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)} {I : ℕ → ℕ}
+lemma not_mem_rowspace_iff {n k₁ k₂ d : ℕ}
+  {M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)}
+  {M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)}
+  {I : ℕ → ℕ}
   (hK : M₂.rowSpace = (LinearMap.ker (M₁.toLin'))) :
   not_mem_rowspace k₂ n M₂.castnat.castbool (indexed_by I d) = true ↔
   (I_to_vec n d I) ∉ M₁.rowSpace := by
@@ -139,31 +175,7 @@ lemma not_mem_rowspace_iff {n k₁ k₂ d : ℕ} {M₁ : Matrix (Fin k₁) (Fin 
   rintro ⟨y, ⟨hy₁, hy₂⟩⟩
   sorry
 
-
-
-
-lemma mem_ker_iff {n k d : ℕ} {M : Matrix (Fin k) (Fin n) (ZMod 2)} {I : ℕ → ℕ} :
-  mem_ker_bool k n M.castnat.castbool (indexed_by I d) = true ↔
-  (I_to_vec n d I) ∈ LinearMap.ker M.toLin' := by
-  unfold mem_ker_bool
-  simp [Finset.fold_true_to_prop]
-  unfold Matrix.mulVec
-  simp
-  constructor
-  · intro hp
-    ext x
-    dsimp
-    have:= hp x.1 x.2
-    rw [Finset.vec_inner_product_eq_inner_product, Bool.ofNat_ZMod2_false] at this
-    exact this
-  intro hp i hi
-  rw [Finset.vec_inner_product_eq_inner_product, Bool.ofNat_ZMod2_false]
-  rw [funext_iff] at hp
-  convert (hp ⟨i, hi⟩)
-  assumption
-
-
-
+/-
 lemma norm_of_is_index {n d : ℕ} {I : ℕ → ℕ}
   (h_ind : is_index_bool I d n = true) : hammingNorm (I_to_vec n d I) = d := by
   unfold is_index_bool at h_ind
@@ -179,23 +191,23 @@ lemma norm_of_is_index {n d : ℕ} {I : ℕ → ℕ}
   simp
   rw [Finset.card_filter]
   sorry
+  -/
 
-theorem dist_index_x_le_iff_dist {n k₁ k₂ k₃ : ℕ} {M₁ : Matrix (Fin k₁)
- (Fin n) (ZMod 2)} {M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)} {K₂ : Matrix (Fin k₃) (Fin n) (ZMod 2)}
-  (hK : K₂.rowSpace = (LinearMap.ker M₂.toLin'))
-  (hne : (((LinearMap.ker M₁.toLin') \ M₂.rowSpace : Set (Fin n → (ZMod 2))) \ {0}).toFinset.Nonempty):
-  dist_index_le n k₁ k₃ (M₁.castnat.castbool) (K₂.castnat.castbool) (min_weight_ker_not_mem_rowspace M₁ M₂ hne) := by
-  unfold dist_index_le
-  intro I
-  simp only [Bool.not_and, Bool.or_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true]
-  by_contra
-  push_neg at this
-  simp only [ne_eq, Bool.not_eq_false] at this
-  rcases this with ⟨⟨hind, hker⟩, hrs⟩
-  rw [not_mem_rowspace_iff hK] at hrs
-  rw [mem_ker_iff] at hker
-  have hnorm := norm_of_is_index hind
-  have hnorm₂ : min_weight_ker_not_mem_rowspace M₁ M₂ hne ≤ hammingNorm (I_to_vec n (min_weight_ker_not_mem_rowspace M₁ M₂ hne - 1) I) := by
+lemma norm_of_is_index (n d : ℕ) (I : ℕ → ℕ)
+  (is_index: is_index_bool I d n) :
+  hammingNorm (I_to_vec n d I) <= d := by
+  sorry
+
+lemma hamming_ge_min_weight_ker_not_mem_rowspace {n k₁ k₂ : ℕ}
+  (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+  (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
+  (v : Fin n → ZMod 2)
+  (h_ker : v ∉ M₂.rowSpace)
+  (h_ker : v ∈ LinearMap.ker (Matrix.toLin' M₁)) :
+  hammingNorm v ≥ min_weight_ker_not_mem_rowspace M₁ M₂ := by
+  --have hnorm := norm_of_is_index hind
+  /-
+  have hnorm₂ : min_weight_ker_not_mem_rowspace M₁ M₂ ≤ hammingNorm (I_to_vec n (min_weight_ker_not_mem_rowspace M₁ M₂ - 1) I) := by
     apply Finset.min'_le
     apply Finset.mem_image_of_mem
     rw [Set.mem_toFinset]
@@ -208,3 +220,37 @@ theorem dist_index_x_le_iff_dist {n k₁ k₂ k₃ : ℕ} {M₁ : Matrix (Fin k�
   rw [hnorm] at hnorm₂
   apply absurd (Nat.lt_of_le_sub_one _ hnorm₂) (by aesop)
   exact min_weight_ker_not_mem_rowspace_pos
+  -/
+  sorry
+
+-- This is the completeness side
+-- i.e. our SAT formula accepts the true distance
+lemma dist_index_x_le_complete {n k₁ k₂ k₃ : ℕ}
+  {M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)}
+  {M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)}
+  {K₂ : Matrix (Fin k₃) (Fin n) (ZMod 2)}
+  (hK : K₂.rowSpace = (LinearMap.ker M₂.toLin')) :
+  let dist := min_weight_ker_not_mem_rowspace M₁ M₂
+  dist_index_le n k₁ k₃ (M₁.castnat.castbool) (K₂.castnat.castbool) dist := by
+  unfold dist_index_le
+  intro dist I
+  simp only [Bool.not_and, Bool.or_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true]
+  by_contra
+  push_neg at this
+  simp only [ne_eq, Bool.not_eq_false] at this
+  rcases this with ⟨⟨hind, hker⟩, hrs⟩
+  have vec_hamming_le: hammingNorm (I_to_vec n (dist - 1) I) <= (dist - 1) := by
+    apply norm_of_is_index
+    assumption
+  rw [not_mem_rowspace_iff hK] at hrs
+  rw [mem_ker_iff] at hker
+  suffices: hammingNorm (I_to_vec n (dist - 1) I) ≥ dist
+  · have (a b : ℕ) : (b > 0) -> (a ≤ b - 1) -> (a ≥ b) -> False
+    · smt
+    apply (this (hammingNorm (I_to_vec n (dist - 1) I)) dist)
+    · apply min_weight_ker_not_mem_rowspace_pos
+    · assumption
+    · assumption
+  apply hamming_ge_min_weight_ker_not_mem_rowspace
+  · assumption
+  · assumption

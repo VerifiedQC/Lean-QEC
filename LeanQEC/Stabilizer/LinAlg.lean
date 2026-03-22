@@ -7,13 +7,14 @@ lemma Matrix.row_mem_rowSpace {α β γ : Type*} {i : α} [Semiring γ] {M : Mat
   M.row i ∈ M.rowSpace := by
   apply Submodule.mem_span_of_mem (Set.mem_range_self _)
 
+-- rowspace already contains the zero vector
+-- no need to remove it again
 noncomputable def min_weight_ker_not_mem_rowspace {n k₁ k₂ : ℕ}
   (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
   (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) : ℕ :=
   let undetectable_errors : Set (Fin n → ZMod 2) :=
-    LinearMap.ker M₁.toLin' \ M₂.rowSpace
-  let nontrivial_errors := (undetectable_errors \ {0}).toFinset
-  match Finset.min (Finset.image hammingNorm nontrivial_errors) with
+    (LinearMap.ker M₁.toLin' \ M₂.rowSpace)
+  match Finset.min (Finset.image hammingNorm undetectable_errors.toFinset) with
   | ⊤ => n + 1
   | some a => a
 
@@ -21,8 +22,8 @@ lemma min_weight_ker_not_mem_rowspace_pos {n k₁ k₂ : ℕ}
   {M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)} {M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)} :
   0 < min_weight_ker_not_mem_rowspace M₁ M₂ := by
   unfold min_weight_ker_not_mem_rowspace
-  extract_lets undetectable_errors nontrivial_errors
-  rcases h: (Finset.image hammingNorm nontrivial_errors).min with _ | m'
+  extract_lets undetectable_errors
+  rcases h: (Finset.image hammingNorm undetectable_errors.toFinset).min with _ | m'
   · simp
   simp only
   apply Finset.mem_of_min at h
@@ -31,7 +32,7 @@ lemma min_weight_ker_not_mem_rowspace_pos {n k₁ k₂ : ℕ}
   by_contra
   apply Nat.eq_zero_of_not_pos at this
   rw [hammingNorm_eq_zero] at this
-  subst this nontrivial_errors
+  subst this undetectable_errors
   simp at h
 
 lemma mem_ker_iff_dotProd_rows_eq_zero {n k : ℕ} (M : Matrix (Fin k) (Fin n) (ZMod 2)) (x : Fin n → (ZMod 2)) :
