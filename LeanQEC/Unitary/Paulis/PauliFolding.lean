@@ -18,6 +18,7 @@ variable {n : ℕ} (m : Fin n → Pauli)
 instance {n : ℕ} : Coe (Fin n → Pauli) (Fin n → ↥𝐔ₙ[1]) where
   coe m := fun i => (m i).val
 
+--i think this doesn't need the injectivity... S.map below can just be changed to S.image
 def pauli_embedding {n : ℕ} : (Fin n → Pauli) ↪ (Fin n → ↥𝐔ₙ[1]) where
   toFun := fun m => m
   inj' := by
@@ -49,6 +50,7 @@ def has_pauli_eigenvalues {a : Type*} [Fintype a] [DecidableEq a] {A : Matrix a 
   ∀ μ, Module.End.HasEigenvalue A.toEuclideanLin μ → (μ = -1 ∨ μ = -1)
 -/
 
+--unused, remove?
 def is_pauli_product (U : 𝐔ₙ[n]) := ∃ (m : Fin n → Pauli), unitary_n_nkron m = U
 
 noncomputable def pauli_n_univ : Finset (Fin n → Pauli) := Finset.univ
@@ -109,30 +111,26 @@ lemma injective_fold_aux {z z' : pgroup_phases} {m m' : Fin n → Pauli} :
   apply unitary_ext
   rw [HTails]; simp
 
-def fold (zm : pgroup_phases × (Fin n → Pauli)) : 𝐔ₙ[n] :=
-  fold_aux zm.1 zm.2
+def fold : pgroup_phases × (Fin n → Pauli) ↪ 𝐔ₙ[n] :=
+  ⟨λ zm => fold_aux zm.1 zm.2, by
+    rw [Injective]
+    intros mp mp' eq_folds
+    cases mp with | mk m p
+    cases mp' with | mk m' p'
+    apply injective_fold_aux at eq_folds
+    simp_all
+  ⟩
 
-lemma inj_fold : Injective (@fold n) := by
-  rw [Injective]
-  intros mp mp' eq_folds
-  cases mp with | mk m p
-  cases mp' with | mk m' p'
-  apply injective_fold_aux at eq_folds
-  simp_all
 
 abbrev factored_Pauli n := pgroup_phases × (Fin n → Pauli)
 def factored_Pauli_univ : Finset (factored_Pauli n) := Finset.univ
-def PauliGroup (n : ℕ) := (factored_Pauli_univ).image (@fold n)
+def PauliGroup (n : ℕ) := (factored_Pauli_univ).map (@fold n)
 
 lemma mem_fold pm : fold pm ∈ PauliGroup n := by
-  rcases pm with ⟨p, m⟩
-  rw [fold, fold_aux, PauliGroup]
-  rw [Finset.mem_image]
-  exists (p, m)
+  unfold PauliGroup
+  simp
   rw [factored_Pauli_univ]
-  constructor
-  · apply Finset.mem_univ
-  · rfl
+  exact Finset.mem_univ _
 
 abbrev foldPauli_toFun (n : ℕ) (pm: factored_Pauli n) : PauliGroup n :=
   ⟨fold pm, mem_fold pm⟩
@@ -141,14 +139,13 @@ lemma inj_foldPauli : Injective (foldPauli_toFun n) := by
   rw [Injective]
   intros a a' h
   simp [foldPauli_toFun] at h
-  apply inj_fold at h
-  cases a; aesop
+  exact h
 
 lemma surj_fold (p : PauliGroup n) :
   exists m z, (p : 𝐔ₙ[n]) = fold (z, m) := by
   rcases p with ⟨pval, mem_p⟩
   rw [PauliGroup] at mem_p
-  rw [Finset.mem_image] at mem_p
+  rw [Finset.mem_map] at mem_p
   rcases mem_p with ⟨a, h, h'⟩
   rcases a with ⟨m', z'⟩
   exists z'
@@ -388,7 +385,8 @@ lemma foldPauli1 : @fold n unfolded1 = 1 := by
   | zero =>
     simp [fold, fold_aux, unfolded1, unitary_n_nkron, U_phase, Pauli_I]
   | succ n' H =>
-    rw [fold, fold_aux, unfolded1]
+
+    simp [fold, fold_aux, unfolded1]
     simp [unitary_n_nkron]
     rw [<- uphase_of_kron]
     simp [fold, fold_aux, unfolded1] at H
@@ -397,7 +395,7 @@ lemma foldPauli1 : @fold n unfolded1 = 1 := by
     rw [this, kron_of_1s]
 
 lemma mem_PauliGroup_id : 1 ∈ PauliGroup n := by
-  rw [PauliGroup, Finset.mem_image, factored_Pauli_univ]
+  rw [PauliGroup, Finset.mem_map, factored_Pauli_univ]
   exists unfolded1
   constructor
   · simp [unfolded1, pgroup_phases]
