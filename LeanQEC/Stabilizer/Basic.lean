@@ -599,6 +599,22 @@ def BinSympPauli_toPauli {n : ℕ} (bs : BinSympPauli n) : PauliGroup_group n :=
   let pm := fun n => Z2Z2_Pauli_equiv (bs.1 n, bs.2 n)
   foldPauli (pgphase_1, pm)
 
+def Pauli_toBinSympPauli {n : ℕ} (P : PauliGroup_group n) : BinSympPauli n :=
+  let pm := fun n => Z2Z2_Pauli_equiv.symm (PauliGroup.map P n)
+  ⟨fun n => (pm n).1, fun n => (pm n).2⟩
+
+--three big linking theorems, rest is mostly extremely painful proof massaging
+
+theorem Pauli_to_BinSymp_correct {n : ℕ} (P₁ P₂ : PauliGroup_group n) :
+  Pauli_toBinSympPauli (P₁ * P₂) = (Pauli_toBinSympPauli P₁) + (Pauli_toBinSympPauli P₂) := sorry
+
+--only true up to phase: CHANGE
+theorem BinSympPauli_to_Pauli_correct {n : ℕ} {bp₁ bp₂ : BinSympPauli n} :
+  BinSympPauli_toPauli (bp₁ + bp₂) = ((BinSympPauli_toPauli bp₁) : 𝐔ₙ[n]) * (BinSympPauli_toPauli bp₂) := sorry
+
+theorem commutes_of_sympProd_zero {n : ℕ} {bp₁ bp₂ : BinSympPauli n}
+  (h_prod : symplecticProd bp₁ bp₂ = 0) : commute (BinSympPauli_toPauli bp₁) (BinSympPauli_toPauli bp₂) := by
+  sorry
 
 
 structure BinSympMatrix (k n : ℕ) where
@@ -613,14 +629,6 @@ def BinSympMatrix.rowProd {n k : ℕ} (bsm : BinSympMatrix k n) (r₁ r₂ : Fin
 
 def BinSympMatrix.isCommuting {n k : ℕ} (bsm : BinSympMatrix k n) : Prop :=
   ∀ r₁ r₂, bsm.rowProd r₁ r₂ = 0
-
---two big linking theorems, rest is mostly extremely painful proof massaging
-theorem binSympAdd_eq_mul {n : ℕ} {bp₁ bp₂ : BinSympPauli n} :
-  BinSympPauli_toPauli (bp₁ + bp₂) = ((BinSympPauli_toPauli bp₁) : 𝐔ₙ[n]) * (BinSympPauli_toPauli bp₂) := sorry
-
-theorem commutes_of_sympProd_zero {n : ℕ} {bp₁ bp₂ : BinSympPauli n}
-  (h_prod : symplecticProd bp₁ bp₂ = 0) : commute (BinSympPauli_toPauli bp₁) (BinSympPauli_toPauli bp₂) := by
-  sorry
 
 def BinSympMatrix.toStabSet {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) : StabSet n where
   stabs := Finset.image (fun i => BinSympPauli_toPauli (bsm.row i)) Finset.univ
