@@ -87,6 +87,7 @@ def anticommuteₘ {n} (m m' : Fin n -> Pauli) :=
   | _ + 1 =>
     (!commute₁ (m 0) (m' 0)) ^^ anticommuteₘ (Fin.tail m) (Fin.tail m')
 
+--why is this in this file?
 lemma mul_nkrons {n₁ n₂} (U₁ U₁' : 𝐔ₙ[n₁]) (U₂ U₂' : 𝐔ₙ[n₂]) :
   (U₁ ⊗ₙ U₂) * (U₁' ⊗ₙ U₂') =
   (U₁ * U₁') ⊗ₙ (U₂ * U₂') := by
@@ -257,7 +258,7 @@ lemma anticommuteₘ_xx (m : Fin n -> Pauli) :
     rw [commute₁_xx]
 
 
-def anticommute (U₁ U₂ : PauliGroup n) :=
+def anticommute {n : ℕ} (U₁ U₂ : PauliGroup n) :=
   anticommuteₘ (PauliGroup.map U₁) (PauliGroup.map U₂)
 
 lemma anticommute_kron {n₁ n₂}
