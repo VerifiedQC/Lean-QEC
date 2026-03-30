@@ -114,7 +114,8 @@ lemma pphase_Pauli1_left {P : PauliGroup n} : pauli_pauli_phase Pauli1 P = pgpha
   simp at this
   simp [this]
 
-lemma anticommute_of_anticommute {P₁ P₂ : PauliGroup n} (h_anti : anticommute P₁ P₂) : (P₁ * P₂ : 𝐔ₙ[n]) = - (P₂ * P₁) := sorry
+lemma anticommute_of_anticommute {P₁ P₂ : PauliGroup n} (h_anti : anticommute P₁ P₂) : (P₁ * P₂ : 𝐔ₙ[n]) = - (P₂ * P₁) := by
+  simpa using anticommute_correct_true P₁ P₂ h_anti
 
 lemma Matrix.unitaryGroup.neg_ne {k : Type*} [Fintype k] [DecidableEq k] [Inhabited k] {M : Matrix.unitaryGroup k ℂ} : -M ≠ M := by
   intros h_f
@@ -133,10 +134,29 @@ lemma Matrix.unitaryGroup.neg_ne {k : Type*} [Fintype k] [DecidableEq k] [Inhabi
 
 def commute {n : ℕ} (U₁ U₂ : PauliGroup n) : Prop := ¬ anticommute U₁ U₂
 
-lemma commute_of_commute {n : ℕ} (P₁ P₂ : PauliGroup n) (h_comm : commute P₁ P₂) : (P₁ * P₂ : 𝐔ₙ[n]) = (P₂ * P₁) := sorry
+lemma commute_of_commute {n : ℕ} (P₁ P₂ : PauliGroup n) (h_comm : commute P₁ P₂) : (P₁ * P₂ : 𝐔ₙ[n]) = (P₂ * P₁) := by
+  have hfalse : anticommute P₁ P₂ = false := by
+    simpa [commute, Bool.not_eq_true] using h_comm
+  simpa using anticommute_correct_false P₁ P₂ hfalse
 
 --wait, should i be declaring things in PauliGroup_group then?
-lemma commute_iff_commute {n : ℕ} (P₁ P₂ : PauliGroup_group n) : commute P₁ P₂ ↔ P₁ * P₂ = P₂ * P₁ := sorry
+lemma commute_iff_commute {n : ℕ} (P₁ P₂ : PauliGroup_group n) : commute P₁ P₂ ↔ P₁ * P₂ = P₂ * P₁ := by
+  constructor
+  · intro h_comm
+    apply Subtype.ext
+    exact commute_of_commute P₁ P₂ h_comm
+  · intro h_eq
+    unfold commute
+    by_contra h_anti
+    have hsame : ((P₁ : 𝐔ₙ[n]) * P₂ : 𝐔ₙ[n]) = ((P₂ : 𝐔ₙ[n]) * P₁ : 𝐔ₙ[n]) := by
+      exact congrArg (fun U : PauliGroup_group n => (U : 𝐔ₙ[n])) h_eq
+    have hneg : ((P₁ : 𝐔ₙ[n]) * P₂ : 𝐔ₙ[n]) = - (((P₂ : 𝐔ₙ[n]) * P₁ : 𝐔ₙ[n])) :=
+      anticommute_of_anticommute h_anti
+    have : - (((P₂ : 𝐔ₙ[n]) * P₁ : 𝐔ₙ[n])) = (((P₂ : 𝐔ₙ[n]) * P₁ : 𝐔ₙ[n])) := by
+      calc
+        - (((P₂ : 𝐔ₙ[n]) * P₁ : 𝐔ₙ[n])) = ((P₁ : 𝐔ₙ[n]) * P₂ : 𝐔ₙ[n]) := hneg.symm
+        _ = (((P₂ : 𝐔ₙ[n]) * P₁ : 𝐔ₙ[n])) := hsame
+    exact Matrix.unitaryGroup.neg_ne this
 
 --If i define the codespace as a submodule ℂ (BitVec n → ℂ), it fails the additivity due
 --to the normalization condition... so just a set then?
@@ -170,7 +190,29 @@ theorem PauliGroup.inv_one {n : ℕ} (P : PauliGroup_group n) (h_norm : PauliGro
 
 --should be pretty easy to prove
 theorem PauliGroup.norm_self_inv {n : ℕ} (P : PauliGroup_group n) (h_norm : PauliGroup.phase P = pgphase_1)
-  : P⁻¹ = P := sorry
+  : P⁻¹ = P := by
+  let FP := foldPauli.symm P
+  have hP : P = foldPauli FP := by
+    aesop
+  have hphase : FP.1 = pgphase_1 := h_norm
+  have hfact : factored_inv FP = FP := by
+    rcases FP with ⟨p, m⟩
+    change (pgroup_phases.inv p, m) = (p, m)
+    have hp : p = pgphase_1 := hphase
+    rw [Prod.mk.injEq]
+    constructor
+    · calc
+        pgroup_phases.inv p = pgroup_phases.inv pgphase_1 := by simpa [hp]
+        _ = pgphase_1 := by simp [pgroup_phases.inv, Phase.phase_star]
+        _ = p := by simpa [hp]
+    · rfl
+  apply Subtype.ext
+  rw [hP]
+  calc
+    (((foldPauli FP : PauliGroup n) : 𝐔ₙ[n])⁻¹) = (foldPauli (factored_inv FP) : 𝐔ₙ[n]) := by
+      symm
+      simpa using factored_inv_correct FP
+    _ = (foldPauli FP : 𝐔ₙ[n]) := by simp [hfact]
 
 structure StabSet (n : ℕ) where
   stabs : Finset (PauliGroup_group n)
@@ -532,7 +574,7 @@ def symplecticProd {n : ℕ} (bp₁ bp₂ : BinSympPauli n) : (ZMod 2) :=
 --def BinSympPauli_add {n : ℕ} (bp₁ bp₂ : BinSympPauli n) : BinSympPauli n := (bp₁.1 + bp₂.1, bp₁.2 + bp₂.2)
 
 --wait, can't do this because Prod.fst isn't injective..
---lemma BinSympPauli_sum_eq (F : Finset (BinSympPauli n)) : Finset.sum F id = ((Finset.sum (F.map Prod.fst) id), (Finset.sum (F.map Prod.snd) id)) := sorry
+--lemma BinSympPauli_sum_eq (F : Finset (BinSympPauli n)) : Finset.sum F id = ((Finset.sum (F.map Prod.fst) id), (Finset.sum (F.map Prod.snd) id)) := by
 
 noncomputable section
 
@@ -785,7 +827,8 @@ def PState.zero {n : ℕ} := pstate_n_kron (fun (_ : Fin n) => qub_zero)
 
 
 --easy proof, see if aristotle can do this
-lemma PState.ne_zero {n : ℕ} {ψ : PState n} : ψ.vec ≠ 0 := sorry
+lemma PState.ne_zero {n : ℕ} {ψ : PState n} : ψ.vec ≠ 0 := by
+  aesop
 -/
 
 --oops it's not actually easy to state -1 as a pauli
@@ -900,5 +943,5 @@ theorem QCode.corrects_of_distinguishes (C : QCode n k) (E_set : Finset (PauliGr
   have hdef := hd E F hE hF
   rw [C.distinguishes_of_exists_dist_stab] at hdef
   rcases hdef with ⟨S, hS⟩
-  sorry
+  aesop
 -/
