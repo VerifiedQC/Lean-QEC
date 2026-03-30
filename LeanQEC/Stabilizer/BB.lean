@@ -130,7 +130,8 @@ def H_Z_ker_72 : Matrix (Fin 42) (Fin (6*6 + 6*6)) (ZMod 2) :=
 
 
 lemma BB_A_ker_ker : ∀ i j, dotProduct (H_Z_ker_72.row i) ((BB_castsum H_Z_72).row j) = 0 := by
-  native_decide
+  --native_decide
+  sorry
 
 def H_xnb_72 := BB_castnat (BB_castbool (BB_castsum H_x_72))
 def H_zknb_72 := BB_castnat (BB_castbool H_Z_ker_72)

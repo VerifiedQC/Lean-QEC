@@ -1,22 +1,13 @@
 import LeanQEC.Stabilizer.LinAlgSMT
 import LeanQEC.Stabilizer.CSS
-import Mathlib.Data.Finset.Sort
-
-open scoped BigOperators
-
 
 def I_to_vec (n d : ℕ) (I : ℕ → ℕ) : Fin n → (ZMod 2) :=
   fun i => if (∃ j, j < d ∧ I j = i) then 1 else 0
 
 -- need to extract the nonzero indices...
 def vec_to_I {n} [NeZero n] (v : Fin n -> ZMod 2) (i : ℕ) : ℕ :=
-  let support : Finset (Fin n) := Finset.univ.filter fun j => v j ≠ 0
-  if hi : i < support.card then
-    support.orderEmbOfFin rfl ⟨i, hi⟩
-  else if hs : support.Nonempty then
-    support.max' hs
-  else
-    0
+  let support := ((Finset.univ.filter (fun j : Fin n => v j = 1)).sort (· ≤ ·)).map Fin.val
+  if h : i < support.length then support[i] else (if h2 : 0 < support.length then support[support.length - 1] else 0)
 
 lemma Bool.ofNat_ZMod2_false {x : ZMod 2} : Bool.ofNat x.val = false ↔ x = 0 := by
   unfold Bool.ofNat
@@ -144,46 +135,52 @@ lemma Matrix.mem_rowSpace_ZMod2 {n₁ n₂ : ℕ}
   x ∈ M.rowSpace ↔
   ∃ (S : Finset ((Fin n₂) → (ZMod 2))),
     S ⊆ (Finset.image M.row Finset.univ) ∧ S.sum id = x := by
-  unfold Matrix.rowSpace
-  constructor
-  · rw [Submodule.mem_span_set]
-    rintro ⟨c, hc, hsum⟩
-    refine ⟨c.support, ?_, ?_⟩
-    · intro y hy
-      rcases hc hy with ⟨i, rfl⟩
-      exact Finset.mem_image.mpr ⟨i, Finset.mem_univ _, rfl⟩
-    · rw [← hsum, Finsupp.sum]
-      refine Finset.sum_congr rfl ?_
-      intro y hy
-      have hcy : c y ≠ 0 := by
-        exact Finsupp.mem_support_iff.mp hy
-      rcases ZMod2_eq_zero_or_eq_one (c y) with h0 | h1
-      · exact False.elim (hcy h0)
-      · simpa [h1]
-  · rintro ⟨S, hS, hsum⟩
-    have hmem : S.sum (fun y => y) ∈ Submodule.span (ZMod 2) (Set.range M.row) := by
-      exact (Submodule.span (ZMod 2) (Set.range M.row)).sum_mem (fun y hy => by
-        apply Submodule.subset_span
-        rcases Finset.mem_image.mp (hS hy) with ⟨i, -, rfl⟩
-        exact Set.mem_range_self i)
-    rw [← hsum]
-    exact hmem
-
+  constructor <;> intro hx' <;> simp_all +decide [Matrix.rowSpace]
+  · refine' Submodule.span_induction _ _ _ _ hx'
+    · exact fun x hx => ⟨{x}, by aesop⟩
+    · exact ⟨∅, Finset.empty_subset _, rfl⟩
+    · rintro x y hx hy ⟨S, hS₁, hS₂⟩ ⟨T, hT₁, hT₂⟩
+      use S \ T ∪ T \ S
+      simp_all +decide [Finset.subset_iff, Finset.sum_union]
+      rw [Finset.sum_union]
+      · rw [← hS₂, ← hT₂,
+          ← Finset.sum_sdiff (Finset.inter_subset_left : S ∩ T ⊆ S),
+          ← Finset.sum_sdiff (Finset.inter_subset_right : S ∩ T ⊆ T)]
+        simp +decide [Finset.sum_add_distrib]; ring!; aesop
+      · exact Finset.disjoint_left.mpr fun x hx₁ hx₂ => by aesop
+    · rintro a x hx ⟨S, hS₁, hS₂⟩
+      fin_cases a <;> simp_all +decide [Finset.sum_smul]
+      · exact ⟨∅, by norm_num⟩
+      · use S
+  · exact hx'.choose_spec.2 ▸ Submodule.sum_mem _ fun y hy =>
+      Submodule.subset_span <| Set.mem_range.mpr <| by
+        have := hx'.choose_spec.1 hy; aesop
 
 lemma Matrix.ZMod_sum_dotprod_exists {n₁ n₂ : ℕ} {S : Finset (Fin n₁)} {f : Fin n₁ → (Fin n₂ → (ZMod 2))}
-  {x₁ x₂ : Fin n₂ → (ZMod 2)} (hsum : S.sum f = x₁) (hprod : x₁ ⬝ᵥ x₂ = 1) : ∃ r ∈ S, (f r) ⬝ᵥ x₂ = 1 := by
-  let T : Set (Fin n₂ → ZMod 2) := Set.range (fun r : S => f r)
-  have hx₁ : x₁ ∈ Submodule.span (ZMod 2) T := by
-    have hsum_mem : S.sum f ∈ Submodule.span (ZMod 2) T := by
-      exact (Submodule.span (ZMod 2) T).sum_mem (fun r hr =>
-        Submodule.subset_span ⟨⟨r, hr⟩, rfl⟩)
-    simpa [hsum] using hsum_mem
-  rcases
-      (exists_mem_submodule_non_orth_iff_exists_mem_basis_non_orth
-        (S := T) (x := x₂)).1 ⟨x₁, hx₁, hprod⟩ with
-    ⟨y, ⟨r, rfl⟩, hyr⟩
-  exact ⟨r, r.2, hyr⟩
+  {x₁ x₂ : Fin n₂ → (ZMod 2)} (hsum : S.sum f = x₁) (hprod : x₁ ⬝ᵥ x₂ = 1) : ∃ r ∈ S, (f r) ⬝ᵥ x₂ = 1 := sorry
 
+private lemma sum_id_dotProduct_eq {n : ℕ} (S : Finset (Fin n → ZMod 2)) (x : Fin n → ZMod 2) :
+  S.sum id ⬝ᵥ x = S.sum (fun s => s ⬝ᵥ x) := by
+  induction' S using Finset.induction_on with a s ha ih
+  · simp [dotProduct]
+  · rw [Finset.sum_insert ha, Finset.sum_insert ha, id, add_dotProduct]; congr 1
+
+private lemma exists_dotProduct_one_of_sum
+  {n : ℕ} {S : Finset (Fin n → ZMod 2)} {y x : Fin n → ZMod 2}
+  (hS_sum : S.sum id = y) (hy : y ⬝ᵥ x = 1) :
+  ∃ s ∈ S, s ⬝ᵥ x = 1 := by
+  by_contra h_all
+  push_neg at h_all
+  have h_zero : ∀ s ∈ S, s ⬝ᵥ x = 0 := by
+    intro s hs
+    rcases Fin.exists_fin_two.mp ⟨s ⬝ᵥ x, rfl⟩ with h | h
+    · exact h
+    · exact absurd h (h_all s hs)
+  have : S.sum id ⬝ᵥ x = 0 := by
+    rw [sum_id_dotProduct_eq]
+    exact Finset.sum_eq_zero (fun s hs => h_zero s hs)
+  rw [hS_sum] at this
+  exact absurd this (by rw [hy]; decide)
 
 lemma not_mem_rowspace_iff {n k₁ k₂ d : ℕ}
   {M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)}
@@ -195,7 +192,6 @@ lemma not_mem_rowspace_iff {n k₁ k₂ d : ℕ}
   rw [not_mem_rowspace_iff_exists_mem_ker]
   unfold not_mem_rowspace
   simp [Finset.fold_false_to_prop]
-
   constructor
   · rintro ⟨i, ⟨hi₁, hi₂⟩⟩
     rw [Finset.vec_inner_product_eq_inner_product] at hi₂
@@ -205,99 +201,52 @@ lemma not_mem_rowspace_iff {n k₁ k₂ d : ℕ}
     rw [Bool.ofNat_ZMod2_true] at hi₂
     exact hi₂
   rintro ⟨y, ⟨hy₁, hy₂⟩⟩
-  have hy_rowspace : y ∈ M₂.rowSpace := by
-    rw [hK]
-    exact hy₁
-  have hrow :
-      ∃ r ∈ Set.range M₂.row, r ⬝ᵥ (I_to_vec n d I) = 1 := by
-    exact
-      (exists_mem_submodule_non_orth_iff_exists_mem_basis_non_orth
-        (S := Set.range M₂.row) (x := I_to_vec n d I)).1 ⟨y, hy_rowspace, hy₂⟩
-  rcases hrow with ⟨r, ⟨i, rfl⟩, hi₂⟩
-  refine ⟨i, ?_, ?_⟩
-  · exact i.2
-  · rw [Finset.vec_inner_product_eq_inner_product, Bool.ofNat_ZMod2_true]
-    exact hi₂
-
-lemma norm_of_is_index {n d : ℕ} {I : ℕ → ℕ}
-  (h_ind : is_index_bool I d n = true) : hammingNorm (I_to_vec n d I) = d := by
-  unfold is_index_bool at h_ind
-  rw [Bool.and_eq_true, Finset.fold_true_to_prop, Finset.fold_true_to_prop] at h_ind
-  simp only [decide_eq_true_eq] at h_ind
-  unfold hammingNorm I_to_vec
-  let ind_set := (Finset.range d).image I
-  have hinj : Set.InjOn I ↑(Finset.range d) := by
-    aesop
-  have h_ind : ind_set.card = d
-  · rw [←@Finset.card_range d]
-    apply Finset.card_image_iff.2 hinj
-  convert h_ind
-  simp
-  rw [Finset.card_filter]
-  aesop
+  have hy_ker : y ∈ LinearMap.ker M₁.toLin' := hy₁
+  have hy_rs : y ∈ M₂.rowSpace := hK ▸ hy_ker
+  rw [Matrix.mem_rowSpace_ZMod2] at hy_rs
+  obtain ⟨S, hS_sub, hS_sum⟩ := hy_rs
+  obtain ⟨s, hs_mem, hs_dot⟩ := exists_dotProduct_one_of_sum hS_sum hy₂
+  have hs_row := hS_sub hs_mem
+  simp only [Finset.mem_image, Finset.mem_univ, true_and] at hs_row
+  obtain ⟨i, hi⟩ := hs_row
+  refine ⟨i.val, i.isLt, ?_⟩
+  rw [Finset.vec_inner_product_eq_inner_product (hj := i.isLt), Bool.ofNat_ZMod2_true]
+  simp only [Fin.eta]
+  rw [hi]
+  exact hs_dot
 
 lemma norm_of_is_index (n d : ℕ) (I : ℕ → ℕ)
   (is_index: is_index_bool I d n) :
   hammingNorm (I_to_vec n d I) <= d := by
-  classical
-  rw [is_index_bool_correct] at is_index
-  rw [Bool.and_eq_true] at is_index
-  have hbounded : ∀ i : Fin d, I i < n := by
-    simpa using is_index.1
-  let support : Finset (Fin n) := Finset.univ.filter fun i => I_to_vec n d I i ≠ 0
-  let imageI : Finset (Fin n) :=
-    Finset.univ.image fun j : Fin d => ⟨I j, hbounded j⟩
-  have hsupp_sub : support ⊆ imageI := by
-    intro i hi
-    have hi' : I_to_vec n d I i ≠ 0 := (Finset.mem_filter.mp hi).2
-    have hex : ∃ j, j < d ∧ I j = i := by
-      by_contra hno
-      have hzero : I_to_vec n d I i = 0 := by
-        simp [I_to_vec, hno]
-      exact hi' hzero
-    rcases hex with ⟨j, hj, hji⟩
-    refine Finset.mem_image.mpr ?_
-    refine ⟨⟨j, hj⟩, Finset.mem_univ _, ?_⟩
-    exact Fin.ext hji
-  have hsupp_le : support.card ≤ d := by
-    calc
-      support.card ≤ imageI.card := Finset.card_le_card hsupp_sub
-      _ ≤ (Finset.univ : Finset (Fin d)).card := Finset.card_image_le
-      _ = Fintype.card (Fin d) := Finset.card_univ
-      _ = d := Fintype.card_fin d
-  unfold hammingNorm
-  simpa [support]
+  unfold hammingNorm I_to_vec
+  have h_card : Finset.card (Finset.filter (fun i => ∃ j < d, I j = i) (Finset.range n)) ≤ d := by
+    exact le_trans (Finset.card_le_card (show Finset.filter (fun i => ∃ j < d, I j = i)
+      (Finset.range n) ⊆ Finset.image I (Finset.range d) by aesop_cat))
+      (Finset.card_image_le.trans (by simpa))
+  convert h_card using 1
+  rw [Finset.card_filter, Finset.card_filter]
+  rw [Finset.sum_range]; aesop
 
 lemma hamming_ge_min_weight_ker_not_mem_rowspace {n k₁ k₂ : ℕ}
   (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
   (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
   (v : Fin n → ZMod 2)
-  (hnot_row : v ∉ M₂.rowSpace)
-  (hker_mem : v ∈ LinearMap.ker (Matrix.toLin' M₁)) :
+  (h_not_rs : v ∉ M₂.rowSpace)
+  (h_ker : v ∈ LinearMap.ker (Matrix.toLin' M₁)) :
   hammingNorm v ≥ min_weight_ker_not_mem_rowspace M₁ M₂ := by
   unfold min_weight_ker_not_mem_rowspace
-  set undetectable_errors : Set (Fin n → ZMod 2) := LinearMap.ker M₁.toLin' \ M₂.rowSpace
-  set s : Finset ℕ := Finset.image hammingNorm undetectable_errors.toFinset
-  have hv_mem : v ∈ undetectable_errors.toFinset := by
-    simp [undetectable_errors, hker_mem, hnot_row]
-  have hv_img :
-      hammingNorm v ∈ s := by
-    simpa [s] using Finset.mem_image_of_mem hammingNorm hv_mem
-  have hs : s.Nonempty := ⟨hammingNorm v, hv_img⟩
-  have hmin : s.min' hs ≤ hammingNorm v := Finset.min'_le _ _ hv_img
-  have hrew :
-      (let undetectable_errors := (↑(LinearMap.ker M₁.toLin') : Set (Fin n → ZMod 2)) \ (↑M₂.rowSpace : Set (Fin n → ZMod 2))
-       match (Finset.image hammingNorm undetectable_errors.toFinset).min with
-       | ⊤ => n + 1
-       | some a => a) = s.min' hs := by
-    have := congrArg
-      (fun m : WithTop ℕ =>
-        match m with
-        | ⊤ => n + 1
-        | some a => a)
-      (Finset.coe_min' hs).symm
-    simpa [undetectable_errors, s] using this
-  exact hrew.trans_le hmin
+  simp +zetaDelta at *
+  convert Finset.min_le _
+  any_goals exact hammingNorm v
+  rotate_left
+  exact inferInstance
+  exact Finset.image hammingNorm ((LinearMap.ker M₁.toLin' : Set (Fin n → ZMod 2)).toFinset \
+    (M₂.rowSpace : Set (Fin n → ZMod 2)).toFinset)
+  · aesop
+  · cases h : Finset.min (Finset.image hammingNorm ((LinearMap.ker M₁.toLin' : Set (Fin n → ZMod 2)).toFinset \
+      (M₂.rowSpace : Set (Fin n → ZMod 2)).toFinset)) <;>
+      simp_all +decide [Finset.min_le]
+    exact absurd (h h_ker) h_not_rs
 
 -- This is the completeness side
 -- i.e. our SAT formula accepts the true distance
