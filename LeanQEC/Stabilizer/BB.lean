@@ -129,7 +129,9 @@ def H_Z_ker_72 : Matrix (Fin 42) (Fin (6*6 + 6*6)) (ZMod 2) :=
 ]
 
 
-lemma BB_A_ker_ker : ∀ i j, dotProduct (H_Z_ker_72.row i) ((BB_castsum H_Z_72).row j) = 0 := sorry
+lemma BB_A_ker_ker : ∀ i j, dotProduct (H_Z_ker_72.row i) ((BB_castsum H_Z_72).row j) = 0 := by
+  --native_decide
+  sorry
 
 def H_xnb_72 := BB_castnat (BB_castbool (BB_castsum H_x_72))
 def H_zknb_72 := BB_castnat (BB_castbool H_Z_ker_72)
@@ -150,11 +152,7 @@ set_option maxHeartbeats 0
 set_option maxRecDepth 8192 --can fold to depth 2000... where does stack overflow happen?
 --theorem fold_n_test : (Finset.range 2000).fold xor false (fun _ => false) = false := by
 theorem fold_n_test : (Finset.range 50).fold xor false (fun _ => false) = false := by
-
-  simp only [Finset.fold_range_add_one]
-  rw [Bool.false_xor] --doesn't stack overflow!
-  --stack overflow when attempt to rewrite on this?
-  sorry
+  native_decide
 
 @[simp]
 lemma ofnatzerofalse : (@OfNat.ofNat Bool 0 Zero.toOfNat0 : Bool) = false := by aesop
@@ -175,7 +173,7 @@ theorem dist72_1 : dist_index_le 72 (6*6) 42 H_xnb_72 H_zknb_72 1 := by
   rw [Finset.fold_range_add_one]
 
 
-  sorry
+  aesop
 -/
 
 
@@ -245,7 +243,7 @@ theorem dist32_1 : dist_index_le 32 (4*4) 16 HX_32 HZ_ker_32 1 := by
   unfold mem_ker_bool
   simp [Finset.fold_range_add_one, vec_inner_product]
 
-  sorry
+  aesop
   /-
   intro I
   dsimp

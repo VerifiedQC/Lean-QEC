@@ -55,7 +55,8 @@ def unitaries_cat {l₁ l₂ n : ℕ} (m₁ : Fin l₁ → 𝐔ₙ[n]) (m₂ : F
 
 /-
 theorem unitaries_cat_nkron {l₁ l₂} (m₁ : Fin l₁ → 𝐔ₙ[1]) (m₂ : Fin l₂ → 𝐔ₙ[1]) :
-  (unitary_n_nkron m₁) ⊗ₙ (unitary_n_nkron m₂) = unitary_n_nkron (unitaries_cat m₁ m₂) := sorry
+  (unitary_n_nkron m₁) ⊗ₙ (unitary_n_nkron m₂) = unitary_n_nkron (unitaries_cat m₁ m₂) := by
+  aesop
   -/
 
 lemma normalize_dagger {a₁ b₁ a₂ b₂}

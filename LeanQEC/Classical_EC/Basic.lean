@@ -1,4 +1,5 @@
 import LeanQEC.States.BitVec
+import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
 
 abbrev CodeSpace (n : ℕ) := Submodule (ZMod 2) (Fin n → ZMod 2)
 
@@ -132,7 +133,25 @@ theorem genMatrix_size_eq {k : ℕ} (C : CodeSpace n) (G : Matrix (Fin k) (Fin n
 
 --horrible terrible aristotle proof that keeps breaking my build
 lemma dual_finrank_eq {C : CodeSpace n} : Module.finrank (ZMod 2) C.dualCode = n - (Module.finrank (ZMod 2) C) := by
-  sorry
+  let B : LinearMap.BilinForm (ZMod 2) (Fin n → ZMod 2) :=
+    Matrix.toBilin' (1 : Matrix (Fin n) (Fin n) (ZMod 2))
+  have hdual : C.dualCode = B.orthogonal C := by
+    ext x
+    constructor
+    · intro hx n₁ hn₁
+      simpa [B, LinearMap.BilinForm.IsOrtho, Matrix.toBilin'_apply', dotProductBilin] using hx n₁ hn₁
+    · intro hx n₁ hn₁
+      simpa [B, LinearMap.BilinForm.IsOrtho, Matrix.toBilin'_apply', dotProductBilin] using hx n₁ hn₁
+  have hB_refl : B.IsRefl := by
+    intro x y hxy
+    simpa [B, Matrix.toBilin'_apply', dotProduct_comm] using hxy
+  have hB_nondeg : B.Nondegenerate := by
+    simpa [B] using
+      (Matrix.Nondegenerate.of_det_ne_zero
+        (M := (1 : Matrix (Fin n) (Fin n) (ZMod 2)))
+        (by simpa using (one_ne_zero : (1 : ZMod 2) ≠ 0))).toBilin'
+  rw [hdual]
+  simpa [Module.finrank_fin_fun] using LinearMap.BilinForm.finrank_orthogonal (B := B) hB_nondeg hB_refl C
   /-
   -- By definition of dual code, we know that its dimension is equal to the dimension of the original code.
   have h_dual_dim : Module.finrank (ZMod 2) C.dualCode + Module.finrank (ZMod 2) C = n := by

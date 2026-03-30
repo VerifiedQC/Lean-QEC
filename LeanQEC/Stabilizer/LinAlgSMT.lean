@@ -13,18 +13,79 @@ def is_index_bool (I : ℕ → ℕ) (d n : ℕ) : Bool :=
   ((Finset.range d).fold and true (fun i => (I i) < n)) &&
   (Finset.range (d-1)).fold and true (fun i => (I i ≤ I (i + 1)))
 
+lemma Finset.fold_true_to_prop {n : ℕ} {p : ℕ → Bool} :
+  (Finset.range n).fold and true p = true ↔ ∀ i, i < n → p i = true := by
+  induction n with
+  | zero =>
+      simp
+  | succ n ih =>
+      rw [Finset.range_add_one, Finset.fold_insert, Bool.and_eq_true, ih]
+      · constructor
+        · rintro ⟨hn, hprev⟩ i hi
+          rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hlt | rfl
+          · exact hprev i hlt
+          · exact hn
+        · intro h
+          refine ⟨h n (Nat.lt_succ_self _), ?_⟩
+          intro i hi
+          exact h i (Nat.lt_succ_of_lt hi)
+      · exact Finset.notMem_range_self
+
+lemma Finset.fold_false_to_prop {n : ℕ} {p : ℕ → Bool} :
+  (Finset.range n).fold or false p = true ↔ ∃ i, i < n ∧ p i = true := by
+  induction n with
+  | zero =>
+      simp
+  | succ n ih =>
+      rw [Finset.range_add_one, Finset.fold_insert, Bool.or_eq_true, ih]
+      · constructor
+        · rintro (hn | hprev)
+          · exact ⟨n, Nat.lt_succ_self _, hn⟩
+          · rcases hprev with ⟨i, hi, hpi⟩
+            exact ⟨i, Nat.lt_succ_of_lt hi, hpi⟩
+        · rintro ⟨i, hi, hpi⟩
+          rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hlt | rfl
+          · exact Or.inr ⟨i, hlt, hpi⟩
+          · exact Or.inl hpi
+      · exact Finset.notMem_range_self
+
 lemma is_index_bool_correct I d n :
   is_index_bool I d n = (
     (forall i : Fin d, I i < n) &&
     (forall i : Fin (d - 1), I i ≤ I (i + 1))) := by
-  sorry
+  apply Bool.eq_iff_iff.mpr
+  unfold is_index_bool
+  rw [Bool.and_eq_true, Finset.fold_true_to_prop, Finset.fold_true_to_prop, Bool.and_eq_true]
+  simp only [decide_eq_true_eq]
+  constructor
+  · rintro ⟨h₁, h₂⟩
+    constructor
+    · intro i
+      exact h₁ i i.2
+    · intro i
+      exact h₂ i i.2
+  · rintro ⟨h₁, h₂⟩
+    constructor
+    · intro i hi
+      exact h₁ ⟨i, hi⟩
+    · intro i hi
+      exact h₂ ⟨i, hi⟩
 
 def indexed_by (I : ℕ → ℕ) (d : ℕ) : ℕ → Bool := --
   fun i => (Finset.range d).fold or false (fun k => i = (I k))
 
 lemma indexed_by_correct I d i :
   indexed_by I d i = (exists k : Fin d, i = I k) := by
-  sorry
+  apply propext
+  constructor
+  · intro h
+    rcases (by
+      simpa [indexed_by, Finset.fold_false_to_prop] using h :
+        ∃ k, k < d ∧ i = I k) with ⟨k, hk, hik⟩
+    exact ⟨⟨k, hk⟩, hik⟩
+  · rintro ⟨k, hik⟩
+    have hk : ∃ j, j < d ∧ i = I j := ⟨k, k.2, hik⟩
+    simpa [indexed_by, Finset.fold_false_to_prop] using hk
 
 instance : Std.Commutative Bool.xor := by
   constructor
@@ -50,7 +111,9 @@ def dist_index_le (n r₁ z_ker_size : ℕ) (Hₓ H_z_ker : Matrix ℕ ℕ Bool)
 
 lemma Finset.fold_range_add_one {β : Type*}
   {op : β → β → β} [hc : Std.Commutative op] [ha : Std.Associative op] {n : ℕ} {f : ℕ → β} {b : β}
-  : (Finset.range (n+1)).fold op b f = op (f n) ((Finset.range n).fold op b f) := sorry
+  : (Finset.range (n+1)).fold op b f = op (f n) ((Finset.range n).fold op b f) := by
+  rw [Finset.range_add_one, Finset.fold_insert]
+  exact Finset.notMem_range_self
 
 variable {a b : ℕ}
 
@@ -111,7 +174,30 @@ lemma Finset.fold_range_split_idem {β : Type*}
 
 lemma Finset.fold_range_split' {β : Type*}
   {op : β → β → β} [hc : Std.Commutative op] [ha : Std.Associative op] {b : β} [hi : Std.LawfulCommIdentity op b] {n : ℕ} {f : ℕ → β}
-  : (Finset.range (2 * n + 3)).fold op b f = op ((Finset.range_btw 0 (n+2)).fold op b f) ((Finset.range_btw (n+2) (2*n + 3)).fold op b f):= sorry
+  : (Finset.range (2 * n + 3)).fold op b f = op ((Finset.range_btw 0 (n+2)).fold op b f) ((Finset.range_btw (n+2) (2*n + 3)).fold op b f) := by
+  calc
+    (Finset.range (2 * n + 3)).fold op b f
+        = (Finset.range_btw 0 (0 + (n + 2) + (n + 1))).fold op b f := by
+            simp [Finset.range_btw_zero, Nat.two_mul, add_assoc, add_left_comm, add_comm]
+    _ = ((Finset.range_btw 0 (n + 2)) ∪ (Finset.range_btw (n + 2) (0 + (n + 2) + (n + 1)))).fold op b f := by
+          rw [Finset.range_btw_split]
+          simp
+    _ = ((Finset.range_btw 0 (n + 2)).disjUnion (Finset.range_btw (n + 2) (0 + (n + 2) + (n + 1)))
+          (Finset.range_btw_disj le_rfl)).fold op b f := by
+          rw [← Finset.disjUnion_eq_union _ _ (Finset.range_btw_disj le_rfl)]
+    _ = op ((Finset.range_btw 0 (n + 2)).fold op b f)
+          ((Finset.range_btw (n + 2) (0 + (n + 2) + (n + 1))).fold op b f) := by
+          simpa [hi.left_id] using
+            (Finset.fold_disjUnion
+              (op := op)
+              (f := f)
+              (s₁ := Finset.range_btw 0 (n + 2))
+              (s₂ := Finset.range_btw (n + 2) (0 + (n + 2) + (n + 1)))
+              (b₁ := b)
+              (b₂ := b)
+              (h := Finset.range_btw_disj le_rfl))
+    _ = op ((Finset.range_btw 0 (n + 2)).fold op b f) ((Finset.range_btw (n + 2) (2 * n + 3)).fold op b f) := by
+          simp [Nat.two_mul, add_assoc, add_left_comm, add_comm]
 
 
 def Matrix.castnat {a b : ℕ} {α : Type*} [Zero α] (M : Matrix (Fin a) (Fin b) α) : Matrix ℕ ℕ α
