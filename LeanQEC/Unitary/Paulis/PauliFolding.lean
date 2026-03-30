@@ -53,8 +53,10 @@ def has_pauli_eigenvalues {a : Type*} [Fintype a] [DecidableEq a] {A : Matrix a 
 --unused, remove?
 def is_pauli_product (U : 𝐔ₙ[n]) := ∃ (m : Fin n → Pauli), unitary_n_nkron m = U
 
+--unused, remove?
 noncomputable def pauli_n_univ : Finset (Fin n → Pauli) := Finset.univ
 
+--also unused?
 noncomputable def pauli_products_n : Finset (𝐔ₙ[n]) := Finset.image (λ m => unitary_n_nkron m) (Finset.univ : Finset (Fin n → Pauli))
 
 def fold_aux (z : pgroup_phases) (m : Fin n → Pauli) :=
@@ -75,7 +77,7 @@ lemma tuple_eqE_by_cons {n} {u : Type}
 
 lemma injective_fold_aux {z z' : pgroup_phases} {m m' : Fin n → Pauli} :
   fold_aux z m = fold_aux z' m' →
-  z = z' /\ m = m' := by
+  z = z' ∧ m = m' := by
   intro H
   induction n with
   | zero =>
@@ -95,7 +97,7 @@ lemma injective_fold_aux {z z' : pgroup_phases} {m m' : Fin n → Pauli} :
   rotate_left
   · apply ne0_unitary; simp
   · apply ne0_unitary; aesop
-  suffices: m 0 = m' 0 /\ (m 0 = m' 0 → z = z' /\ Fin.tail m = Fin.tail m')
+  suffices: m 0 = m' 0 ∧ (m 0 = m' 0 → z = z' ∧ Fin.tail m = Fin.tail m')
   · constructor <;> try tauto
     have eq_tails : Fin.tail m = Fin.tail m' := by tauto
     apply tuple_eqE_by_cons <;> tauto
