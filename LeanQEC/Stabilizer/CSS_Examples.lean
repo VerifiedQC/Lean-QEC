@@ -42,8 +42,8 @@ example {x : ℕ} (h : (x < 9)) (h2 : (8 = x ∨ 7 = x ∨ 6 = x ∨ 5 = x ∨ 4
             (Bool.xor (8 = x) (Bool.xor (7 = x) (Bool.xor (6 = x) (Bool.xor (5 = x) (Bool.xor (4 = x) (3 = x)))))) ||
             (Bool.xor (4 = x) (Bool.xor (3 = x) (Bool.xor (2 = x) (Bool.xor (1 = x)  (0 = x)))))) =
   true := by
-  --smt [h, h2]
-  sorry
+  simp_rw [eq_comm] at h2 ⊢
+  smt [h, h2]
 
 
 
@@ -128,5 +128,5 @@ theorem dist_golay_7 : dist_index_le 23 11 12 Golay_mat Golay_ker 7 := by
   simp_rw [@Eq.comm _ _ (I _)]
   --smt
   --run smt on this at your own risk!!!!
-  sorry
+  smt
 -/
