@@ -199,9 +199,9 @@ theorem PauliGroup.norm_self_inv {n : ℕ} (P : PauliGroup_group n) (h_norm : Pa
     rw [Prod.mk.injEq]
     constructor
     · calc
-        pgroup_phases.inv p = pgroup_phases.inv pgphase_1 := by simp [hp]
+        pgroup_phases.inv p = pgroup_phases.inv pgphase_1 := by simpa [hp]
         _ = pgphase_1 := by simp [pgroup_phases.inv, Phase.phase_star]
-        _ = p := by simp [hp]
+        _ = p := by simpa [hp]
     · rfl
   apply Subtype.ext
   rw [hP]
@@ -214,6 +214,12 @@ theorem PauliGroup.norm_self_inv {n : ℕ} (P : PauliGroup_group n) (h_norm : Pa
 structure StabSet (n : ℕ) where
   stabs : Finset (PauliGroup_group n)
   comm : ∀ s₁ ∈ stabs, ∀ s₂ ∈ stabs, commute s₁ s₂
+
+structure NormalizedStabSet (n : ℕ) extends StabSet n where
+  norm: ∀ s ∈ stabs, PauliGroup.phase s = pgphase_1
+
+instance : Coe (NormalizedStabSet n) (StabSet n) where
+  coe S := S.toStabSet
 
 
 instance {n : ℕ} {S : StabSet n} : IsMulCommutative (Subgroup.closure (SetLike.coe S.stabs)) := by
@@ -242,8 +248,7 @@ lemma stab_closure_mul_self_eq_one {n : ℕ} {S : StabSet n} {P : (Subgroup.clos
 
 
 
-/- --got rid of hstab₂ so this isn't useful anymore
-lemma StabSet_closure_phase_one {n : ℕ} (S : StabSet n) : ∀ s ∈ (Subgroup.closure (SetLike.coe S.stabs)), PauliGroup.phase s = pgphase_1 := by
+lemma NormalizedStabSet_closure_phase_one {n : ℕ} (S : NormalizedStabSet n) : ∀ s ∈ (Subgroup.closure (SetLike.coe S.stabs)), PauliGroup.phase s = pgphase_1 := by
   apply Subgroup.closure_induction
   · exact S.norm
   · show PauliGroup.phase (Pauli1) = pgphase_1
@@ -259,7 +264,7 @@ lemma StabSet_closure_phase_one {n : ℕ} (S : StabSet n) : ∀ s ∈ (Subgroup.
     exact fun x hx y hy => (commute_iff_commute _ _).1 (S.comm x hx y hy)
   intros x hx hp
   apply PauliGroup.inv_one x hp
--/
+
 
 
 def StabCode_of_StabSet {n : ℕ} (S : StabSet n)
@@ -465,8 +470,8 @@ theorem list_map_union_of_is_comm {G : Type*} [Group G] {H : Subgroup G} [Decida
 
 
 
---can't use Finset.prod anymore, since ambient group is noncommutative...
-theorem mem_stab_iff_prod_subset_stabSet {n : ℕ} (S : StabSet n) (s :  PauliGroup_group n) :
+--requires StabSet to have phase one
+theorem mem_stab_iff_prod_subset_stabSet {n : ℕ} (S : NormalizedStabSet n) (s :  PauliGroup_group n) :
   s ∈ (StabCode_of_StabSet S).stabs ↔ ∃ F, ∃ h : F ⊆ S.stabs, (List.prod (finset_subset_to_closure_map h).toList : (Subgroup.closure (SetLike.coe S.stabs))).1 = s := by
   constructor
   · revert s
@@ -517,7 +522,7 @@ theorem mem_stab_iff_prod_subset_stabSet {n : ℕ} (S : StabSet n) (s :  PauliGr
     rintro x x_mem hx
     rw [PauliGroup.norm_self_inv]
     · assumption
-
+    apply NormalizedStabSet_closure_phase_one S x x_mem
   rintro ⟨F, hF₁, rfl⟩
   unfold StabCode_of_StabSet finset_subset_to_closure_map to_closure_map
   have h_mem : ∀ {x : ↥(Subgroup.closure (SetLike.coe S.stabs))}, (x : ↥(PauliGroup_group n)) ∈ (Subgroup.closure (SetLike.coe S.stabs))
@@ -602,7 +607,7 @@ def BinSympMatrix.rowProd {n k : ℕ} (bsm : BinSympMatrix k n) (r₁ r₂ : Fin
 def BinSympMatrix.isCommuting {n k : ℕ} (bsm : BinSympMatrix k n) : Prop :=
   ∀ r₁ r₂, bsm.rowProd r₁ r₂ = 0
 
-def BinSympMatrix.toStabSet {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) : StabSet n where
+def BinSympMatrix.toStabSet {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) : NormalizedStabSet n where
   stabs := Finset.image (fun i => BinSympPauli_toPauli (bsm.row i)) Finset.univ
   comm := by
     simp_rw [Finset.mem_image]
