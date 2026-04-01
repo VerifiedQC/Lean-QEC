@@ -126,7 +126,7 @@ def fold : pgroup_phases × (Fin n → Pauli) ↪ 𝐔ₙ[n] :=
 
 abbrev factored_Pauli n := pgroup_phases × (Fin n → Pauli)
 def factored_Pauli_univ : Finset (factored_Pauli n) := Finset.univ
-def PauliGroup (n : ℕ) := (factored_Pauli_univ).map (@fold n)
+def PauliGroup (n : ℕ) : Finset 𝐔ₙ[n] := (factored_Pauli_univ).map (@fold n)
 
 lemma mem_fold pm : fold pm ∈ PauliGroup n := by
   unfold PauliGroup
