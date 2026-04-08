@@ -415,6 +415,8 @@ def PauliGroup.map (P : PauliGroup n) : (Fin n → Pauli) :=
 def PauliGroup.phase (P : PauliGroup n) : pgroup_phases :=
   (foldPauli.symm P).1
 
+def PauliGroup.normalized (P : PauliGroup n) := PauliGroup.phase P = pgphase_1
+
 -- trivial now, could possibly delete
 lemma rep_unique (f₁ f₂ : factored_Pauli n) (H: foldPauli f₁ = foldPauli f₂) :
   f₁ = f₂ := by

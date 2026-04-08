@@ -172,8 +172,8 @@ theorem PauliGroup.phase_mul_of_commutes {n : ℕ} (P₁ P₂ : ↥(PauliGroup_g
   PauliGroup.phase (P₁ * P₂) = (PauliGroup.phase P₁) * (PauliGroup.phase P₂) := sorry
 
 
-theorem PauliGroup.inv_one {n : ℕ} (P : PauliGroup_group n) (h_norm : PauliGroup.phase P = pgphase_1)
-  : PauliGroup.phase (P⁻¹ : PauliGroup_group n) = pgphase_1 := by
+theorem PauliGroup.inv_one {n : ℕ} (P : PauliGroup_group n) (h_norm : PauliGroup.normalized P)
+  : PauliGroup.normalized (P⁻¹ : PauliGroup_group n)  := by
   show PauliGroup.phase ⟨(P.1)⁻¹, pauli_inv (by aesop)⟩ = pgphase_1
   let FP := foldPauli.symm P
   have: P = foldPauli FP := by aesop
@@ -186,7 +186,7 @@ theorem PauliGroup.inv_one {n : ℕ} (P : PauliGroup_group n) (h_norm : PauliGro
   simp [phase]
 
 --should be pretty easy to prove
-theorem PauliGroup.norm_self_inv {n : ℕ} (P : PauliGroup_group n) (h_norm : PauliGroup.phase P = pgphase_1)
+theorem PauliGroup.norm_self_inv {n : ℕ} (P : PauliGroup_group n) (h_norm : PauliGroup.normalized P)
   : P⁻¹ = P := by
   let FP := foldPauli.symm P
   have hP : P = foldPauli FP := by
@@ -216,7 +216,7 @@ structure StabSet (n : ℕ) where
   comm : ∀ s₁ ∈ stabs, ∀ s₂ ∈ stabs, commute s₁ s₂
 
 structure NormalizedStabSet (n : ℕ) extends StabSet n where
-  norm: ∀ s ∈ stabs, PauliGroup.phase s = pgphase_1
+  norm: ∀ s ∈ stabs, PauliGroup.normalized s
 
 instance : Coe (NormalizedStabSet n) (StabSet n) where
   coe S := S.toStabSet
@@ -248,14 +248,14 @@ lemma stab_closure_mul_self_eq_one {n : ℕ} {S : StabSet n} {P : (Subgroup.clos
 
 
 
-lemma NormalizedStabSet_closure_phase_one {n : ℕ} (S : NormalizedStabSet n) : ∀ s ∈ (Subgroup.closure (SetLike.coe S.stabs)), PauliGroup.phase s = pgphase_1 := by
+lemma NormalizedStabSet_closure_phase_one {n : ℕ} (S : NormalizedStabSet n) : ∀ s ∈ (Subgroup.closure (SetLike.coe S.stabs)), PauliGroup.normalized s := by
   apply Subgroup.closure_induction
   · exact S.norm
-  · show PauliGroup.phase (Pauli1) = pgphase_1
-    rw [Pauli1_unfold, PauliGroup.phase]
+  · show PauliGroup.normalized (Pauli1)
+    rw [PauliGroup.normalized, Pauli1_unfold, PauliGroup.phase]
     simp only [pgphase_1, phase_id, Equiv.symm_apply_apply]
   · intros x y hx hy hpx hpy
-    rw [PauliGroup.phase_mul_of_commutes, hpx, hpy]
+    rw [PauliGroup.normalized, PauliGroup.phase_mul_of_commutes, hpx, hpy]
     · simp only [pgphase_1, phase_id, pgp_mul_eq, Phase.phase_mul_eq, mul_one]
     rw [commute_iff_commute]
     have hxy:= (Subgroup.closureCommGroupOfComm ?_).mul_comm ⟨x, hx⟩ ⟨y, hy⟩
@@ -286,7 +286,7 @@ def StabCode_of_StabSet {n : ℕ} (S : StabSet n)
     apply inv_stab xstab
 
 
-
+--unused
 def isStabSet {n : ℕ} (C : StabCode n) (S : StabSet n) : Prop := (Subgroup.closure (SetLike.coe S.stabs)) = C.stabs
 
 def StabSet_isCommuting {n : ℕ} (S : Finset (PauliGroup n)) : Prop := ∀ s₁ ∈ S, ∀ s₂ ∈ S, commute s₁ s₂
@@ -616,7 +616,7 @@ def BinSympMatrix.toStabSet {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.
   norm := by
     simp_rw [Finset.mem_image]
     rintro s ⟨r₁, ⟨_, rfl⟩⟩
-    unfold PauliGroup.phase
+    unfold PauliGroup.normalized PauliGroup.phase
     simp only [BinSympPauli_toPauli, Equiv.symm_apply_apply]
 
 def StabCode_of_BinSympMatrix {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) : StabCode n :=
@@ -712,7 +712,7 @@ noncomputable instance {n : ℕ} (SC : StabCode n) : DecidablePred fun N => ∀ 
 
 def StabCode.normalizer {n : ℕ} (SC : StabCode n) : Finset (PauliGroup n) := {N | ∀ s ∈ SC.stabs, commute N s}
 
-def StabCode.undetectable {n : ℕ} (SC : StabCode n) (E : PauliGroup n) : Prop := E ∈ SC.normalizer ∧ normalize_pauli E ∉ SC.stabs
+def StabCode.undetectable {n : ℕ} (SC : StabCode n) (E : PauliGroup n) : Prop := E ∈ SC.normalizer ∧ E ∉ SC.stabs ∧ PauliGroup.normalized E
 
 noncomputable instance {n : ℕ} (SC : StabCode n) : DecidablePred fun E => SC.undetectable E
  := Classical.decPred _
@@ -724,7 +724,7 @@ def StabCode.nontrivial {n : ℕ} (SC : StabCode n) : Prop := ∃ ψ₁ ∈ SC.s
 --wait, why is this true again? If there are at least two code words, then the pauli error that maps one to another is undetectable
 theorem StabCode.undetectable_set_nonempty {n : ℕ} (SC : StabCode n) (hnt : SC.nontrivial) : SC.undetectable_set.Nonempty := sorry
 
-def StabCode.distance {n : ℕ} (SC : StabCode n) (hnt : SC.nontrivial) : ℕ := Finset.min' (Finset.image (fun E => pauli_weight E) (SC.undetectable_set))
+def StabCode.distance {n : ℕ} (SC : StabCode n) (hnt : SC.nontrivial) : ℕ := Finset.min' (Finset.image (fun E => pauli_weight E) SC.undetectable_set)
  (Finset.image_nonempty.2 (StabCode.undetectable_set_nonempty SC hnt))
 
 lemma commute_iff_norm_commute {n : ℕ} (P₁ P₂ : PauliGroup n) : commute P₁ P₂ ↔ commute (normalize_pauli P₁) P₂ := by
@@ -734,11 +734,12 @@ lemma mem_normalizer_iff_norm_mem {n : ℕ} (SC : StabCode n) (E : PauliGroup n)
   unfold StabCode.normalizer
   simp_rw [Finset.mem_filter_univ, ←commute_iff_norm_commute]
 
-
+/- --restricted undetectable to phase 1, not necessary anymore
 theorem StabCode.undetectable_iff_normalized_undetectable {n : ℕ} (SC : StabCode n) (E : PauliGroup n) :
   SC.undetectable E ↔ SC.undetectable (normalize_pauli E) := by
   unfold undetectable
-  simp_rw [←mem_normalizer_iff_norm_mem, normalize_pauli_idem]
+  simp_rw [←mem_normalizer_iff_norm_mem]
+-/
 
 def BinSympMatrix.rowSpace {k n : ℕ} (B : BinSympMatrix k n):= Submodule.span (ZMod 2) (Set.range B.row)
 
