@@ -84,7 +84,7 @@ lemma ker_from_non_pivot_correct {a b}
   (m : Matrix (Fin a) (Fin b) (ZMod 2))
   (pivots : @pivot_t a b)
   (pivots_correct : is_rref_with_pivots m pivots) j :
-  kernel_from_non_pivot m pivots j ∈ m.toLin'.ker := by
+  kernel_from_non_pivot m pivots j ∈ LinearMap.ker m.toLin' := by
   sorry
 
 def ker_from_rref_aux {a b}
@@ -123,7 +123,7 @@ lemma ker_from_rref_le_ker {a b}
   (m : Matrix (Fin a) (Fin b) (ZMod 2))
   (pivots : @pivot_t a b)
   (pivots_correct : is_rref_with_pivots m pivots) :
-  Submodule.span (ZMod 2) (ker_from_rref m pivots).toFinset ≤ m.toLin'.ker := by
+  Submodule.span (ZMod 2) (ker_from_rref m pivots).toFinset ≤ LinearMap.ker m.toLin' := by
   sorry
 
 #check Submodule.eq_of_le_of_finrank_eq
@@ -134,7 +134,7 @@ lemma ker_from_rref_correct {a b}
   (m : Matrix (Fin a) (Fin b) (ZMod 2))
   (pivots : @pivot_t a b)
   (pivots_correct : is_rref_with_pivots m pivots) :
-  m.toLin'.ker = Submodule.span (ZMod 2) (ker_from_rref m pivots).toFinset := by
+  LinearMap.ker m.toLin' = Submodule.span (ZMod 2) (ker_from_rref m pivots).toFinset := by
   sorry
 
 /-
