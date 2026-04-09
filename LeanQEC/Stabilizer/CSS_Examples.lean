@@ -1,6 +1,7 @@
 import LeanQEC.Stabilizer.CSS
 import LeanQEC.Stabilizer.LinAlg
 import LeanQEC.Stabilizer.LinAlgSMT
+import LeanQEC.TranslationCorrectness
 
 def Shor_X : Matrix (Fin 2) (Fin 9) (ZMod 2) :=  !![1, 1, 1, 1, 1, 1, 0, 0, 0 ;
               0, 0, 0, 1, 1, 1, 1, 1, 1
@@ -36,21 +37,26 @@ lemma Shor_orth : Shor_Z.mutually_orth_rows Shor_X := sorry
 
 
 
-def Shor_X_ker := Matrix.castnat (Matrix.castbool !![1,1,0,0,0,0,0,0,0;
+def Shor_X_ker : Matrix (Fin 7) (Fin 9) (ZMod 2) := !![1,1,0,0,0,0,0,0,0;
 1,0,1,0,0,0,0,0,0;
 0,0,0,1,1,0,0,0,0;
 0,0,0,1,0,1,0,0,0;
 1,0,0,1,0,0,1,0,0;
 1,0,0,1,0,0,0,1,0;
 1,0,0,1,0,0,0,0,1;
-])
+]
 
-def Shor_Z_ker := Matrix.castnat (Matrix.castbool !![1,1,1,0,0,0,0,0,0;
+def Shor_X_ker_cast := Matrix.castnat (Matrix.castbool Shor_X_ker)
+
+def Shor_Z_ker : Matrix (Fin 3) (Fin 9) (ZMod 2) := !![1,1,1,0,0,0,0,0,0;
 0,0,0,1,1,1,0,0,0;
 0,0,0,0,0,0,1,1,1;
-])
+]
+
+def Shor_Z_ker_cast := Matrix.castnat (Matrix.castbool Shor_Z_ker)
 
 def Shor_pair : CSS_pair 9 6 2 := CSS_pair.of_matrices Shor_Z Shor_X Shor_orth Shor_Z_ind Shor_X_ind
+
 
 
 
@@ -73,23 +79,34 @@ example {x : ℕ} (h : (x < 9)) (h2 : (8 = x ∨ 7 = x ∨ 6 = x ∨ 5 = x ∨ 4
 
 
 
-theorem dist9z_3 : dist_index_le 9 2 3 Shor_X_cast Shor_Z_ker 3 := by
+theorem dist9z_3 : dist_index_le 9 2 3 Shor_X_cast Shor_Z_ker_cast 3 := by
   intro I
   dsimp
   simp [is_index_bool,
     indexed_by, Finset.fold_range_add_one, mem_ker_bool, vec_inner_product, Shor_X_cast, Shor_X,
-    Matrix.castnat, Matrix.castbool, Shor_Z_ker, not_mem_rowspace]
+    Matrix.castnat, Matrix.castbool, Shor_Z_ker_cast, Shor_Z_ker, not_mem_rowspace]
   simp_rw [@Eq.comm _ _ (I _)]
   smt
 
-theorem dist9x_3 : dist_index_le 9 6 2 Shor_Z_cast Shor_X_ker 3 := by
+theorem dist9x_3 : dist_index_le 9 6 7 Shor_Z_cast Shor_X_ker_cast 3 := by
   intro I
   dsimp
   simp [is_index_bool,
     indexed_by, Finset.fold_range_add_one, mem_ker_bool, vec_inner_product, Shor_Z_cast, Shor_Z,
-    Matrix.castnat, Matrix.castbool, Shor_X_ker, not_mem_rowspace]
+    Matrix.castnat, Matrix.castbool, Shor_X_ker_cast, Shor_X_ker, not_mem_rowspace]
   simp_rw [@Eq.comm _ _ (I _)]
   smt
+
+lemma Shor_dist_3 : 3 ≤ (Shor_pair.toBSM.distance (by norm_num)) := by
+
+  apply sat_translation_correct Shor_pair Shor_Z_ker _ Shor_X_ker _ 3
+  · convert dist9x_3
+    · unfold Shor_Z_cast Shor_pair CSS_pair.of_matrices
+      dsimp
+      --apply forget_eq_castnat_castbool
+      sorry
+    sorry
+  sorry
 
 def Steane_mat := Matrix.castnat (Matrix.castbool !![
   1, 0, 0, 1, 0, 1, 1;

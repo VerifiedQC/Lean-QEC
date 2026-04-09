@@ -13,9 +13,8 @@ def forget {a b : ℕ} [NeZero a] [NeZero b]
 
 lemma forget_eq_castnat_castbool {a b : ℕ} [NeZero a] [NeZero b]
   (M : Matrix (Fin a) (Fin b) (ZMod 2)) :
-  (fun i j => if i < a && j < b then
-      decide (M (Fin.ofNat a i) (Fin.ofNat b j) = 1)
-    else false) = M.castnat.castbool := by
+    forget M = M.castnat.castbool := by
+  unfold forget
   ext i j; simp [Matrix.castnat, Matrix.castbool, Fin.ofNat];
   split_ifs <;> simp_all +decide [ Nat.mod_eq_of_lt ];
   rcases M ⟨ i, by linarith ⟩ ⟨ j, by linarith ⟩ with ( _ | _ | m ) <;> trivial;
