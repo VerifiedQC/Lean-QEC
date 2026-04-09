@@ -22,9 +22,9 @@ lemma Shor_Z_ind : LinearIndependent (ZMod 2) Shor_Z.row := sorry
 lemma Shor_X_ind : LinearIndependent (ZMod 2) Shor_X.row := sorry
 
 
-def Shor_Z_cast := Matrix.castnat (Matrix.castbool Shor_Z)
+def Shor_Z_cast := Shor_Z.castnat.castbool
 
-def Shor_X_cast := Matrix.castnat (Matrix.castbool Shor_X)
+def Shor_X_cast := Shor_X.castnat.castbool
 
 
 def Shor_X_codespace := Shor_X.toCodeSpace
@@ -46,14 +46,19 @@ def Shor_X_ker : Matrix (Fin 7) (Fin 9) (ZMod 2) := !![1,1,0,0,0,0,0,0,0;
 1,0,0,1,0,0,0,0,1;
 ]
 
-def Shor_X_ker_cast := Matrix.castnat (Matrix.castbool Shor_X_ker)
+theorem Shor_X_ker_correct : kergen_correct Shor_X Shor_X_ker := sorry
+
+def Shor_X_ker_cast := Shor_X_ker.castnat.castbool
 
 def Shor_Z_ker : Matrix (Fin 3) (Fin 9) (ZMod 2) := !![1,1,1,0,0,0,0,0,0;
 0,0,0,1,1,1,0,0,0;
 0,0,0,0,0,0,1,1,1;
 ]
 
-def Shor_Z_ker_cast := Matrix.castnat (Matrix.castbool Shor_Z_ker)
+theorem Shor_Z_ker_correct : kergen_correct Shor_Z Shor_Z_ker := sorry
+
+
+def Shor_Z_ker_cast := Shor_Z_ker.castnat.castbool
 
 def Shor_pair : CSS_pair 9 6 2 := CSS_pair.of_matrices Shor_Z Shor_X Shor_orth Shor_Z_ind Shor_X_ind
 
@@ -101,12 +106,13 @@ lemma Shor_dist_3 : 3 ≤ (Shor_pair.toBSM.distance (by norm_num)) := by
 
   apply sat_translation_correct Shor_pair Shor_Z_ker _ Shor_X_ker _ 3
   · convert dist9x_3
-    · unfold Shor_Z_cast Shor_pair CSS_pair.of_matrices
-      dsimp
-      --apply forget_eq_castnat_castbool
-      sorry
-    sorry
-  sorry
+    · apply forget_eq_castnat_castbool
+    apply forget_eq_castnat_castbool
+  · convert dist9z_3
+    · apply forget_eq_castnat_castbool
+    apply forget_eq_castnat_castbool
+  · exact Shor_Z_ker_correct
+  exact Shor_X_ker_correct
 
 def Steane_mat := Matrix.castnat (Matrix.castbool !![
   1, 0, 0, 1, 0, 1, 1;
