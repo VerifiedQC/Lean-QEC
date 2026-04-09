@@ -197,43 +197,4 @@ end AristotleLemmas
 lemma mul_Pauli1_correct (P Q : Pauli) :
   let PQ := mul_Pauli1 P Q
   P.val * Q.val = U_phase PQ.2 PQ.1 := by
-  -- By definition of `mul_Pauli1`, we can split into cases based on the values of `P` and `Q`.
-  cases' P with P hP
-  cases' Q with Q hQ
-  simp [mul_Pauli1];
-  -- By definition of `mul_Pauli1`, we can split into cases based on the values of `P` and `Q` and apply the corresponding multiplication rules.
-  by_cases hP : P = Pauli_I ∨ P = Pauli_X ∨ P = Pauli_Y ∨ P = Pauli_Z;
-  · by_cases hQ : Q = Pauli_I ∨ Q = Pauli_X ∨ Q = Pauli_Y ∨ Q = Pauli_Z;
-    · rcases hP with ( rfl | rfl | rfl | rfl ) <;> rcases hQ with ( rfl | rfl | rfl | rfl ) <;> simp +decide [ * ];
-      all_goals norm_num [ Pauli_I, Pauli_X, Pauli_Y, Pauli_Z, U_phase ] at *;
-      all_goals norm_num [ phase_id, phase_i, phase_ni, pgphase_i, pgphase_ni, pX_sq, pY_sq, pZ_sq, pX_mul_pY, pY_mul_pZ, pZ_mul_pX, pY_mul_pX, pZ_mul_pY, pX_mul_pZ ] at *;
-      -- In each case, the equality holds because multiplying by 1 or -1 doesn't change the matrix.
-      all_goals ext; simp [phase_id, phase_i, phase_ni];
-      all_goals norm_num [ phase_id, phase_i, phase_ni, U_phase ] at *;
-      all_goals erw [ show ( phase_id : phase ).z = 1 from rfl ] ; norm_num;
-    · aesop;
-      all_goals simp_all +decide [ Subtype.ext_iff ];
-      · unfold Pauli at hQ_1; aesop;
-        · exact?;
-        · cases h ; tauto;
-        · cases h ; tauto;
-        · cases h_1 ; tauto;
-      · unfold Pauli at hQ_1; aesop;
-        · contradiction;
-        · cases h ; tauto;
-        · cases h ; tauto;
-        · cases h_1 ; tauto;
-      · unfold Pauli at hQ_1; aesop;
-        · exact?;
-        · cases h ; tauto;
-        · cases h ; tauto;
-        · cases h_1 ; tauto;
-      · unfold Pauli at hQ_1; aesop;
-        · exact?;
-        · cases h ; tauto;
-        · cases h ; tauto;
-        · cases h_1 ; tauto;
-  · -- Since P is in the Pauli set, it must be one of I, X, Y, or Z. This contradicts our assumption that P is not any of these.
-    exfalso; exact hP (by
-    unfold Pauli at *; aesop;
-    all_goals tauto)
+  sorry

@@ -2,20 +2,41 @@ import LeanQEC.Stabilizer.CSS
 import LeanQEC.Stabilizer.LinAlg
 import LeanQEC.Stabilizer.LinAlgSMT
 
-def q9_X := Matrix.castnat (Matrix.castbool !![1, 1, 1, 1, 1, 1, 0, 0, 0 ;
+def Shor_X : Matrix (Fin 2) (Fin 9) (ZMod 2) :=  !![1, 1, 1, 1, 1, 1, 0, 0, 0 ;
               0, 0, 0, 1, 1, 1, 1, 1, 1
-])
+]
 
-def q9_Z := Matrix.castnat (Matrix.castbool !![
+
+def Shor_Z : Matrix (Fin 6) (Fin 9) (ZMod 2) :=  !![
   1, 1, 0, 0, 0, 0, 0, 0, 0;
   0, 1, 1, 0, 0, 0, 0, 0, 0;
   0, 0, 0, 1, 1, 0, 0, 0, 0;
   0, 0, 0, 0, 1, 1, 0, 0, 0;
   0, 0, 0, 0, 0, 0, 1, 1, 0;
   0, 0, 0, 0, 0, 0, 0, 1, 1;
-])
+]
 
-def q9x_ker := Matrix.castnat (Matrix.castbool !![1,1,0,0,0,0,0,0,0;
+lemma Shor_Z_ind : LinearIndependent (ZMod 2) Shor_Z.row := sorry
+
+lemma Shor_X_ind : LinearIndependent (ZMod 2) Shor_X.row := sorry
+
+
+def Shor_Z_cast := Matrix.castnat (Matrix.castbool Shor_Z)
+
+def Shor_X_cast := Matrix.castnat (Matrix.castbool Shor_X)
+
+
+def Shor_X_codespace := Shor_X.toCodeSpace
+
+def Shor_Z_codespace := Shor_Z.toCodeSpace
+
+
+
+lemma Shor_orth : Shor_Z.mutually_orth_rows Shor_X := sorry
+
+
+
+def Shor_X_ker := Matrix.castnat (Matrix.castbool !![1,1,0,0,0,0,0,0,0;
 1,0,1,0,0,0,0,0,0;
 0,0,0,1,1,0,0,0,0;
 0,0,0,1,0,1,0,0,0;
@@ -24,10 +45,14 @@ def q9x_ker := Matrix.castnat (Matrix.castbool !![1,1,0,0,0,0,0,0,0;
 1,0,0,1,0,0,0,0,1;
 ])
 
-def q9z_ker := Matrix.castnat (Matrix.castbool !![1,1,1,0,0,0,0,0,0;
+def Shor_Z_ker := Matrix.castnat (Matrix.castbool !![1,1,1,0,0,0,0,0,0;
 0,0,0,1,1,1,0,0,0;
 0,0,0,0,0,0,1,1,1;
 ])
+
+def Shor_pair : CSS_pair 9 6 2 := CSS_pair.of_matrices Shor_Z Shor_X Shor_orth Shor_Z_ind Shor_X_ind
+
+
 
 example (x : ℕ) (h : (x < 9)) (h2 : (8 = x ∨ 7 = x ∨ 6 = x ∨ 5 = x ∨ 4 = x ∨ 3 = x ∨ 2 = x ∨ 1 = x ∨ 0 = x)):
  ((Bool.xor (x = 0) (Bool.xor (x = 1) (Bool.xor (x = 2) (Bool.xor (x = 3) (Bool.xor (x = 4) (x = 5)))))) ||
@@ -48,21 +73,21 @@ example {x : ℕ} (h : (x < 9)) (h2 : (8 = x ∨ 7 = x ∨ 6 = x ∨ 5 = x ∨ 4
 
 
 
-theorem dist9z_3 : dist_index_le 9 2 3 q9_X q9z_ker 3 := by
+theorem dist9z_3 : dist_index_le 9 2 3 Shor_X_cast Shor_Z_ker 3 := by
   intro I
   dsimp
   simp [is_index_bool,
-    indexed_by, Finset.fold_range_add_one, mem_ker_bool, vec_inner_product, q9_X,
-    Matrix.castnat, Matrix.castbool, ZMod.val, q9z_ker, not_mem_rowspace]
+    indexed_by, Finset.fold_range_add_one, mem_ker_bool, vec_inner_product, Shor_X_cast, Shor_X,
+    Matrix.castnat, Matrix.castbool, Shor_Z_ker, not_mem_rowspace]
   simp_rw [@Eq.comm _ _ (I _)]
   smt
 
-theorem dist9x_3 : dist_index_le 9 6 2 q9_Z q9x_ker 3 := by
+theorem dist9x_3 : dist_index_le 9 6 2 Shor_Z_cast Shor_X_ker 3 := by
   intro I
   dsimp
   simp [is_index_bool,
-    indexed_by, Finset.fold_range_add_one, mem_ker_bool, vec_inner_product, q9_Z,
-    Matrix.castnat, Matrix.castbool, ZMod.val, q9x_ker, not_mem_rowspace]
+    indexed_by, Finset.fold_range_add_one, mem_ker_bool, vec_inner_product, Shor_Z_cast, Shor_Z,
+    Matrix.castnat, Matrix.castbool, Shor_X_ker, not_mem_rowspace]
   simp_rw [@Eq.comm _ _ (I _)]
   smt
 

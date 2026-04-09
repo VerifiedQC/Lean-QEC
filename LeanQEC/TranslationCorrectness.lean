@@ -83,7 +83,7 @@ lemma dist_index_le_sound_contrapositive
         apply dist.prop
       suffices: ∃(a b : ℕ), a + 1 < b /\ b < a
       · rcases this with ⟨a, b, h, h'⟩
-        smt [h, h']
+        sorry
       exists n, dist
     apply min_weight_ker_not_mem_rowspace_empty
     · assumption

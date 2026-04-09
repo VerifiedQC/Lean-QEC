@@ -84,7 +84,7 @@ lemma injective_fold_aux {z z' : pgroup_phases} {m m' : Fin n → Pauli} :
     constructor
     · simp [fold_aux, unitary_n_nkron, U_phase] at H
       rw [Subtype.mk.injEq, phase.mk.injEq]
-      apply smul_left_injective _ (by norm_num) H
+      convert H
     funext x ; apply finZeroElim x
   | succ n ih =>
   replace H := by simpa [fold_aux_iter] using H

@@ -84,7 +84,7 @@ def herm_of_qubit_tensor_herm {n : ℕ} (m : Fin n → 𝐔ₙ[1]) (Hm : ∀ x, 
 noncomputable section
 
 def U_phase {k : Type*} [Fintype k] [DecidableEq k] (U : 𝐔[k]) (z : phase) : 𝐔[k] := ⟨z.1 • U.val, by
-  simp [unitary.mem_iff, smul_smul, mul_comm]
+  simp [Unitary.mem_iff, smul_smul, mul_comm]
   rw [mul_comm, ←Complex.normSq_eq_conj_mul_self, Complex.coe_smul, Complex.normSq_eq_norm_sq, z.2]
   simp
 ⟩

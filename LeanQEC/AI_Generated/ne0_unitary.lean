@@ -20,4 +20,4 @@ lemma ne0_unitary t [Nonempty t] [Fintype t] [DecidableEq t]
     -- If $m$ were the zero matrix, then its determinant would be zero, contradicting the fact that it is unitary.
     by_contra h_zero;
     have := unitary_m.2;
-    apply_fun Matrix.det at this; simp_all +decide ;
+    apply_fun Matrix.det at this; simp_all [Matrix.det_zero];

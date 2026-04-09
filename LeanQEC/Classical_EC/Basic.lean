@@ -1,5 +1,6 @@
 import LeanQEC.States.BitVec
 import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
+import LeanQEC.Stabilizer.LinAlg
 
 abbrev CodeSpace (n : ℕ) := Submodule (ZMod 2) (Fin n → ZMod 2)
 
@@ -17,9 +18,6 @@ def zeroVec : Fin n → ZMod 2 := 0
 
 noncomputable section
 
-instance CodeSpace_fintype (C : CodeSpace n) : Fintype ↑(C : Set (Fin n → ZMod 2)) := by
-  classical
-  infer_instance
 
 def CodeSpace.toFinset (C : CodeSpace n) : Finset (Fin n → ZMod 2) :=
   (C : Set (Fin n → ZMod 2)).toFinset
