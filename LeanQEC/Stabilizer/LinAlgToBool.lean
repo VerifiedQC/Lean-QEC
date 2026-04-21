@@ -157,7 +157,32 @@ lemma Matrix.mem_rowSpace_ZMod2 {n₁ n₂ : ℕ}
         have := hx'.choose_spec.1 hy; aesop
 
 lemma Matrix.ZMod_sum_dotprod_exists {n₁ n₂ : ℕ} {S : Finset (Fin n₁)} {f : Fin n₁ → (Fin n₂ → (ZMod 2))}
-  {x₁ x₂ : Fin n₂ → (ZMod 2)} (hsum : S.sum f = x₁) (hprod : x₁ ⬝ᵥ x₂ = 1) : ∃ r ∈ S, (f r) ⬝ᵥ x₂ = 1 := sorry
+  {x₁ x₂ : Fin n₂ → (ZMod 2)} (hsum : S.sum f = x₁) (hprod : x₁ ⬝ᵥ x₂ = 1) : ∃ r ∈ S, (f r) ⬝ᵥ x₂ = 1 := by
+  by_contra h_all
+  push_neg at h_all
+  have h_zero : ∀ r ∈ S, (f r) ⬝ᵥ x₂ = 0 := by
+    intro r hr
+    rcases Fin.exists_fin_two.mp ⟨(f r) ⬝ᵥ x₂, rfl⟩ with h | h
+    · exact h
+    · exact absurd h (h_all r hr)
+  have hsum_zero : S.sum f ⬝ᵥ x₂ = 0 := by
+    suffices hsum_zero_aux :
+        ∀ T : Finset (Fin n₁), (∀ r ∈ T, (f r) ⬝ᵥ x₂ = 0) → T.sum f ⬝ᵥ x₂ = 0 by
+      exact hsum_zero_aux S h_zero
+    intro T
+    induction' T using Finset.induction_on with a s ha ih
+    · intro _
+      simp [dotProduct]
+    · intro hT_zero
+      have hs_zero : ∀ r ∈ s, (f r) ⬝ᵥ x₂ = 0 := by
+        intro r hr
+        exact hT_zero r (Finset.mem_insert_of_mem hr)
+      have ha_zero : (f a) ⬝ᵥ x₂ = 0 := hT_zero a (Finset.mem_insert_self _ _)
+      simpa [Finset.sum_insert ha, add_dotProduct, ha_zero] using ih hs_zero
+  have hprod_ne : x₁ ⬝ᵥ x₂ ≠ 0 := by
+    rw [hprod]
+    decide
+  exact hprod_ne (hsum ▸ hsum_zero)
 
 private lemma sum_id_dotProduct_eq {n : ℕ} (S : Finset (Fin n → ZMod 2)) (x : Fin n → ZMod 2) :
   S.sum id ⬝ᵥ x = S.sum (fun s => s ⬝ᵥ x) := by
