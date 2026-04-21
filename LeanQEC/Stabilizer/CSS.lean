@@ -64,7 +64,27 @@ lemma toCodeSpace_subset_dual_of_orth_gen {n k₁ k₂ : ℕ} (M₁ : Matrix (Fi
   have htoRow₂ : M₂.toCodeSpace = M₂.rowSpace := by
     ext x
     simp [Matrix.toCodeSpace, Matrix.rowSpace, Matrix.row]
-  sorry
+  intro x hx
+  rw [htoRow₁] at hx
+  rw [htoRow₂]
+  have hsubset : M₁.rowSpace ≤ CodeSpace.dualCode M₂.rowSpace := by
+    refine Submodule.span_le.2 ?_
+    rintro y ⟨i, rfl⟩
+    show M₁.row i ∈ M₂.rowSpace.orthogonalBilin (dotProductBilin _ _)
+    rw [Submodule.mem_orthogonalBilin_iff]
+    intro z hz
+    refine Submodule.span_induction ?_ ?_ ?_ ?_ hz
+    · rintro _ ⟨j, rfl⟩
+      rw [LinearMap.IsOrtho, dotProductBilin_apply_apply, dotProduct_comm]
+      exact h_orth i j
+    · simp [LinearMap.IsOrtho, dotProductBilin_apply_apply]
+    · intro a b _ _ ha hb
+      rw [LinearMap.IsOrtho, dotProductBilin_apply_apply] at ha hb ⊢
+      rw [add_dotProduct, ha, hb, zero_add]
+    · intro a b _ hb
+      rw [LinearMap.IsOrtho, dotProductBilin_apply_apply] at hb ⊢
+      rw [smul_dotProduct, hb, smul_zero]
+  exact hsubset hx
 
 def CSS_pair.of_matrices [NeZero k₁] [NeZero k₂] (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)) (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
 (h_orth : H₁.mutually_orth_rows H₂) (H₁_ind : LinearIndependent (ZMod 2) (H₁.row)) (H₂_ind : LinearIndependent (ZMod 2) (H₂.row)) : CSS_pair n k₁ k₂ where

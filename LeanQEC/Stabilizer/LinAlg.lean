@@ -1,5 +1,7 @@
 import Smt
+import Mathlib.Algebra.Field.ZMod
 import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
+import Mathlib.LinearAlgebra.Basis.VectorSpace
 import Mathlib.LinearAlgebra.Finsupp.LinearCombination
 import Mathlib.InformationTheory.Hamming
 import Mathlib.LinearAlgebra.Dual.Lemmas
@@ -20,7 +22,6 @@ lemma Submodule.mem_span_range_iff_sum {α : Type*} [Fintype α] {n : ℕ} (x : 
   · rw [ Finsupp.mem_span_range_iff_exists_finsupp ] at hx;
     obtain ⟨ c, rfl ⟩ := hx; use Finset.univ.filter fun a => c a = 1; simp +decide [ Finsupp.sum_fintype ] ;
     rw [ Finset.sum_filter ] ; congr ; ext x ; rcases c x with ( _ | _ | c ) <;> norm_num ; tauto;
-    contradiction;
   · exact fun ⟨ S, hS ⟩ => hS ▸ Submodule.sum_mem _ fun i _ => Submodule.subset_span ( Set.mem_range_self _ )
 
 -- rowspace already contains the zero vector
@@ -78,8 +79,11 @@ lemma exists_ker_dotProduct_eq_one_of_not_mem_rowSpace {n k : ℕ} (M : Matrix (
     (x : Fin n → ZMod 2) (hx : x ∉ M.rowSpace) :
     ∃ y ∈ LinearMap.ker M.toLin', y ⬝ᵥ x = 1 := by
   unfold Matrix.rowSpace at hx
+  letI : Fact (Nat.Prime 2) := ⟨by decide⟩
+  letI : Module.Free (ZMod 2) ((Fin n → ZMod 2) ⧸ Submodule.span (ZMod 2) (Set.range M.row)) :=
+    Module.Free.of_basis (Module.Basis.ofVectorSpace (ZMod 2) _)
 
-  obtain ⟨f, hfx, hf_bot⟩ := Submodule.exists_dual_map_eq_bot_of_notMem hx sorry
+  obtain ⟨f, hfx, hf_bot⟩ := Submodule.exists_dual_map_eq_bot_of_notMem hx inferInstance
   refine ⟨fun i => f (Pi.single i 1), ?_, ?_⟩
   · rw [mem_ker_iff_dotProd_rows_eq_zero]
     intro i
@@ -100,7 +104,6 @@ lemma not_mem_rowspace_iff_exists_mem_ker {n k : ℕ} (M : Matrix (Fin k) (Fin n
   · rintro ⟨y, hy_ker, hy_dot⟩ hx
     have := ker_dotProduct_rowSpace_eq_zero M y x hy_ker hx
     simp_all
-    contradiction
 
 
 lemma ex_mem_submodule_non_orth_iff_non_orth_mem_basis {n : ℕ} (S : Set (Fin n → (ZMod 2))) (x : Fin n → (ZMod 2))

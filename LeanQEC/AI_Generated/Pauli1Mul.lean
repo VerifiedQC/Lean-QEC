@@ -197,4 +197,51 @@ end AristotleLemmas
 lemma mul_Pauli1_correct (P Q : Pauli) :
   let PQ := mul_Pauli1 P Q
   P.val * Q.val = U_phase PQ.2 PQ.1 := by
-  sorry
+  rcases Pauli_cases P with rfl | rfl | rfl | rfl
+  all_goals rcases Pauli_cases Q with rfl | rfl | rfl | rfl
+  · simp [mul_Pauli1]
+    change Pauli_X.val * Pauli_X.val = U_phase Pauli_I.val phase_id
+    rw [U_phase_id]
+    simpa using pX_sq
+  · simpa [mul_Pauli1] using pX_mul_pY
+  · simpa [mul_Pauli1] using pX_mul_pZ
+  · simp [mul_Pauli1]
+    change Pauli_X.val * Pauli_I.val = U_phase Pauli_X.val phase_id
+    rw [U_phase_id]
+    simpa [Pauli_I]
+  · simpa [mul_Pauli1] using pY_mul_pX
+  · simp [mul_Pauli1]
+    change Pauli_Y.val * Pauli_Y.val = U_phase Pauli_I.val phase_id
+    rw [U_phase_id]
+    simpa using pY_sq
+  · simpa [mul_Pauli1] using pY_mul_pZ
+  · simp [mul_Pauli1]
+    change Pauli_Y.val * Pauli_I.val = U_phase Pauli_Y.val phase_id
+    rw [U_phase_id]
+    simpa [Pauli_I]
+  · simpa [mul_Pauli1] using pZ_mul_pX
+  · simpa [mul_Pauli1] using pZ_mul_pY
+  · simp [mul_Pauli1]
+    change Pauli_Z.val * Pauli_Z.val = U_phase Pauli_I.val phase_id
+    rw [U_phase_id]
+    simpa using pZ_sq
+  · simp [mul_Pauli1]
+    change Pauli_Z.val * Pauli_I.val = U_phase Pauli_Z.val phase_id
+    rw [U_phase_id]
+    simpa [Pauli_I]
+  · simp [mul_Pauli1]
+    change Pauli_I.val * Pauli_X.val = U_phase Pauli_X.val phase_id
+    rw [U_phase_id]
+    simpa [Pauli_I]
+  · simp [mul_Pauli1]
+    change Pauli_I.val * Pauli_Y.val = U_phase Pauli_Y.val phase_id
+    rw [U_phase_id]
+    simpa [Pauli_I]
+  · simp [mul_Pauli1]
+    change Pauli_I.val * Pauli_Z.val = U_phase Pauli_Z.val phase_id
+    rw [U_phase_id]
+    simpa [Pauli_I]
+  · simp [mul_Pauli1]
+    change Pauli_I.val * Pauli_I.val = U_phase Pauli_I.val phase_id
+    rw [U_phase_id]
+    simpa [Pauli_I]
