@@ -751,10 +751,18 @@ noncomputable instance {k n : ℕ} (B : BinSympMatrix k n) : DecidablePred fun E
 
 def BinSympMatrix.undetectable_set {k n : ℕ} (B : BinSympMatrix k n) : Finset (BinSympPauli n) := {bsp | B.undetectable bsp}
 
-def BinSympMatrix.undetectable_set_nonempty {k n : ℕ} (B : BinSympMatrix k n) (hk : 0 < k) : B.undetectable_set.Nonempty := sorry
+def BinSympMatrix.distance {k n : ℕ} (B : BinSympMatrix k n) (_hk : 0 < k) : ℕ :=
+  match Finset.min (B.undetectable_set.image BinSympPauli.weight) with
+  | ⊤ => n + 1
+  | some d => d
 
-def BinSympMatrix.distance {k n : ℕ} (B : BinSympMatrix k n) (hk : 0 < k) : ℕ := Finset.min' (B.undetectable_set.image BinSympPauli.weight)
-(Finset.image_nonempty.2 (B.undetectable_set_nonempty hk))
+theorem BinSympMatrix.undetectable_set_nonempty {k n : ℕ} (B : BinSympMatrix k n) (hk : 0 < k)
+    (h_dist : B.distance hk ≤ n) : B.undetectable_set.Nonempty := by
+  by_contra h_empty
+  rw [Finset.not_nonempty_iff_eq_empty] at h_empty
+  unfold BinSympMatrix.distance at h_dist
+  rw [h_empty] at h_dist
+  simp at h_dist
 
 lemma BinSympMatrix.toStabCodeNontrivial_of_k_pos {k n : ℕ} (B : BinSympMatrix k n) (h_comm : B.isCommuting) (hk : 0 < k) :
   (StabCode_of_BinSympMatrix B h_comm).nontrivial := sorry
