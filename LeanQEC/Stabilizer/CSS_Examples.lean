@@ -84,16 +84,16 @@ example {x : ℕ} (h : (x < 9)) (h2 : (8 = x ∨ 7 = x ∨ 6 = x ∨ 5 = x ∨ 4
 
 
 
-theorem dist9z_3 : dist_index_le 9 2 3 Shor_X_cast Shor_Z_ker_cast 3 := by
+theorem dist9z_3 : dist_index_le 9 2 3 Shor_X.castnat.castbool Shor_Z_ker.castnat.castbool 3 := by
   intro I
   dsimp
   simp [is_index_bool,
-    indexed_by, Finset.fold_range_add_one, mem_ker_bool, vec_inner_product, Shor_X_cast, Shor_X,
-    Matrix.castnat, Matrix.castbool, Shor_Z_ker_cast, Shor_Z_ker, not_mem_rowspace]
+    indexed_by, Finset.fold_range_add_one, mem_ker_bool, vec_inner_product, Shor_X,
+    Matrix.castnat, Matrix.castbool, Shor_Z_ker, not_mem_rowspace]
   simp_rw [@Eq.comm _ _ (I _)]
   smt
 
-theorem dist9x_3 : dist_index_le 9 6 7 Shor_Z_cast Shor_X_ker_cast 3 := by
+theorem dist9x_3 : dist_index_le 9 6 7 Shor_Z.castnat.castbool Shor_X_ker.castnat.castbool 3 := by
   intro I
   dsimp
   simp [is_index_bool,
@@ -103,14 +103,13 @@ theorem dist9x_3 : dist_index_le 9 6 7 Shor_Z_cast Shor_X_ker_cast 3 := by
   smt
 
 lemma Shor_dist_3 : 3 ≤ (Shor_pair.toBSM.distance (by norm_num)) := by
-
   apply sat_translation_correct Shor_pair Shor_Z_ker _ Shor_X_ker _ 3
   · convert dist9x_3
-    · apply forget_eq_castnat_castbool
+    · exact forget_eq_castnat_castbool _
     apply forget_eq_castnat_castbool
   · convert dist9z_3
-    · apply forget_eq_castnat_castbool
-    apply forget_eq_castnat_castbool
+    · exact forget_eq_castnat_castbool _
+    exact forget_eq_castnat_castbool _
   · exact Shor_Z_ker_correct
   exact Shor_X_ker_correct
 
@@ -121,10 +120,10 @@ def Steane_mat := Matrix.castnat (Matrix.castbool !![
 ])
 
 def Steane_ker := Matrix.castnat (Matrix.castbool !![
-  1,1,0,1,0,0,0;
-  0,1,1,0,1,0,0;
-  1,0,1,0,0,1,0;
-  1,1,1,0,0,0,1;
+    1,1,0,1,0,0,0;
+    0,1,1,0,1,0,0;
+    1,0,1,0,0,1,0;
+    1,1,1,0,0,0,1;
 ])
 
 theorem dist_steane_3 : dist_index_le 7 3 4 Steane_mat Steane_ker 3 := by
