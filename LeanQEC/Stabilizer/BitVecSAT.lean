@@ -92,7 +92,7 @@ def stabilizer_constraints
   (errs : BitVec n) :=
   stabilizer_constraints_aux ker errs (kerdim - 1)
 
-def all_dist_constraints
+def lt_dist_sat
   {n stabdim kerdim : ℕ}
   (stabs : BitVec (stabdim * n))
   (ker : BitVec (kerdim * n))

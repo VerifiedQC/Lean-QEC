@@ -18,9 +18,9 @@ def X_ker : BitVec (42 * 72) :=
 
 set_option maxHeartbeats 0 in
 -- heavy unfolding
-lemma bb72_test_z : all_dist_constraints HX Z_ker 5 7
+lemma bb72_test_z : lt_dist_sat HX Z_ker 5 7
   := by
-  simp (maxSteps := 9999999) only [all_dist_constraints, loc_constraints, loc_constraints_aux,
+  simp (maxSteps := 9999999) only [lt_dist_sat, loc_constraints, loc_constraints_aux,
     loc_constraints_ith, Nat.lt_add_one, getElem!_pos, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat,
     eq_iff_iff, Nat.reduceLT, Nat.cast_one, Nat.zero_lt_succ, Nat.cast_zero, parity_constraints,
     parity_constraints_aux, row_parity_constraint, row_parity_constraint_aux, Nat.reduceMul, HX,
@@ -41,9 +41,9 @@ lemma bb72_test_z : all_dist_constraints HX Z_ker 5 7
 
 set_option maxHeartbeats 0 in
 -- heavy unfolding
-lemma bb72_test_x : all_dist_constraints HZ X_ker 5 7
+lemma bb72_test_x : lt_dist_sat HZ X_ker 5 7
   := by
-  simp (maxSteps := 9999999) only [all_dist_constraints, loc_constraints, loc_constraints_aux,
+  simp (maxSteps := 9999999) only [lt_dist_sat, loc_constraints, loc_constraints_aux,
     loc_constraints_ith, Nat.lt_add_one, getElem!_pos, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat,
     eq_iff_iff, Nat.reduceLT, Nat.cast_one, Nat.zero_lt_succ, Nat.cast_zero, parity_constraints,
     parity_constraints_aux, row_parity_constraint, row_parity_constraint_aux, Nat.reduceMul, HZ,

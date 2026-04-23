@@ -12,9 +12,9 @@ def golay_ker : BitVec (12 * 23) :=
 
 set_option maxHeartbeats 0 in
 -- heavy unfolding
-lemma steane_dist : all_dist_constraints golay_mat golay_ker 6 5
+lemma steane_dist : lt_dist_sat golay_mat golay_ker 6 5
   := by
-  simp (maxSteps := 9999999) only [all_dist_constraints, loc_constraints, loc_constraints_aux,
+  simp (maxSteps := 9999999) only [lt_dist_sat, loc_constraints, loc_constraints_aux,
     loc_constraints_ith, Nat.lt_add_one, getElem!_pos, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat,
     eq_iff_iff, Nat.reduceLT, Nat.cast_one, Nat.zero_lt_succ, Nat.cast_zero, parity_constraints,
     parity_constraints_aux, row_parity_constraint, row_parity_constraint_aux, Nat.reduceMul,

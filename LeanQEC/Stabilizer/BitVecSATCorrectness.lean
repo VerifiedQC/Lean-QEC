@@ -25,6 +25,25 @@ def Matrix.toBitVecs {i j : ℕ} (M : Matrix (Fin i) (Fin j) (ZMod 2)) : (Fin i)
 def flatten_matrix {i j : ℕ} (M : Matrix (Fin i) (Fin j) (ZMod 2)) : BitVec (i * j) :=
   BitVec.appendList M.toBitVecs
 
-def T : Matrix (Fin 2) (Fin 2) (ZMod 2) := !![1, 1; 0, 1]
+--def T : Matrix (Fin 2) (Fin 2) (ZMod 2) := !![1, 1; 0, 1]
+--#eval! flatten_matrix T -- evaluates to 13: successully flattened
 
-#eval! flatten_matrix T -- evaluates to 13: successully flattened
+def kergen_correct {a b n : ℕ}
+  (M : Matrix (Fin a) (Fin b) (ZMod 2))
+  (gen : Fin n -> Fin b -> ZMod 2) : Prop :=
+  LinearMap.ker M.toLin' =
+  Submodule.span (ZMod 2) (Finset.image gen Finset.univ)
+
+
+
+theorem sat_translation_correct
+  {n nlog k₁ k₂ : ℕ} [NeZero n] [NeZero k₁] [NeZero k₂] [NeZero (n - k₁)] [NeZero (n - k₂)]
+  (css : CSS_pair n k₁ k₂)
+  (xkergen : Fin (n - k₁) → Fin n → ZMod 2)
+  (xkergen_correct : kergen_correct css.H₁ xkergen)
+  (zkergen : Fin (n - k₂) → Fin n → ZMod 2)
+  (zkergen_correct : kergen_correct css.H₂ zkergen)
+  (dist : ℕ) :
+  lt_dist_sat (flatten_matrix css.H₁) (flatten_matrix (Matrix.of xkergen)) dist nlog →
+  lt_dist_sat (flatten_matrix css.H₂) (flatten_matrix (Matrix.of zkergen)) dist nlog →
+  dist ≤ css.toBSM.distance (by apply NeZero.pos) := sorry

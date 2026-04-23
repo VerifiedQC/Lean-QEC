@@ -208,7 +208,8 @@ theorem sat_translation_correct
   (xkergen_correct : kergen_correct css.H₁ xkergen)
   (zkergen : Fin (n - k₂) → Fin n → ZMod 2)
   (zkergen_correct : kergen_correct css.H₂ zkergen)
-  (dist : Fin n) :
+  (dist : Fin n) --why is this Fin?
+   :
   let _ : NeZero (k₁ + k₂) := by
     rcases css with ⟨_, _, _, _, _, _, _, gt0_k₁⟩
     constructor; smt [gt0_k₁]
