@@ -275,7 +275,7 @@ theorem CSS.toBSM_dist_eq (C : CSS_pair n k₁ k₂) :
             · intro hrow
               exact hz_not ((CSS_BSM_rowSpace_iff C.H₁ C.H₂ 0 z).1 hrow).2
           simpa [BinSympMatrix.undetectable_set] using hbsp
-        · simpa [BinSympPauli.weight] using (union_weight_zero_left z).le
+        · simp [BinSympPauli.weight]
       · rcases Finset.mem_image.1 hd with ⟨x, hx, rfl⟩
         have hx_mem : x ∈ (LinearMap.ker C.H₁.toLin' : Set (Fin n → ZMod 2)) \ C.H₂.rowSpace := by
           simpa using hx
@@ -295,7 +295,7 @@ theorem CSS.toBSM_dist_eq (C : CSS_pair n k₁ k₂) :
             · intro hrow
               exact hx_not ((CSS_BSM_rowSpace_iff C.H₁ C.H₂ x 0).1 hrow).1
           simpa [BinSympMatrix.undetectable_set] using hbsp
-        · simpa [BinSympPauli.weight] using (union_weight_zero_right x).le
+        · simp [BinSympPauli.weight]
   have hx_bound : ∀ d ∈ xWeights, d ≤ n := by
     intro d hd
     rcases Finset.mem_image.1 hd with ⟨z, _, rfl⟩

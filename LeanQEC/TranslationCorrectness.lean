@@ -34,7 +34,7 @@ lemma min_weight_ker_not_mem_rowspace_empty
   (is_empty : ¬∃x, x ∈ LinearMap.ker H₁.toLin' /\ x ∉ H₂.rowSpace) :
   min_weight_ker_not_mem_rowspace H₁ H₂ = n + 1 := by
   unfold min_weight_ker_not_mem_rowspace at *
-  simp_all +decide [Set.eq_empty_iff_forall_notMem]
+  simp_all +decide
   rw [show (LinearMap.ker (Matrix.toLin' H₁) : Set (Fin n → ZMod 2)).toFinset \
     (H₂.rowSpace : Set (Fin n → ZMod 2)).toFinset = ∅ from by ext x; aesop]
   simp +decide
@@ -82,7 +82,7 @@ lemma dist_index_le_sound_contrapositive
       intro h_nonempty
       rcases h_nonempty with ⟨x, hxker, hxrow⟩
       have : x ∈ undetectable_errors := ⟨hxker, hxrow⟩
-      simpa [h_empty] using this
+      simp [h_empty] at this
     rw [hmin] at hdist
     exact absurd hdist (not_lt_of_ge (le_trans (Nat.le_of_lt dist.isLt) (Nat.le_succ n)))
   · have h_nonempty : ∃ x, x ∈ LinearMap.ker H₁.toLin' /\ x ∉ H₂.rowSpace := by
@@ -93,7 +93,7 @@ lemma dist_index_le_sound_contrapositive
     have hx_ne_zero : x ≠ 0 := by
       intro hx0
       apply rowspace_x
-      simpa [hx0] using (show (0 : Fin n → ZMod 2) ∈ H₂.rowSpace from Submodule.zero_mem _)
+      simp [hx0]
     let S : Finset (Fin n) := Finset.univ.filter fun j : Fin n => x j ≠ 0
     have hS_card : S.card = hammingNorm x := by
       simp [S, hammingNorm]
@@ -128,7 +128,7 @@ lemma dist_index_le_sound_contrapositive
         let j : Fin S.card := (S.orderIsoOfFin rfl).symm ⟨i, hiS⟩
         refine ⟨j.1, lt_of_lt_of_le j.2 hS_le, ?_⟩
         have hsub : S.orderIsoOfFin rfl j = ⟨i, hiS⟩ := by
-          simpa [j] using (S.orderIsoOfFin rfl).apply_symm_apply ⟨i, hiS⟩
+          simp [j]
         have hj_eq : S.orderEmbOfFin rfl j = i := by
           simpa using congrArg Subtype.val hsub
         simpa [I, j.2] using congrArg Fin.val hj_eq
@@ -157,21 +157,22 @@ lemma dist_index_le_sound_contrapositive
       constructor
       · intro j hjdist
         by_cases hjS : j < S.card
-        · simpa [I, hjS] using (S.orderEmbOfFin rfl ⟨j, hjS⟩).isLt
-        · simpa [I, hjS] using (S.max' hS_nonempty).isLt
+        · simp [I, hjS]
+        · simp [I, hjS]
       · intro j hj
         by_cases hnext : j + 1 < S.card
         · have hjS : j < S.card := lt_trans (Nat.lt_succ_self j) hnext
           have : S.orderEmbOfFin rfl ⟨j, hjS⟩ ≤ S.orderEmbOfFin rfl ⟨j + 1, hnext⟩ := by
             exact (S.orderEmbOfFin rfl).monotone (show (⟨j, hjS⟩ : Fin S.card) ≤ ⟨j + 1, hnext⟩ from Nat.le_succ _)
-          simpa [I, hjS, hnext] using this
+          simp [I, hjS, hnext]
         · by_cases hjS : j < S.card
           · have hmem : S.orderEmbOfFin rfl ⟨j, hjS⟩ ∈ S := by
               simp
             have : S.orderEmbOfFin rfl ⟨j, hjS⟩ ≤ S.max' hS_nonempty := by
               exact S.le_max' _ hmem
-            simpa [I, hjS, hnext] using this
-          · simpa [I, hjS, hnext]
+            simp [I, hjS, hnext]
+            exact this
+          · simp [I, hjS, hnext]
     have hker_bool : mem_ker_bool k₁ n (forget H₁) (indexed_by I (dist - 1)) = true := by
       rw [forget_eq_castnat_castbool]
       exact (mem_ker_iff (M := H₁) (I := I) (d := dist - 1)).2 (by simpa [hI_to_vec] using ker_x)
@@ -199,7 +200,7 @@ lemma dist_index_le_sound
   · simp_all only
   apply dist_index_le_sound_contrapositive
   · assumption
-  · simp_all only [not_le, gt_iff_lt]
+  · simp_all only [not_le]
 
 theorem sat_translation_correct
   {n k₁ k₂ : ℕ} [NeZero n] [NeZero k₁] [NeZero k₂] [NeZero (n - k₁)] [NeZero (n - k₂)]

@@ -55,11 +55,11 @@ lemma raw_phase_star_move (a b c : ℂ)
       -- Since $b$ has norm 1, we have $|b|^2 = b \cdot \overline{b} = 1$.
       have h_norm : b * star b = 1 := by
         -- Since $b$ is a complex number with norm 1, we have $b * \overline{b} = 1$ by definition of the norm.
-        simp [norm_b, Complex.mul_conj];
+        simp [Complex.mul_conj];
         -- Since ‖b‖ = 1, we have Complex.normSq b = 1 by definition of the norm.
         simp [Complex.normSq_eq_norm_sq, norm_b];
       exact eq_one_div_of_mul_eq_one_right h_norm;
-    by_cases hb : b = 0 <;> simp_all +decide [ mul_comm, mul_assoc, mul_left_comm ];
+    by_cases hb : b = 0 <;> simp_all +decide;
     -- Since $b \neq 0$, we can multiply both sides of the equation $a * b⁻¹ = c$ by $b$ to get $a = b * c$.
     field_simp [hb]
     -- Since multiplication is commutative in the complex numbers, we have $c * b = b * c$.
@@ -76,7 +76,7 @@ lemma raw_uphase_div {T U}
   r • u = u' := by
     convert congr_arg ( fun x => star z' • x ) eq using 1;
     · -- By the associativity of scalar multiplication, we have $(z * star z') • u = star z' • (z • u)$.
-      simp [mul_comm, mul_assoc, smul_smul];
+      simp [mul_comm, smul_smul];
     · simp +decide [ ← SemigroupAction.mul_smul ];
       -- Since $z'$ has norm 1, we have $z' * \overline{z'} = 1$.
       have h_norm : z' * starRingEnd ℂ z' = 1 := by

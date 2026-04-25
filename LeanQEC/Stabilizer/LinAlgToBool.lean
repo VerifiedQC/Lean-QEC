@@ -137,15 +137,15 @@ lemma Matrix.mem_rowSpace_ZMod2 {n₁ n₂ : ℕ}
     · exact ⟨∅, Finset.empty_subset _, rfl⟩
     · rintro x y hx hy ⟨S, hS₁, hS₂⟩ ⟨T, hT₁, hT₂⟩
       use S \ T ∪ T \ S
-      simp_all +decide [Finset.subset_iff, Finset.sum_union]
+      simp_all +decide [Finset.subset_iff]
       rw [Finset.sum_union]
       · rw [← hS₂, ← hT₂,
           ← Finset.sum_sdiff (Finset.inter_subset_left : S ∩ T ⊆ S),
           ← Finset.sum_sdiff (Finset.inter_subset_right : S ∩ T ⊆ T)]
-        simp +decide [Finset.sum_add_distrib]; ring!; aesop
+        simp +decide; ring!; aesop
       · exact Finset.disjoint_left.mpr fun x hx₁ hx₂ => by aesop
     · rintro a x hx ⟨S, hS₁, hS₂⟩
-      fin_cases a <;> simp_all +decide [Finset.sum_smul]
+      fin_cases a <;> simp_all +decide
       · exact ⟨∅, by norm_num⟩
       · use S
   · exact hx'.choose_spec.2 ▸ Submodule.sum_mem _ fun y hy =>
@@ -243,7 +243,7 @@ lemma norm_of_is_index (n d : ℕ) (I : ℕ → ℕ)
   have h_card : Finset.card (Finset.filter (fun i => ∃ j < d, I j = i) (Finset.range n)) ≤ d := by
     exact le_trans (Finset.card_le_card (show Finset.filter (fun i => ∃ j < d, I j = i)
       (Finset.range n) ⊆ Finset.image I (Finset.range d) by aesop_cat))
-      (Finset.card_image_le.trans (by simpa))
+      (Finset.card_image_le.trans (by simp))
   convert h_card using 1
   rw [Finset.card_filter, Finset.card_filter]
   rw [Finset.sum_range]; aesop
@@ -266,7 +266,7 @@ lemma hamming_ge_min_weight_ker_not_mem_rowspace {n k₁ k₂ : ℕ}
   · aesop
   · cases h : Finset.min (Finset.image hammingNorm ((LinearMap.ker M₁.toLin' : Set (Fin n → ZMod 2)).toFinset \
       (M₂.rowSpace : Set (Fin n → ZMod 2)).toFinset)) <;>
-      simp_all +decide [Finset.min_le]
+      simp_all +decide
     exact absurd (h h_ker) h_not_rs
 
 -- This is the completeness side

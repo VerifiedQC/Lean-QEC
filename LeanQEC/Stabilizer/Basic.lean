@@ -197,9 +197,9 @@ theorem PauliGroup.norm_self_inv {n : ℕ} (P : PauliGroup_group n) (h_norm : Pa
     rw [Prod.mk.injEq]
     constructor
     · calc
-        pgroup_phases.inv p = pgroup_phases.inv pgphase_1 := by simpa [hp]
+        pgroup_phases.inv p = pgroup_phases.inv pgphase_1 := by simp [hp]
         _ = pgphase_1 := by simp [pgroup_phases.inv, Phase.phase_star]
-        _ = p := by simpa [hp]
+        _ = p := by simp [hp]
     · rfl
   apply Subtype.ext
   rw [hP]
@@ -286,7 +286,7 @@ lemma sum_univ_if_eq_one {α : Type*} [Fintype α] [DecidableEq α]
       Finset.univ.sum (fun a => f a * ind a) := by
   refine Finset.sum_congr rfl ?_
   intro a ha
-  rcases Fin.exists_fin_two.mp ⟨ind a, rfl⟩ with h | h <;> simp [h, mul_comm]
+  rcases Fin.exists_fin_two.mp ⟨ind a, rfl⟩ with h | h <;> simp [h]
 
 
 
@@ -496,7 +496,7 @@ lemma anticommute_eq_symplecticBool {n : ℕ} (bp₁ bp₂ : BinSympPauli n) :
       Bool.ofNat (symplecticProd bp₁ bp₂).val := by
   induction n with
   | zero =>
-      simp [anticommute, anticommuteₘ, symplecticProd, dotProduct, BinSympPauli_toPauli]
+      simp [anticommute, anticommuteₘ, symplecticProd, dotProduct]
   | succ n ih =>
       rcases bp₁ with ⟨x₁, z₁⟩
       rcases bp₂ with ⟨x₂, z₂⟩
@@ -668,19 +668,19 @@ lemma BinSympMatrix.rowProductSub_add {n k : ℕ} (bsm : BinSympMatrix k n) (h_c
       (((oneSub * x : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) = (x : ↥(PauliGroup_group n)) := by
     change (((oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n)) *
         ((x : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) = (x : ↥(PauliGroup_group n))
-    simpa [oneSub]
+    simp [oneSub]
   have hone_right_val (x : ↥(bsm.stabClosure h_comm)) :
       (((x * oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) = (x : ↥(PauliGroup_group n)) := by
     change (((x : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n)) *
         ((oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) = (x : ↥(PauliGroup_group n))
-    simpa [oneSub]
+    simp [oneSub]
   have hone_mul_val :
       (((oneSub * oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) =
         (oneSub : ↥(PauliGroup_group n)) := by
     change (((oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n)) *
         ((oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) =
         (oneSub : ↥(PauliGroup_group n))
-    simpa [oneSub]
+    simp [oneSub]
   have hadd :
       (fun i : Fin k => if ind₁ i + ind₂ i = 1 then bsm.rowStabElem h_comm i else oneSub) =
         fun i => f i * g i := by
@@ -702,8 +702,7 @@ lemma BinSympMatrix.rowProductSub_add {n k : ℕ} (bsm : BinSympMatrix k n) (h_c
     · unfold f g
       rw [h₁, h₂]
       apply Subtype.ext
-      simpa [oneSub] using congrArg Subtype.val
-        ((BinSympMatrix.rowStabElem_mul_self_eq_one bsm h_comm i).symm)
+      simp [oneSub]
   unfold BinSympMatrix.rowProductSub
   rw [hadd]
   simpa [f, g] using
@@ -779,7 +778,7 @@ lemma BinSympMatrix.rowProduct_binaryImage {n k : ℕ} (bsm : BinSympMatrix k n)
                   (1 : ↥(PauliGroup_group n)) := by
                 simp
               exact (congrArg Pauli_toBinSympPauli hco).trans (Pauli_toBinSympPauli_one (n := n))
-          simp [hia, hone]
+          simp [hia]
   have hsum :
       Pauli_toBinSympPauli (bsm.rowProduct h_comm ind) =
         Finset.univ.sum (fun i => if ind i = 1 then bsm.row i else 0) := by
@@ -896,8 +895,8 @@ theorem BinSympCode_stab_eq_rowProduct {n k : ℕ} (bsm : BinSympMatrix k n) (h_
       rcases hx with ⟨ind, rfl⟩
       exact ⟨ind, (BinSympMatrix.rowProduct_inv_eq_self bsm h_comm ind).symm⟩
   · rintro ⟨ind, rfl⟩
-    simpa [BinSympMatrix.rowProduct, BinSympMatrix.stabClosure, StabCode_of_BinSympMatrix,
-      StabCode_of_StabSet] using (bsm.rowProductSub h_comm ind).property
+    simp [BinSympMatrix.rowProduct, BinSympMatrix.stabClosure, StabCode_of_BinSympMatrix,
+      StabCode_of_StabSet]
 
 theorem BinSympCode_stab_eq_rowSpace {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
     (s : ↥(PauliGroup_group n)) :
@@ -992,7 +991,7 @@ lemma BinSympMatrix.mem_rowSpace_iff_exists_indicator {k n : ℕ} (B : BinSympMa
     rw [← B.selectedRows_sum_eq_mulVec ind]
     exact Submodule.sum_mem _ (fun i _ => by
       rcases Fin.exists_fin_two.mp ⟨ind i, rfl⟩ with h | h
-      · simpa [h] using (Submodule.zero_mem B.rowSpace)
+      · simp [h]
       · simpa [h] using (Submodule.subset_span (Set.mem_range_self i) : B.row i ∈ B.rowSpace))
 
 def BinSympMatrix.undetectable {k n : ℕ} (B : BinSympMatrix k n) (bsp : BinSympPauli n) : Prop :=

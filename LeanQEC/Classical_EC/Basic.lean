@@ -147,7 +147,7 @@ lemma dual_finrank_eq {C : CodeSpace n} : Module.finrank (ZMod 2) C.dualCode = n
     simpa [B] using
       (Matrix.Nondegenerate.of_det_ne_zero
         (M := (1 : Matrix (Fin n) (Fin n) (ZMod 2)))
-        (by simpa using (one_ne_zero : (1 : ZMod 2) ≠ 0))).toBilin'
+        (by simp)).toBilin'
   rw [hdual]
   simpa [Module.finrank_fin_fun] using LinearMap.BilinForm.finrank_orthogonal (B := B) hB_nondeg hB_refl C
   /-

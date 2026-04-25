@@ -63,11 +63,11 @@ lemma ker_dotProduct_rowSpace_eq_zero {n k : ℕ} (M : Matrix (Fin k) (Fin n) (Z
     (y : Fin n → ZMod 2) (x : Fin n → ZMod 2)
     (hy : y ∈ LinearMap.ker M.toLin') (hx : x ∈ M.rowSpace) : y ⬝ᵥ x = 0 := by
   revert x;
-  intro x hx; induction hx using Submodule.span_induction <;> simp_all +decide [ Matrix.mulVec, dotProduct ] ;
+  intro x hx; induction hx using Submodule.span_induction <;> simp_all +decide [ dotProduct ] ;
   · obtain ⟨ i, rfl ⟩ := ‹_›; simp_all +decide [ funext_iff, Matrix.mulVec, dotProduct ] ;
     simpa only [ mul_comm ] using hy i;
   · simp_all +decide [ mul_add, Finset.sum_add_distrib ];
-  · rename_i a x hx ih; rw [ ← Finset.sum_congr rfl fun _ _ => mul_left_comm _ _ _ ] ; simp_all +decide [ ← Finset.mul_sum _ _ _, ← Finset.sum_mul ] ;
+  · rename_i a x hx ih; rw [ ← Finset.sum_congr rfl fun _ _ => mul_left_comm _ _ _ ] ; simp_all +decide [ ← Finset.mul_sum _ _ _ ] ;
 
 lemma dual_eq_dotProduct {n : ℕ} (f : Module.Dual (ZMod 2) (Fin n → ZMod 2)) (v : Fin n → ZMod 2) :
     f v = (fun i => f (Pi.single i 1)) ⬝ᵥ v := by
