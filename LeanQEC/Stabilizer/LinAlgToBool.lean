@@ -42,7 +42,7 @@ lemma Finset.vec_inner_product_eq_sum_range
       rw [hfold]
       rw [Bool.ofNat_ZMod2_mul, Bool.ofNat_ZMod2_add]
       congr 1
-      abel
+      abel_nf
 
 lemma Finset.vec_inner_product_eq_inner_product
   {n k d j : ℕ} {I : ℕ → ℕ}
@@ -142,7 +142,7 @@ lemma Matrix.mem_rowSpace_ZMod2 {n₁ n₂ : ℕ}
       · rw [← hS₂, ← hT₂,
           ← Finset.sum_sdiff (Finset.inter_subset_left : S ∩ T ⊆ S),
           ← Finset.sum_sdiff (Finset.inter_subset_right : S ∩ T ⊆ T)]
-        simp +decide; ring!; aesop
+        simp +decide; ring_nf!; aesop
       · exact Finset.disjoint_left.mpr fun x hx₁ hx₂ => by aesop
     · rintro a x hx ⟨S, hS₁, hS₂⟩
       fin_cases a <;> simp_all +decide
@@ -237,8 +237,8 @@ lemma not_mem_rowspace_iff {n k₁ k₂ d : ℕ}
   exact hs_dot
 
 lemma norm_of_is_index (n d : ℕ) (I : ℕ → ℕ)
-  (is_index: is_index_bool I d n) :
-  hammingNorm (I_to_vec n d I) <= d := by
+  -- (is_index: is_index_bool I d n)
+  : hammingNorm (I_to_vec n d I) <= d := by
   unfold hammingNorm I_to_vec
   have h_card : Finset.card (Finset.filter (fun i => ∃ j < d, I j = i) (Finset.range n)) ≤ d := by
     exact le_trans (Finset.card_le_card (show Finset.filter (fun i => ∃ j < d, I j = i)
@@ -287,7 +287,7 @@ lemma dist_index_x_le_complete {n k₁ k₂ k₃ : ℕ}
   rcases this with ⟨⟨hind, hker⟩, hrs⟩
   have vec_hamming_le: hammingNorm (I_to_vec n (dist - 1) I) <= (dist - 1) := by
     apply norm_of_is_index
-    assumption
+    -- assumption
   rw [not_mem_rowspace_iff hK] at hrs
   rw [mem_ker_iff] at hker
   suffices: hammingNorm (I_to_vec n (dist - 1) I) ≥ dist

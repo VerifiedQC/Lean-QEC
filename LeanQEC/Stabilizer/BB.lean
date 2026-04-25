@@ -212,7 +212,7 @@ BB_castnat (BB_castbool !![0,0,1,1,0,1,0,0,1,0,1,1,1,0,1,1,1,0,0,0,0,0,0,0,0,0,0
 ])
 
 
-#eval (BB_castbool (BB_castsum (BB_32_A.hstack BB_32_B)))
+-- #eval (BB_castbool (BB_castsum (BB_32_A.hstack BB_32_B)))
 
 def sumtest : Matrix (Fin 2) (Fin (2+2)) (ZMod 2) := BB_castsum (!![1, 0; 0, 1].hstack !![1, 0; 0, 1])
 

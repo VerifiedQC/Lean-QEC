@@ -348,11 +348,11 @@ def Z2Z2_Pauli_equiv : ((ZMod 2) × (ZMod 2)) ≃ Pauli where
 
 lemma ZMod2_or_eq_zero_iff (a b : ZMod 2) :
     ZMod2_or a b = 0 ↔ a = 0 ∧ b = 0 := by
-  fin_cases a <;> fin_cases b <;> simp [ZMod2_or] <;> native_decide
+  fin_cases a <;> fin_cases b <;> simp [ZMod2_or] ; native_decide
 
 lemma Z2Z2_Pauli_equiv_ne_I_iff (a b : ZMod 2) :
     Z2Z2_Pauli_equiv (a, b) ≠ Pauli_I ↔ ZMod2_or a b ≠ 0 := by
-  fin_cases a <;> fin_cases b <;> simp [Z2Z2_Pauli_equiv, ZMod2_or] <;> native_decide
+  fin_cases a <;> fin_cases b <;> simp [Z2Z2_Pauli_equiv, ZMod2_or] ; native_decide
 
 def BinSympPauli_toPauli {n : ℕ} (bs : BinSympPauli n) : ↥(PauliGroup_group n) :=
   let pm := fun n => Z2Z2_Pauli_equiv (bs.1 n, bs.2 n)
@@ -382,7 +382,7 @@ lemma local_anticommute_eq_sympProd (P Q : Pauli) :
           ((Z2Z2_Pauli_equiv.symm P).2 * (Z2Z2_Pauli_equiv.symm Q).1)).val := by
   rcases Pauli_cases P with rfl | rfl | rfl | rfl <;>
     rcases Pauli_cases Q with rfl | rfl | rfl | rfl <;>
-    simp [commute₁, Z2Z2_Pauli_equiv, Bool.ofNat] <;> native_decide
+    simp [commute₁, Z2Z2_Pauli_equiv, Bool.ofNat] ; native_decide
 
 lemma local_anticommute_xor_tail (a b c d t : ZMod 2) :
     (!commute₁ (Z2Z2_Pauli_equiv (a, b)) (Z2Z2_Pauli_equiv (c, d)) ^^ Bool.ofNat t.val) =
@@ -720,7 +720,7 @@ lemma BinSympMatrix.rowProduct_self_mul_eq_one {n k : ℕ} (bsm : BinSympMatrix 
     bsm.rowProduct h_comm ind * bsm.rowProduct h_comm ind = 1 := by
   have hzero : (fun i => ind i + ind i) = (fun _ => (0 : ZMod 2)) := by
     funext i
-    rcases Fin.exists_fin_two.mp ⟨ind i, rfl⟩ with h | h <;> simp [h] <;> native_decide
+    rcases Fin.exists_fin_two.mp ⟨ind i, rfl⟩ with h | h <;> simp [h] ; native_decide
   rw [← BinSympMatrix.rowProduct_add bsm h_comm ind ind, hzero, BinSympMatrix.rowProduct_zero]
 
 lemma BinSympMatrix.rowProduct_inv_eq_self {n k : ℕ} (bsm : BinSympMatrix k n)

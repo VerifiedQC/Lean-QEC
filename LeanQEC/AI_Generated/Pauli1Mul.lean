@@ -107,7 +107,7 @@ lemma pX_mul_pY : pX * pY = U_phase pZ phase_i := by
     simp +decide [ beq ];
   · simp ( config := { decide := Bool.true } ) [ pX, pY, pZ, U_phase, Matrix.mul_apply ];
     unfold unitary_fin_equiv;
-    unfold Qubit.X Qubit.Y Qubit.Z; norm_num [ Fin.sum_univ_succ, Matrix.mul_apply ] ; ring;
+    unfold Qubit.X Qubit.Y Qubit.Z; norm_num [ Fin.sum_univ_succ, Matrix.mul_apply ] ; ring_nf;
     repeat erw [ Matrix.cons_val_succ' ] ; norm_num;
     exact Or.inl rfl;
   · simp +decide [ pX, pY, pZ, U_phase ];
