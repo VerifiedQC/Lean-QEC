@@ -304,6 +304,20 @@ def union_weight (v₁ v₂ : Fin n → (ZMod 2)) : ℕ := hammingNorm (fun i =>
 
 def BinSympPauli.weight {n : ℕ} (bsp : BinSympPauli n) : ℕ := union_weight bsp.1 bsp.2
 
+@[simp]
+lemma union_weight_zero_left (v : Fin n → ZMod 2) : union_weight 0 v = hammingNorm v := by
+  unfold union_weight
+  congr
+  ext i
+  simp [ZMod2_or]
+
+@[simp]
+lemma union_weight_zero_right (v : Fin n → ZMod 2) : union_weight v 0 = hammingNorm v := by
+  unfold union_weight
+  congr
+  ext i
+  simp [ZMod2_or]
+
 def symplecticProd {n : ℕ} (bp₁ bp₂ : BinSympPauli n) : (ZMod 2) :=
   dotProduct bp₁.1 bp₂.2 + dotProduct bp₁.2 bp₂.1
 

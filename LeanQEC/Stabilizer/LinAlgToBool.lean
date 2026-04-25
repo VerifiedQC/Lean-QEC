@@ -21,10 +21,6 @@ lemma Bool.ofNat_ZMod2_mul (x y : ZMod 2) :
   Bool.and (Bool.ofNat x.val) (Bool.ofNat y.val) = Bool.ofNat ((x * y).val) := by
   fin_cases x <;> fin_cases y <;> decide
 
-lemma Bool.ofNat_ZMod2_add (x y : ZMod 2) :
-  Bool.xor (Bool.ofNat x.val) (Bool.ofNat y.val) = Bool.ofNat ((x + y).val) := by
-  fin_cases x <;> fin_cases y <;> decide
-
 lemma Finset.vec_inner_product_eq_sum_range
   {n : ℕ} {v₁ v₂ : ℕ → Bool} {w₁ w₂ : ℕ → ZMod 2}
   (h₁ : ∀ i, i < n → v₁ i = Bool.ofNat (w₁ i).val)
