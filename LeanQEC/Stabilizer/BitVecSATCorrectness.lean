@@ -1,4 +1,4 @@
-import LeanQEC.Stabilizer.BitVecSat
+import LeanQEC.Stabilizer.BitVecSAT
 import LeanQEC.Stabilizer.CSS
 import LeanQEC.Stabilizer.LinAlgToBool
 
