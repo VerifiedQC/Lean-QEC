@@ -43,54 +43,37 @@ def loc_constraints
   (errs : BitVec n) :=
   loc_constraints_aux locs errs (n-1)
 
-
-def row_parity_constraint_aux {n stabdim : ℕ} (stabs : BitVec (stabdim * n))
-  (errs : BitVec n) (r : ℕ) (c : ℕ) :=
-  let k := r + stabdim * c
+def row_inner_product_aux {n k : ℕ} (M : BitVec (k * n)) (x : BitVec n) (r c : ℕ) : Bool :=
+  let i := (r * k) + c
   match c with
-  | 0 => errs[c]! && stabs[k]!
-  | c' + 1 => (errs[c]! && stabs[k]!) ^^ row_parity_constraint_aux stabs errs r c'
+  | 0 => x[c]! && M[i]!
+  | c' + 1 => (x[c]! && M[k]!) ^^ row_inner_product_aux M x r c'
 
-def row_parity_constraint {stabdim n : ℕ} (stabs : BitVec (stabdim * n)) (errs : BitVec n) (r : ℕ) :=
-  !(row_parity_constraint_aux stabs errs r (n-1))
+def row_inner_product {n k : ℕ} (M : BitVec (k * n)) (x : BitVec n) (r : ℕ) : Bool :=
+  row_inner_product_aux M x r (n-1)
 
 def parity_constraints_aux {stabdim n : ℕ} (stabs : BitVec (stabdim * n)) (errs : BitVec n) (r : ℕ) :=
   match r with
-  | 0 => row_parity_constraint stabs errs 0
-  | r' + 1 => row_parity_constraint stabs errs r ∧ parity_constraints_aux stabs errs r'
+  | 0 => !(row_inner_product stabs errs 0)
+  | r' + 1 => !(row_inner_product stabs errs r) ∧ parity_constraints_aux stabs errs r'
 
 def parity_constraints {stabdim n : ℕ} (stabs : BitVec (stabdim * n)) (errs : BitVec n) :=
   parity_constraints_aux stabs errs (stabdim-1)
 
-def row_stabilizer_constraint_aux
-  {kerdim n : ℕ}
-  (ker : BitVec (kerdim * n))
-  (errs : BitVec n) (r : ℕ) (c : ℕ) :=
-  let k := r + (kerdim) * c
-  match c with
-  | 0 => (errs[c]! && ker[k]!)
-  | c' + 1 => (errs[c]! && ker[k]!) ^^ row_stabilizer_constraint_aux ker errs r c'
-
-def row_stabilizer_constraint
-  {kerdim n : ℕ}
-  (ker : BitVec (kerdim * n))
-  (errs : BitVec n) (r : ℕ) :=
-  row_stabilizer_constraint_aux ker errs r (n-1)
-
-def stabilizer_constraints_aux
+def rowspace_constraints_aux
   {kerdim n : ℕ}
   (ker : BitVec (kerdim * n))
   (errs : BitVec n) (r : ℕ) :=
   match r with
-  | 0 => row_stabilizer_constraint ker errs 0
-  | r' + 1 => row_stabilizer_constraint ker errs r ∨
-      stabilizer_constraints_aux ker errs r'
+  | 0 => (row_inner_product ker errs 0)
+  | r' + 1 => (row_inner_product ker errs r) ∨
+      rowspace_constraints_aux ker errs r'
 
-def stabilizer_constraints
+def rowspace_constraints
   {kerdim n : ℕ}
   (ker : BitVec (kerdim * n))
   (errs : BitVec n) :=
-  stabilizer_constraints_aux ker errs (kerdim - 1)
+  rowspace_constraints_aux ker errs (kerdim - 1)
 
 def lt_dist_sat
   {n stabdim kerdim : ℕ}
@@ -98,4 +81,4 @@ def lt_dist_sat
   (ker : BitVec (kerdim * n))
   (k nlog : ℕ) : Prop :=
   ∀ (locs : (BitVec (k * nlog))) (errs : BitVec n),
-  ¬ (loc_constraints locs errs ∧ parity_constraints stabs errs ∧ stabilizer_constraints ker errs)
+  ¬ (loc_constraints locs errs ∧ parity_constraints stabs errs ∧ rowspace_constraints ker errs)

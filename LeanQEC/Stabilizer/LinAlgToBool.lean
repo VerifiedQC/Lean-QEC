@@ -203,6 +203,21 @@ private lemma exists_dotProduct_one_of_sum
   rw [hS_sum] at this
   exact absurd this (by rw [hy]; decide)
 
+lemma exists_row_of_exists_mem_rowspace_non_orth {n k : ℕ}
+  {M : Matrix (Fin k) (Fin n) (ZMod 2)}
+  {x y : Fin n → (ZMod 2)}
+  (hy₁ : y ∈ M.rowSpace)
+  (hy₂ : y ⬝ᵥ x = 1) :
+  ∃ r, (M.row r) ⬝ᵥ x = 1 := by
+  rw [Matrix.mem_rowSpace_ZMod2] at hy₁
+  obtain ⟨S, hS_sub, hS_sum⟩ := hy₁
+  obtain ⟨s, hs_mem, hs_dot⟩ := exists_dotProduct_one_of_sum hS_sum hy₂
+  have hs_row := hS_sub hs_mem
+  simp only [Finset.mem_image, Finset.mem_univ, true_and] at hs_row
+  obtain ⟨i, hi⟩ := hs_row
+  refine ⟨i, ?_⟩
+  rwa [hi]
+
 lemma not_mem_rowspace_iff {n k₁ k₂ d : ℕ}
   {M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)}
   {M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)}
