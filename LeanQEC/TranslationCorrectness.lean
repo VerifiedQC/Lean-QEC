@@ -29,8 +29,6 @@ lemma min_weight_ker_not_mem_rowspace_empty
   {n k₁ k₂ : ℕ} [NeZero n] [NeZero k₁] [NeZero (n - k₂)]
   (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
   (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
-  (H₂_kergen : Fin (n - k₂) → Fin n → ZMod 2)
-  (H₂_kergen_correct : kergen_correct H₂ H₂_kergen)
   (is_empty : ¬∃x, x ∈ LinearMap.ker H₁.toLin' /\ x ∉ H₂.rowSpace) :
   min_weight_ker_not_mem_rowspace H₁ H₂ = n + 1 := by
   unfold min_weight_ker_not_mem_rowspace at *
@@ -45,8 +43,6 @@ lemma dist_index_some
   {n k₁ k₂ : ℕ} [NeZero n] [NeZero k₁] [NeZero (n - k₂)]
   (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
   (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
-  (H₂_kergen : Fin (n - k₂) → Fin n → ZMod 2)
-  (H₂_kergen_correct : kergen_correct H₂ H₂_kergen)
   (dist : ℕ)
   (non_empty : ∃x, x ∈ LinearMap.ker H₁.toLin' /\ x ∉ H₂.rowSpace)
   (hdist : min_weight_ker_not_mem_rowspace H₁ H₂ < dist) :
@@ -78,7 +74,7 @@ lemma dist_index_le_sound_contrapositive
   intro htest
   by_cases h_empty : undetectable_errors = ∅
   · have hmin : min_weight_ker_not_mem_rowspace H₁ H₂ = n + 1 := by
-      apply min_weight_ker_not_mem_rowspace_empty H₁ H₂ H₂_kergen H₂_kergen_correct
+      apply min_weight_ker_not_mem_rowspace_empty H₁ H₂
       intro h_nonempty
       rcases h_nonempty with ⟨x, hxker, hxrow⟩
       have : x ∈ undetectable_errors := ⟨hxker, hxrow⟩
@@ -88,7 +84,7 @@ lemma dist_index_le_sound_contrapositive
   · have h_nonempty : ∃ x, x ∈ LinearMap.ker H₁.toLin' /\ x ∉ H₂.rowSpace := by
       rcases Set.nonempty_iff_ne_empty.mpr h_empty with ⟨x, hx⟩
       exact ⟨x, hx.1, hx.2⟩
-    rcases dist_index_some H₁ H₂ H₂_kergen H₂_kergen_correct dist h_nonempty hdist with
+    rcases dist_index_some H₁ H₂  dist h_nonempty hdist with
       ⟨x, ker_x, rowspace_x, hamming_x⟩
     have hx_ne_zero : x ≠ 0 := by
       intro hx0
