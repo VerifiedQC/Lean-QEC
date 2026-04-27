@@ -97,8 +97,8 @@ theorem dist9x_3 : dist_index_le 9 6 7 Shor_Z.castnat.castbool Shor_X_ker.castna
   intro I
   dsimp
   simp [is_index_bool,
-    indexed_by, Finset.fold_range_add_one, mem_ker_bool, vec_inner_product, Shor_Z_cast, Shor_Z,
-    Matrix.castnat, Matrix.castbool, Shor_X_ker_cast, Shor_X_ker, not_mem_rowspace]
+    indexed_by, Finset.fold_range_add_one, mem_ker_bool, vec_inner_product, Shor_Z,
+    Matrix.castnat, Matrix.castbool, Shor_X_ker, not_mem_rowspace]
   simp_rw [@Eq.comm _ _ (I _)]
   smt
 
@@ -131,7 +131,7 @@ theorem dist_steane_3 : dist_index_le 7 3 4 Steane_mat Steane_ker 3 := by
   dsimp
   simp [is_index_bool,
     indexed_by, Finset.fold_range_add_one, mem_ker_bool, vec_inner_product, Steane_ker,
-    Matrix.castnat, Matrix.castbool, ZMod.val, Steane_mat, not_mem_rowspace]
+    Matrix.castnat, Matrix.castbool, Steane_mat, not_mem_rowspace]
   simp_rw [@Eq.comm _ _ (I _)]
   smt
 

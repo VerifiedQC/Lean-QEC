@@ -159,6 +159,55 @@ private lemma CSS_BSM_rowSpace_iff
     simpa [Prod.ext_iff] using
       Submodule.add_mem ((CSS_BSM H₁ H₂).rowSpace) hx_pair hz_pair
 
+private lemma zmod2_val_eq_one_of_ne_zero (a : ZMod 2) (ha : a ≠ 0) : a.1 = 1 := by
+  have hlt : a.1 < 2 := a.2
+  have hne : a.1 ≠ 0 := by simpa using ha
+  omega
+
+private lemma zmod2_or_val_ge_left (a b : ZMod 2) : a.1 ≤ (ZMod2_or a b).1 := by
+  by_cases ha : a = 0
+  · simp [ha, ZMod2_or]
+  · have h_or_ne : ZMod2_or a b ≠ 0 := by
+      intro h_or
+      exact ha ((ZMod2_or_eq_zero_iff a b).1 h_or).1
+    rw [zmod2_val_eq_one_of_ne_zero a ha, zmod2_val_eq_one_of_ne_zero (ZMod2_or a b) h_or_ne]
+
+private lemma zmod2_or_val_ge_right (a b : ZMod 2) : b.1 ≤ (ZMod2_or a b).1 := by
+  by_cases hb : b = 0
+  · simp [hb, ZMod2_or]
+  · have h_or_ne : ZMod2_or a b ≠ 0 := by
+      intro h_or
+      exact hb ((ZMod2_or_eq_zero_iff a b).1 h_or).2
+    rw [zmod2_val_eq_one_of_ne_zero b hb, zmod2_val_eq_one_of_ne_zero (ZMod2_or a b) h_or_ne]
+
+private lemma hammingNorm_le_union_weight_left'
+    (v₁ v₂ : Fin n → ZMod 2) :
+    hammingNorm v₁ ≤ union_weight v₁ v₂ := by
+  let v : Fin n → ZMod 2 := fun i => ZMod2_or (v₁ i) (v₂ i)
+  have hv_eq : hammingNorm v = ∑ i, (v i).1 := by
+    refine le_antisymm
+      ((weight_le_disj (z := v) (k := ∑ i, (v i).1)).2 le_rfl)
+      ((weight_le_disj (z := v) (k := hammingNorm v)).1 le_rfl)
+  rw [weight_le_disj]
+  rw [show union_weight v₁ v₂ = hammingNorm v by rfl, hv_eq]
+  refine Finset.sum_le_sum ?_
+  intro i hi
+  exact zmod2_or_val_ge_left (v₁ i) (v₂ i)
+
+private lemma hammingNorm_le_union_weight_right'
+    (v₁ v₂ : Fin n → ZMod 2) :
+    hammingNorm v₂ ≤ union_weight v₁ v₂ := by
+  let v : Fin n → ZMod 2 := fun i => ZMod2_or (v₁ i) (v₂ i)
+  have hv_eq : hammingNorm v = ∑ i, (v i).1 := by
+    refine le_antisymm
+      ((weight_le_disj (z := v) (k := ∑ i, (v i).1)).2 le_rfl)
+      ((weight_le_disj (z := v) (k := hammingNorm v)).1 le_rfl)
+  rw [weight_le_disj]
+  rw [show union_weight v₁ v₂ = hammingNorm v by rfl, hv_eq]
+  refine Finset.sum_le_sum ?_
+  intro i hi
+  exact zmod2_or_val_ge_right (v₁ i) (v₂ i)
+
 set_option maxHeartbeats 0 in
 theorem CSS.toBSM_dist_eq (C : CSS_pair n k₁ k₂) :
   C.toBSM.distance (Nat.add_pos_left C.nt₁ _) = min C.dX C.dZ := by
@@ -198,13 +247,13 @@ theorem CSS.toBSM_dist_eq (C : CSS_pair n k₁ k₂) :
           rw [Finset.mem_image]
           refine ⟨bsp.1, ?_, rfl⟩
           simp [hx_ker, hx_not]
-        · simp [BinSympPauli.weight]
+        · simpa [BinSympPauli.weight] using hammingNorm_le_union_weight_left' bsp.1 bsp.2
       · refine ⟨hammingNorm bsp.2, ?_, ?_⟩
         · apply Finset.mem_union_left
           rw [Finset.mem_image]
           refine ⟨bsp.2, ?_, rfl⟩
           simp [hz_ker, hz_not]
-        · simp [BinSympPauli.weight]
+        · simpa [BinSympPauli.weight] using hammingNorm_le_union_weight_right' bsp.1 bsp.2
     · intro d hd
       rcases Finset.mem_union.1 hd with hd | hd
       · rcases Finset.mem_image.1 hd with ⟨z, hz, rfl⟩

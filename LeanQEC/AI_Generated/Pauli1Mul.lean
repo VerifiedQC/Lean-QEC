@@ -87,7 +87,7 @@ lemma pY_sq : pY * pY = 1 := by
   · unfold unitary_fin_equiv; norm_num;
     norm_num [ Matrix.mul_apply, Qubit.Y ];
     norm_num [ Fin.ext_iff, Matrix.vecHead, Matrix.vecTail, beq ];
-  · unfold unitary_fin_equiv; aesop;
+  · unfold unitary_fin_equiv;
     norm_num [ Qubit.Y, Matrix.mul_apply ];
     norm_num [ beq ];
   · unfold Qubit.Y ;
@@ -107,7 +107,7 @@ lemma pX_mul_pY : pX * pY = U_phase pZ phase_i := by
     simp +decide [ beq ];
   · simp ( config := { decide := Bool.true } ) [ pX, pY, pZ, U_phase, Matrix.mul_apply ];
     unfold unitary_fin_equiv;
-    unfold Qubit.X Qubit.Y Qubit.Z; norm_num [ Fin.sum_univ_succ, Matrix.mul_apply ] ; ring; norm_num;
+    unfold Qubit.X Qubit.Y Qubit.Z; norm_num [ Fin.sum_univ_succ, Matrix.mul_apply ] ; ring_nf;
     repeat erw [ Matrix.cons_val_succ' ] ; norm_num;
     exact Or.inl rfl;
   · simp +decide [ pX, pY, pZ, U_phase ];
@@ -118,13 +118,13 @@ lemma pX_mul_pY : pX * pY = U_phase pZ phase_i := by
     simp +zetaDelta at *;
     erw [ show ( beq.symm 0#1 : Fin 2 ) = 0 from rfl, show ( beq.symm 1#1 : Fin 2 ) = 1 from rfl ] ; norm_num [ Qubit.X, Qubit.Y, Qubit.Z ]
 lemma pY_mul_pZ : pY * pZ = U_phase pX phase_i := by
-  ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Matrix.mul_apply, Complex.ext_iff, Fin.sum_univ_succ ] <;> ring_nf <;> norm_num;
+  ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Matrix.mul_apply, Complex.ext_iff, Fin.sum_univ_succ ] <;> ring_nf;
   · unfold U_phase pX pY pZ; norm_num [ Fin.sum_univ_succ, Matrix.mul_apply, Complex.ext_iff, Fin.sum_univ_succ ] ;
     unfold unitary_fin_equiv Qubit.X Qubit.Y Qubit.Z; norm_num [ Fin.sum_univ_succ, Matrix.mul_apply, Complex.ext_iff ] ;
     repeat erw [ Matrix.cons_val_zero ] ; norm_num;
   · unfold U_phase; norm_num [ Complex.ext_iff, Matrix.mul_apply ] ;
     erw [ show ( pY : Matrix ( BitVec 1 ) ( BitVec 1 ) ℂ ) = Matrix.of ( fun i j => if i = 0 ∧ j = 0 then 0 else if i = 0 ∧ j = 1 then -Complex.I else if i = 1 ∧ j = 0 then Complex.I else 0 ) from ?_, show ( pZ : Matrix ( BitVec 1 ) ( BitVec 1 ) ℂ ) = Matrix.of ( fun i j => if i = 0 ∧ j = 0 then 1 else if i = 0 ∧ j = 1 then 0 else if i = 1 ∧ j = 0 then 0 else -1 ) from ?_, show ( pX : Matrix ( BitVec 1 ) ( BitVec 1 ) ℂ ) = Matrix.of ( fun i j => if i = 0 ∧ j = 0 then 0 else if i = 0 ∧ j = 1 then 1 else if i = 1 ∧ j = 0 then 1 else 0 ) from ?_ ] ; norm_num [ Complex.ext_iff, Fin.sum_univ_succ, Matrix.mul_apply ];
-    · simp ( config := { decide := Bool.true } ) [ BitVec.equivFin ];
+    · simp (config := { decide := true });
     · ext i j ; fin_cases i ; fin_cases j ; rfl;
       · rfl;
       · fin_cases j <;> rfl;
@@ -132,21 +132,21 @@ lemma pY_mul_pZ : pY * pZ = U_phase pX phase_i := by
       · rfl;
       · fin_cases j <;> rfl;
     · exact Matrix.ext fun i j => by fin_cases i <;> fin_cases j <;> rfl;
-  · unfold U_phase pX pY pZ; norm_num [ Fin.sum_univ_succ ] ; ring_nf ; norm_num [ Complex.ext_iff, Fin.ext_iff, Fin.forall_fin_succ ] ;
+  · unfold U_phase pX pY pZ; norm_num [ Fin.sum_univ_succ ] ; ring_nf ;
     unfold unitary_fin_equiv; norm_num [ Qubit.X, Qubit.Y, Qubit.Z ] ;
     repeat erw [ Matrix.cons_val_succ' ] ; norm_num;
     repeat erw [ Matrix.cons_val_zero ] ; norm_num;
     rfl;
   · unfold U_phase; norm_num [ Complex.ext_iff, Matrix.mul_apply ] ;
-    unfold pX pY pZ; norm_num [ Matrix.mul_apply, Fin.sum_univ_succ ] ; ring_nf ; norm_num;
-    unfold unitary_fin_equiv; norm_num [ Qubit.X, Qubit.Y, Qubit.Z, Fin.sum_univ_succ ] ; ring_nf ; norm_num;
+    unfold pX pY pZ; norm_num [ Matrix.mul_apply, Fin.sum_univ_succ ] ; ring_nf;
+    unfold unitary_fin_equiv; norm_num [ Qubit.X, Qubit.Y, Qubit.Z, Fin.sum_univ_succ ] ; ring_nf;
     repeat erw [ Matrix.cons_val_succ' ] ; norm_num;
     exact Or.inr rfl
 lemma pZ_mul_pX : pZ * pX = U_phase pY phase_i := by
   unfold pZ pX U_phase phase_i;
-  unfold unitary_fin_equiv pY; aesop;
+  unfold unitary_fin_equiv pY;
   ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Matrix.mul_apply, Qubit.X, Qubit.Y, Qubit.Z ];
-  · unfold unitary_fin_equiv; aesop;
+  · unfold unitary_fin_equiv;
     simp ( config := { decide := Bool.true } ) [ beq ];
   · simp +decide [ unitary_fin_equiv ] ; ring_nf;
     simp +decide [ beq ];
@@ -159,8 +159,9 @@ lemma pY_mul_pX : pY * pX = U_phase pZ phase_ni := by
   · simp +decide [ pY, pX, pZ ];
     simp +decide [ unitary_fin_equiv ];
     simp +decide [ Qubit.Y, Qubit.X, Qubit.Z, beq ];
-    simp +decide [ BitVec.equivFin ];
-    exact Or.inl rfl;
+    change ![0, -Complex.I] 0 * Matrix.vecCons 0 (fun i => 1) 0 +
+      ![0, -Complex.I] 1 * Matrix.vecCons 0 (fun i => 1) 1 = -Complex.I
+    norm_num;
   · unfold pX pY pZ; norm_num [ Complex.ext_iff ];
     unfold unitary_fin_equiv; norm_num [ Matrix.mul_apply, Qubit.X, Qubit.Y, Qubit.Z ] ;
     repeat erw [ Matrix.cons_val_succ' ] ; norm_num;
@@ -168,8 +169,9 @@ lemma pY_mul_pX : pY * pX = U_phase pZ phase_ni := by
   · simp ( config := { decide := Bool.true } ) [ pY, pX, pZ ];
     simp ( config := { decide := Bool.true } ) [ unitary_fin_equiv, Qubit.X, Qubit.Y, Qubit.Z ];
     simp ( config := { decide := Bool.true } ) [ beq ];
-    simp ( config := { decide := Bool.true } ) [ BitVec.equivFin ];
-    exact Or.inr rfl;
+    change ![Complex.I, 0] 0 * Matrix.vecCons 0 (fun i => 1) 0 +
+      ![Complex.I, 0] 1 * Matrix.vecCons 0 (fun i => 1) 1 = 0
+    norm_num;
   · norm_num [ Matrix.mul_apply, pX, pY, pZ ];
     unfold unitary_fin_equiv; norm_num [ beq ] ;
     simp ( config := { decide := Bool.true } ) [ Qubit.X, Qubit.Y, Qubit.Z ]
@@ -181,7 +183,7 @@ lemma pZ_mul_pY : pZ * pY = U_phase pX phase_ni := by
     simp ( config := { decide := Bool.true } ) [ beq ];
   · unfold unitary_fin_equiv; norm_num [ Matrix.mul_apply, Qubit.X, Qubit.Y, Qubit.Z ] ;
     simp ( config := { decide := Bool.true } ) [ beq ];
-  · unfold unitary_fin_equiv; simp +decide [ Qubit.X, Qubit.Y, Qubit.Z, Matrix.mul_apply ] ; ring;
+  · unfold unitary_fin_equiv; simp +decide [ Qubit.X, Qubit.Y, Qubit.Z ] ; ring_nf;
     simp +decide [ beq ]
 lemma pX_mul_pZ : pX * pZ = U_phase pY phase_ni := by
   unfold pX pZ pY;
@@ -208,7 +210,7 @@ lemma mul_Pauli1_correct (P Q : Pauli) :
   · simp [mul_Pauli1]
     change Pauli_X.val * Pauli_I.val = U_phase Pauli_X.val phase_id
     rw [U_phase_id]
-    simpa [Pauli_I]
+    simp [Pauli_I]
   · simpa [mul_Pauli1] using pY_mul_pX
   · simp [mul_Pauli1]
     change Pauli_Y.val * Pauli_Y.val = U_phase Pauli_I.val phase_id
@@ -218,7 +220,7 @@ lemma mul_Pauli1_correct (P Q : Pauli) :
   · simp [mul_Pauli1]
     change Pauli_Y.val * Pauli_I.val = U_phase Pauli_Y.val phase_id
     rw [U_phase_id]
-    simpa [Pauli_I]
+    simp [Pauli_I]
   · simpa [mul_Pauli1] using pZ_mul_pX
   · simpa [mul_Pauli1] using pZ_mul_pY
   · simp [mul_Pauli1]
@@ -228,20 +230,20 @@ lemma mul_Pauli1_correct (P Q : Pauli) :
   · simp [mul_Pauli1]
     change Pauli_Z.val * Pauli_I.val = U_phase Pauli_Z.val phase_id
     rw [U_phase_id]
-    simpa [Pauli_I]
+    simp [Pauli_I]
   · simp [mul_Pauli1]
     change Pauli_I.val * Pauli_X.val = U_phase Pauli_X.val phase_id
     rw [U_phase_id]
-    simpa [Pauli_I]
+    simp [Pauli_I]
   · simp [mul_Pauli1]
     change Pauli_I.val * Pauli_Y.val = U_phase Pauli_Y.val phase_id
     rw [U_phase_id]
-    simpa [Pauli_I]
+    simp [Pauli_I]
   · simp [mul_Pauli1]
     change Pauli_I.val * Pauli_Z.val = U_phase Pauli_Z.val phase_id
     rw [U_phase_id]
-    simpa [Pauli_I]
+    simp [Pauli_I]
   · simp [mul_Pauli1]
     change Pauli_I.val * Pauli_I.val = U_phase Pauli_I.val phase_id
     rw [U_phase_id]
-    simpa [Pauli_I]
+    simp [Pauli_I]

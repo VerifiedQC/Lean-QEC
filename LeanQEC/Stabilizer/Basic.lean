@@ -1,4 +1,5 @@
 import LeanQEC.States.Basic
+import LeanQEC.Stabilizer.LinAlg
 import LeanQEC.Unitary.Paulis.Basic
 variable {n : ℕ}
 
@@ -168,9 +169,6 @@ structure StabCode (n : ℕ) where
   h_comm : IsMulCommutative stabs
   hstab : ∀ ψ ∈ space, ∀ S ∈ stabs, stabilizes S ψ
 
-theorem PauliGroup.phase_mul_of_commutes {n : ℕ} (P₁ P₂ : ↥(PauliGroup_group n)) (hcomm : commute P₁ P₂) :
-  PauliGroup.phase (P₁ * P₂) = (PauliGroup.phase P₁) * (PauliGroup.phase P₂) := sorry
-
 
 theorem PauliGroup.inv_one {n : ℕ} (P : PauliGroup_group n) (h_norm : PauliGroup.normalized P)
   : PauliGroup.normalized (P⁻¹ : PauliGroup_group n)  := by
@@ -199,9 +197,9 @@ theorem PauliGroup.norm_self_inv {n : ℕ} (P : PauliGroup_group n) (h_norm : Pa
     rw [Prod.mk.injEq]
     constructor
     · calc
-        pgroup_phases.inv p = pgroup_phases.inv pgphase_1 := by simpa [hp]
+        pgroup_phases.inv p = pgroup_phases.inv pgphase_1 := by simp [hp]
         _ = pgphase_1 := by simp [pgroup_phases.inv, Phase.phase_star]
-        _ = p := by simpa [hp]
+        _ = p := by simp [hp]
     · rfl
   apply Subtype.ext
   rw [hP]
@@ -244,27 +242,6 @@ instance {n : ℕ} {S : StabSet n} : IsMulCommutative (Subgroup.closure (SetLike
   intros x y hx hy hcomm
   apply Commute.inv_right ((commute_iff_eq _ _).2 hcomm)
 
-lemma stab_closure_mul_self_eq_one {n : ℕ} {S : StabSet n} {P : (Subgroup.closure (SetLike.coe S.stabs))} : P * P = 1 := sorry
-
-
-
-lemma NormalizedStabSet_closure_phase_one {n : ℕ} (S : NormalizedStabSet n) : ∀ s ∈ (Subgroup.closure (SetLike.coe S.stabs)), PauliGroup.normalized s := by
-  apply Subgroup.closure_induction
-  · exact S.norm
-  · show PauliGroup.normalized (Pauli1)
-    rw [PauliGroup.normalized, Pauli1_unfold, PauliGroup.phase]
-    simp only [pgphase_1, phase_id, Equiv.symm_apply_apply]
-  · intros x y hx hy hpx hpy
-    rw [PauliGroup.normalized, PauliGroup.phase_mul_of_commutes, hpx, hpy]
-    · simp only [pgphase_1, phase_id, pgp_mul_eq, Phase.phase_mul_eq, mul_one]
-    rw [commute_iff_commute]
-    have hxy:= (Subgroup.closureCommGroupOfComm ?_).mul_comm ⟨x, hx⟩ ⟨y, hy⟩
-    · simp only [MulMemClass.mk_mul_mk, Subtype.mk.injEq] at hxy
-      exact hxy
-    exact fun x hx y hy => (commute_iff_commute _ _).1 (S.comm x hx y hy)
-  intros x hx hp
-  apply PauliGroup.inv_one x hp
-
 
 
 def StabCode_of_StabSet {n : ℕ} (S : StabSet n)
@@ -291,243 +268,25 @@ def isStabSet {n : ℕ} (C : StabCode n) (S : StabSet n) : Prop := (Subgroup.clo
 
 def StabSet_isCommuting {n : ℕ} (S : Finset (PauliGroup n)) : Prop := ∀ s₁ ∈ S, ∀ s₂ ∈ S, commute s₁ s₂
 
-def to_closure_map {n : ℕ} {S : Set (PauliGroup_group n)}
-  (x : (PauliGroup_group n)) (hx : x ∈ S) : ↥(Subgroup.closure S) := ⟨x, Subgroup.subset_closure hx⟩
+lemma inv_eq_self_of_mul_self_eq_one {G : Type*} [Group G] {g : G} (hg : g * g = 1) : g⁻¹ = g := by
+  have h := congrArg (fun x => g⁻¹ * x) hg
+  simpa [mul_assoc] using h.symm
 
-noncomputable def finset_subset_to_closure_map {n : ℕ} {S₁ S₂ : Finset (PauliGroup_group n)}
-  (hsub : S₁ ⊆ S₂) : Finset ↥(Subgroup.closure (SetLike.coe S₂)) := S₁.attach.image (fun x => to_closure_map x.1 (hsub x.2))
+noncomputable def subgroupCarrierCommGroup {G : Type*} [Group G] (H : Subgroup G)
+    [IsMulCommutative ↥H] : CommGroup ↥H where
+  __ := inferInstanceAs (Group ↥H)
+  mul_comm := by
+    intro a b
+    let hcomm : Std.Commutative (fun x y : ↥H => x * y) := IsMulCommutative.is_comm (M := ↥H)
+    exact hcomm.comm a b
 
-@[simp]
-lemma Finset.attach_singleton {α : Type*} (x : α) : Finset.attach {x} = {⟨x, Finset.mem_singleton_self _⟩} := by
-  apply subset_antisymm
-  · intros x' x'_mem
-    rw [Finset.mem_singleton]
-    have hcard : (Finset.attach {x}).card ≤ 1
-    · apply le_of_eq
-      rw [Finset.card_attach, Finset.card_singleton]
-    rw [Finset.card_le_one] at hcard
-    apply hcard
-    · exact x'_mem
-    simp only [mem_attach]
-  simp only [singleton_subset_iff, mem_attach]
-
-lemma sdiff_decomp {α : Type*} [DecidableEq α] (x y : Finset α) : x = Finset.disjUnion _ _ (Finset.disjoint_sdiff_inter x y) := by
-  rw [Finset.disjUnion_eq_union]
-  apply subset_antisymm
-  · intros a hax
-    by_cases hay : a ∈ y
-    · apply Finset.mem_union_right _ (Finset.mem_inter_of_mem hax hay)
-    apply Finset.mem_union_left _ (Finset.mem_sdiff.2 ⟨hax, hay⟩)
-  intros a ha
-  rcases (Finset.mem_union.1 ha) with (ha₁ | ha₂)
-  · exact (Finset.mem_sdiff.1 ha₁).1
-  exact (Finset.mem_inter.1 ha₂).1
-
-
-noncomputable section
-
-lemma subset_to_closure_map_disj {n : ℕ} (S : StabSet n) {A B : Finset (PauliGroup_group n)}
-  (hA : A ⊆ S.stabs) (hB : B ⊆ S.stabs) (hdisj : Disjoint A B) : Disjoint (finset_subset_to_closure_map hA) (finset_subset_to_closure_map hB) := by
-  rw [Finset.disjoint_iff_ne] at ⊢ hdisj
-  unfold finset_subset_to_closure_map
-  simp_rw [Finset.mem_image]
-  rintro a ⟨a', ha'⟩ b ⟨b', hb'⟩
-  rw [←ha'.2, ←hb'.2]
-  unfold to_closure_map
-  rw [ne_eq, Subtype.mk.injEq, ←ne_eq]
-  apply hdisj _ (by exact Finset.coe_mem _) _ (by exact Finset.coe_mem _)
-
-lemma finset_subset_to_closure_map_union {n : ℕ} (S : StabSet n) {F A B : Finset (PauliGroup_group n)}
-  (hF : F ⊆ S.stabs) {hdisj : Disjoint A B} (hF_eq : F = Finset.disjUnion _ _ hdisj) : (finset_subset_to_closure_map hF) = Finset.disjUnion (@finset_subset_to_closure_map n A S.stabs (by
-    apply subset_trans _ hF
-    rw [hF_eq]
-    exact fun a ha => Finset.mem_disjUnion.2 (Or.inl ha)
-  )) (@finset_subset_to_closure_map n B S.stabs (by
-    apply subset_trans _ hF
-    rw [hF_eq]
-    exact fun b hb => Finset.mem_disjUnion.2 (Or.inr hb)
-  )) (subset_to_closure_map_disj S (by
-    apply subset_trans _ hF
-    rw [hF_eq]
-    exact fun a ha => Finset.mem_disjUnion.2 (Or.inl ha)
-  ) (by
-    apply subset_trans _ hF
-    rw [hF_eq]
-    exact fun b hb => Finset.mem_disjUnion.2 (Or.inr hb) --oh god this is terrible
-  ) hdisj) := by
-    rw [Finset.disjUnion_eq_union]
-    apply subset_antisymm
-    · unfold finset_subset_to_closure_map
-      intro f f_mem
-      rcases (Finset.mem_image.1 f_mem) with ⟨f', hf'⟩
-      have hf'_mem : ↑f' ∈ F := by simp only [Finset.coe_mem]
-      simp_rw [hF_eq, Finset.mem_disjUnion] at hf'_mem
-      rcases hf'_mem with (hf'_a | hf'_b)
-      · apply Finset.mem_union_left
-        rw [Finset.mem_image]
-        refine ⟨⟨↑f', hf'_a⟩, ⟨by simp, ?_⟩⟩
-        rw [←hf'.2]
-      apply Finset.mem_union_right
-      rw [Finset.mem_image]
-      refine ⟨⟨↑f', hf'_b⟩, ⟨by simp, ?_⟩⟩
-      rw [←hf'.2]
-    unfold finset_subset_to_closure_map
-    intro f f_mem
-    rw [Finset.mem_image]
-    rcases (Finset.mem_union.1 f_mem) with (hfa | hfb)
-    · rcases (Finset.mem_image.1 hfa) with ⟨f', hf'⟩
-      refine ⟨⟨↑f', ?_⟩, ?_⟩
-      · rw [hF_eq, Finset.mem_disjUnion]
-        exact Or.inl (by simp)
-      rw [←hf'.2]
-      simp
-    rcases (Finset.mem_image.1 hfb) with ⟨f', hf'⟩
-    refine ⟨⟨↑f', ?_⟩, ?_⟩
-    · rw [hF_eq, Finset.mem_disjUnion]
-      exact Or.inr (by simp)
-    rw [←hf'.2]
-    simp
-
---harder version where your elements are members of ambient group but happen to be subset
-theorem list_prod_eq_perm_of_mem_comm_subgroup {G : Type*} [Group G] (H : Subgroup G) [DecidableEq G] [IsMulCommutative H]
-  {L₁ L₂ : List G} {hL₁ : (SetLike.coe L₁.toFinset) ⊆ H} {hL₂ : (SetLike.coe L₂.toFinset) ⊆ H} (hperm : L₁.Perm L₂) : L₁.prod = L₂.prod := by
-  revert L₂
-  induction L₁ with
-  | nil =>
-    intros L₂ hL₂
-    rw [List.nil_perm]
-    rintro (rfl)
-    rfl
-  | cons a L₁ ih =>
-    intros L₂ hL₂ hP
-    rw [List.prod_cons]
-    have h_a_mem : a ∈ L₂ := by
-      rw [←List.Perm.mem_iff hP, List.mem_cons]
-      exact Or.inl rfl
-    rw [List.mem_iff_append] at h_a_mem
-    rcases h_a_mem with ⟨s, t, rfl⟩
-    have h_comm : s.prod * a = a * s.prod := by
-      have a_mem : a ∈ H := by
-        apply hL₁ (by aesop)
-      have s_prod_mem : s.prod ∈ H := by
-        apply Submonoid.list_prod_mem
-        intros x hx
-        rw [Subgroup.mem_toSubmonoid]
-        apply hL₂
-        rw [Finset.mem_coe, List.mem_toFinset]
-        apply List.mem_append_left _ hx
-      have a_eq : a = ↑ (⟨a, a_mem⟩ : H) := rfl
-      have s_prod_eq : s.prod = ↑ (⟨s.prod, s_prod_mem⟩ : H) := rfl
-      rw [a_eq, s_prod_eq, ←Subgroup.coe_mul, IsMulCommutative.is_comm.comm]
-      rfl
-    rw [List.prod_append, List.prod_cons, ←mul_assoc, h_comm, mul_assoc, mul_right_inj]
-    rw [←List.prod_append, ih]
-    · exact (hP.trans List.perm_middle).cons_inv
-    apply subset_trans (by aesop) hL₁
-    apply subset_trans (by aesop) hL₂
-
-
---seems useful
-theorem list_prod_eq_perm_of_is_comm {G : Type*} [Group G] {H : Subgroup G} [DecidableEq H] [IsMulCommutative H]
-  {L₁ L₂ : List H} (hperm: L₁.Perm L₂) : L₁.prod = L₂.prod := by
-  revert L₂
-  induction L₁ with
-  | nil => simp only [List.nil_perm, List.prod_nil, forall_eq]
-  | cons a t ih =>
-    intros L₂ hp
-    rw [List.prod_cons]
-    have h_a_mem : a ∈ L₂ := by
-      rw [←List.Perm.mem_iff hp, List.mem_cons]
-      exact Or.inl rfl
-    rw [List.mem_iff_append] at h_a_mem
-    rcases h_a_mem with ⟨j, k, rfl⟩
-    rw [List.prod_append, List.prod_cons, ←mul_assoc, mul_comm j.prod]
-    rw [mul_assoc, ←List.prod_append, mul_right_inj]
-    apply ih
-    exact (hp.trans List.perm_middle).cons_inv
-
-
-
-lemma Finset.insert_disjUnion {α : Type*} [DecidableEq α] {A B : Finset α} (a : α) {hdisj : Disjoint (insert a A) B}
- : Finset.disjUnion _ _ hdisj = insert a (Finset.disjUnion A B (Finset.disjoint_of_subset_left (Finset.subset_insert _ _) hdisj)) := by
-  rw [disjUnion_eq_union, disjUnion_eq_union]
-  simp only [insert_union]
-
-theorem list_map_union_of_is_comm {G : Type*} [Group G] {H : Subgroup G} [DecidableEq H] [IsMulCommutative H] {A B : Finset H}
-  (hd : Disjoint A B) : (Finset.disjUnion A B hd).toList.prod = A.toList.prod * B.toList.prod := by
-  revert hd
-  induction A using Finset.induction_on with
-  | empty =>
-    intro _
-    simp
-  | @insert a s ha ih =>
-    intro hd
-    rw [list_prod_eq_perm_of_is_comm (Finset.toList_insert ha), List.prod_cons, mul_assoc, ←List.prod_cons, Finset.insert_disjUnion]
-    rw [list_prod_eq_perm_of_is_comm (Finset.toList_insert _), List.prod_cons, mul_right_inj]
-    · apply ih
-    rw [Finset.disjUnion_eq_union, Finset.notMem_union]
-    refine ⟨ha, Disjoint.notMem_of_mem_left_finset hd (Finset.mem_insert_self _ _)⟩
-
-
-
---requires StabSet to have phase one
-theorem mem_stab_iff_prod_subset_stabSet {n : ℕ} (S : NormalizedStabSet n) (s :  PauliGroup_group n) :
-  s ∈ (StabCode_of_StabSet S).stabs ↔ ∃ F, ∃ h : F ⊆ S.stabs, (List.prod (finset_subset_to_closure_map h).toList : (Subgroup.closure (SetLike.coe S.stabs))).1 = s := by
-  constructor
-  · revert s
-    unfold StabCode_of_StabSet
-    simp only
-    apply Subgroup.closure_induction
-    · intros x x_mem
-      refine ⟨{x}, ⟨Finset.singleton_subset_iff.2 x_mem, ?_⟩⟩
-      unfold finset_subset_to_closure_map to_closure_map
-      simp only [Finset.attach_singleton, Finset.image_singleton, Finset.toList_singleton, List.prod]
-      unfold List.foldr List.foldr
-      have hx : x = ↑(⟨x, Subgroup.mem_closure_of_mem x_mem⟩ : (Subgroup.closure (SetLike.coe S.stabs)))
-      · rfl
-      rw [Subgroup.coe_mul, ←hx, Subgroup.coe_one, mul_one]
-    · refine ⟨∅, ⟨Finset.empty_subset _, ?_⟩⟩
-      unfold finset_subset_to_closure_map to_closure_map
-      simp
-    · rintro x y x_mem y_mem ⟨fx, hfx₁, hfx₂⟩ ⟨fy, hfy₁, hfy₂⟩
-      let F := symmDiff fx fy
-      refine ⟨F, ⟨subset_trans Finset.symmDiff_subset_union ?_, ?_⟩⟩
-      · apply Finset.union_subset hfx₁ hfy₁
-      rw [←hfx₂, ←hfy₂, ←Subgroup.coe_mul] --the culprit!
-      --congr --maybe don't congr so we can move back to the ambient group for associativity?
-      --rw [IsMulCommutative.is_comm.comm] works, but how do i do like, associativity?
-      --lean no longer recognizes any group structure on ↥(Subgroup.closure ↑S.stabs)
-      --despite the fact that an instance declares it a CommGroup earlier and also its
-      --literally a closure
-      have sd1:= sdiff_decomp fx fy
-      have sd2:= sdiff_decomp fy fx
-      simp_rw [Finset.disjUnion_comm _ (fy ∩ fx), Finset.inter_comm fy fx] at sd2
-      rw [finset_subset_to_closure_map_union S hfx₁ sd1]
-      rw [finset_subset_to_closure_map_union S hfy₁ sd2]
-      rw [list_map_union_of_is_comm, list_map_union_of_is_comm]
-      rw [Subgroup.coe_mul, Subgroup.coe_mul, mul_assoc]
-      rw [Subgroup.coe_mul]
-      nth_rw 2 [←mul_assoc] --canceling prods now next to each other
-      rw [←Subgroup.coe_mul, stab_closure_mul_self_eq_one, Subgroup.coe_one, one_mul]
-      have hf : F = Finset.disjUnion (fx \ fy) (fy \ fx) (disjoint_sdiff_sdiff) := by
-        unfold F symmDiff
-        rw [Finset.disjUnion_eq_union]
-        rfl
-      have hfsub : F ⊆ S.stabs := by
-        rw [hf, Finset.disjUnion_eq_union, Finset.union_subset_iff]
-        refine ⟨subset_trans Finset.sdiff_subset hfx₁, subset_trans Finset.sdiff_subset hfy₁⟩
-      rw [finset_subset_to_closure_map_union S hfsub hf]
-      · rw [list_map_union_of_is_comm]
-        rfl
-    rintro x x_mem hx
-    rw [PauliGroup.norm_self_inv]
-    · assumption
-    apply NormalizedStabSet_closure_phase_one S x x_mem
-  rintro ⟨F, hF₁, rfl⟩
-  unfold StabCode_of_StabSet finset_subset_to_closure_map to_closure_map
-  have h_mem : ∀ {x : ↥(Subgroup.closure (SetLike.coe S.stabs))}, (x : ↥(PauliGroup_group n)) ∈ (Subgroup.closure (SetLike.coe S.stabs))
-  · aesop --???
-  exact h_mem
+lemma sum_univ_if_eq_one {α : Type*} [Fintype α] [DecidableEq α]
+    (ind : α → ZMod 2) (f : α → ZMod 2) :
+    Finset.univ.sum (fun a => if ind a = 1 then f a else 0) =
+      Finset.univ.sum (fun a => f a * ind a) := by
+  refine Finset.sum_congr rfl ?_
+  intro a ha
+  rcases Fin.exists_fin_two.mp ⟨ind a, rfl⟩ with h | h <;> simp [h]
 
 
 
@@ -543,7 +302,21 @@ def ZMod2_or (a b : ZMod 2) := a + b + (a * b)
 
 def union_weight (v₁ v₂ : Fin n → (ZMod 2)) : ℕ := hammingNorm (fun i => ZMod2_or (v₁ i) (v₂ i))
 
-def BinSympPauli.weight {n : ℕ} (bsp : BinSympPauli n) : ℕ := hammingNorm bsp.1 + hammingNorm bsp.2
+def BinSympPauli.weight {n : ℕ} (bsp : BinSympPauli n) : ℕ := union_weight bsp.1 bsp.2
+
+@[simp]
+lemma union_weight_zero_left (v : Fin n → ZMod 2) : union_weight 0 v = hammingNorm v := by
+  unfold union_weight
+  congr
+  ext i
+  simp [ZMod2_or]
+
+@[simp]
+lemma union_weight_zero_right (v : Fin n → ZMod 2) : union_weight v 0 = hammingNorm v := by
+  unfold union_weight
+  congr
+  ext i
+  simp [ZMod2_or]
 
 def symplecticProd {n : ℕ} (bp₁ bp₂ : BinSympPauli n) : (ZMod 2) :=
   dotProduct bp₁.1 bp₂.2 + dotProduct bp₁.2 bp₂.1
@@ -573,25 +346,208 @@ def Z2Z2_Pauli_equiv : ((ZMod 2) × (ZMod 2)) ≃ Pauli where
     intro x
     rcases Pauli_cases x with h | h | h | h <;> simp [h]
 
-def BinSympPauli_toPauli {n : ℕ} (bs : BinSympPauli n) : PauliGroup_group n :=
+lemma ZMod2_or_eq_zero_iff (a b : ZMod 2) :
+    ZMod2_or a b = 0 ↔ a = 0 ∧ b = 0 := by
+  fin_cases a <;> fin_cases b <;> simp [ZMod2_or] ; native_decide
+
+lemma Z2Z2_Pauli_equiv_ne_I_iff (a b : ZMod 2) :
+    Z2Z2_Pauli_equiv (a, b) ≠ Pauli_I ↔ ZMod2_or a b ≠ 0 := by
+  fin_cases a <;> fin_cases b <;> simp [Z2Z2_Pauli_equiv, ZMod2_or] ; native_decide
+
+def BinSympPauli_toPauli {n : ℕ} (bs : BinSympPauli n) : ↥(PauliGroup_group n) :=
   let pm := fun n => Z2Z2_Pauli_equiv (bs.1 n, bs.2 n)
   foldPauli (pgphase_1, pm)
 
-def Pauli_toBinSympPauli {n : ℕ} (P : PauliGroup_group n) : BinSympPauli n :=
+def Pauli_toBinSympPauli {n : ℕ} (P : ↥(PauliGroup_group n)) : BinSympPauli n :=
   let pm := fun n => Z2Z2_Pauli_equiv.symm (PauliGroup.map P n)
   ⟨fun n => (pm n).1, fun n => (pm n).2⟩
 
 --three big linking theorems, rest is mostly extremely painful proof massaging
 
-theorem Pauli_to_BinSymp_correct {n : ℕ} (P₁ P₂ : PauliGroup_group n) :
-  Pauli_toBinSympPauli (P₁ * P₂) = (Pauli_toBinSympPauli P₁) + (Pauli_toBinSympPauli P₂) := sorry
+lemma Bool.ofNat_ZMod2_add (x y : ZMod 2) :
+    Bool.xor (Bool.ofNat x.val) (Bool.ofNat y.val) = Bool.ofNat ((x + y).val) := by
+  fin_cases x <;> fin_cases y <;> decide
 
-theorem BinSympPauli_to_Pauli_correct {n : ℕ} {bp₁ bp₂ : BinSympPauli n} :
-  ∃ p : (pgroup_phases), U_phase (BinSympPauli_toPauli (bp₁ + bp₂)).1 p = ((BinSympPauli_toPauli bp₁) : 𝐔ₙ[n]) * (BinSympPauli_toPauli bp₂) := sorry
+lemma local_mul_Pauli_toBinSymp (P Q : Pauli) :
+    Z2Z2_Pauli_equiv.symm (mul_Pauli1 P Q).2 =
+      Z2Z2_Pauli_equiv.symm P + Z2Z2_Pauli_equiv.symm Q := by
+  rcases Pauli_cases P with rfl | rfl | rfl | rfl <;>
+    rcases Pauli_cases Q with rfl | rfl | rfl | rfl <;>
+    simp [mul_Pauli1, Z2Z2_Pauli_equiv] <;> native_decide
+
+lemma local_anticommute_eq_sympProd (P Q : Pauli) :
+    (!commute₁ P Q) =
+      Bool.ofNat
+        (((Z2Z2_Pauli_equiv.symm P).1 * (Z2Z2_Pauli_equiv.symm Q).2) +
+          ((Z2Z2_Pauli_equiv.symm P).2 * (Z2Z2_Pauli_equiv.symm Q).1)).val := by
+  rcases Pauli_cases P with rfl | rfl | rfl | rfl <;>
+    rcases Pauli_cases Q with rfl | rfl | rfl | rfl <;>
+    simp [commute₁, Z2Z2_Pauli_equiv, Bool.ofNat] ; native_decide
+
+lemma local_anticommute_xor_tail (a b c d t : ZMod 2) :
+    (!commute₁ (Z2Z2_Pauli_equiv (a, b)) (Z2Z2_Pauli_equiv (c, d)) ^^ Bool.ofNat t.val) =
+      Bool.ofNat (((a * d + b * c) + t).val) := by
+  have hhead :
+      (!commute₁ (Z2Z2_Pauli_equiv (a, b)) (Z2Z2_Pauli_equiv (c, d))) =
+        Bool.ofNat ((a * d + b * c).val) := by
+    simpa using
+      (local_anticommute_eq_sympProd (Z2Z2_Pauli_equiv (a, b)) (Z2Z2_Pauli_equiv (c, d)))
+  rw [hhead, Bool.ofNat_ZMod2_add]
+
+@[simp]
+lemma BinSympPauli_toPauli_zero {n : ℕ} : BinSympPauli_toPauli (0 : BinSympPauli n) = 1 := by
+  change foldPauli (pgphase_1, fun _ : Fin n => Pauli_I) = Pauli1
+  simpa using Pauli1_unfold.symm
+
+lemma BinSympPauli_toPauli_normalized {n : ℕ} (bp : BinSympPauli n) :
+    PauliGroup.normalized (BinSympPauli_toPauli bp) := by
+  unfold PauliGroup.normalized PauliGroup.phase BinSympPauli_toPauli
+  simp [Equiv.symm_apply_apply]
+
+@[simp]
+lemma Pauli_toBinSympPauli_BinSympPauli_toPauli {n : ℕ} (bp : BinSympPauli n) :
+    Pauli_toBinSympPauli (BinSympPauli_toPauli bp) = bp := by
+  ext i <;> simp [Pauli_toBinSympPauli, BinSympPauli_toPauli, PauliGroup.map]
+
+@[simp]
+lemma Pauli_toBinSympPauli_normalize_pauli {n : ℕ} (P : PauliGroup n) :
+    Pauli_toBinSympPauli (normalize_pauli P) = Pauli_toBinSympPauli P := by
+  ext i <;> simp [Pauli_toBinSympPauli, normalize_pauli, PauliGroup.map]
+
+@[simp]
+lemma BinSympPauli_toPauli_Pauli_toBinSympPauli {n : ℕ} (P : PauliGroup n) :
+    BinSympPauli_toPauli (Pauli_toBinSympPauli P) = normalize_pauli P := by
+  apply Subtype.ext
+  simp [BinSympPauli_toPauli, Pauli_toBinSympPauli, normalize_pauli, PauliGroup.map]
+
+lemma PauliGroup.map_BinSympPauli_toPauli {n : ℕ} (bp : BinSympPauli n) :
+    PauliGroup.map (BinSympPauli_toPauli bp) = fun i => Z2Z2_Pauli_equiv (bp.1 i, bp.2 i) := by
+  funext i
+  have hx := congrArg (fun bp' => bp'.1 i) (Pauli_toBinSympPauli_BinSympPauli_toPauli bp)
+  have hz := congrArg (fun bp' => bp'.2 i) (Pauli_toBinSympPauli_BinSympPauli_toPauli bp)
+  have hpair : Z2Z2_Pauli_equiv.symm (PauliGroup.map (BinSympPauli_toPauli bp) i) = (bp.1 i, bp.2 i) := by
+    exact Prod.ext hx hz
+  have := congrArg Z2Z2_Pauli_equiv hpair
+  simpa using this
+
+@[simp]
+lemma Pauli_toBinSympPauli_one {n : ℕ} :
+    Pauli_toBinSympPauli (1 : PauliGroup_group n) = 0 := by
+  simpa [BinSympPauli_toPauli_zero] using
+    (Pauli_toBinSympPauli_BinSympPauli_toPauli (0 : BinSympPauli n))
+
+lemma pauli_weight_BinSympPauli_toPauli {n : ℕ} (bp : BinSympPauli n) :
+    pauli_weight (BinSympPauli_toPauli bp) = BinSympPauli.weight bp := by
+  unfold pauli_weight BinSympPauli.weight union_weight hammingNorm
+  congr
+  ext i
+  simp [PauliGroup.map_BinSympPauli_toPauli, Z2Z2_Pauli_equiv_ne_I_iff]
+
+lemma pauli_weight_eq_BinSympPauli_weight {n : ℕ} (P : PauliGroup n) :
+    pauli_weight P = BinSympPauli.weight (Pauli_toBinSympPauli P) := by
+  calc
+    pauli_weight P = pauli_weight (normalize_pauli P) := by
+      unfold pauli_weight
+      rw [show PauliGroup.map (normalize_pauli P) = PauliGroup.map P from
+        (normalize_pauli_map_eq P).symm]
+    _ = BinSympPauli.weight (Pauli_toBinSympPauli P) := by
+      rw [← BinSympPauli_toPauli_Pauli_toBinSympPauli P]
+      exact pauli_weight_BinSympPauli_toPauli (Pauli_toBinSympPauli P)
+
+theorem Pauli_to_BinSymp_correct {n : ℕ} (P₁ P₂ : PauliGroup_group n) :
+    Pauli_toBinSympPauli (P₁ * P₂) = (Pauli_toBinSympPauli P₁) + (Pauli_toBinSympPauli P₂) := by
+  let FP₁ := foldPauli.symm P₁
+  let FP₂ := foldPauli.symm P₂
+  have hmul : foldPauli.symm (P₁ * P₂ : PauliGroup_group n) = mul_factored_Paulis FP₁ FP₂ := by
+    apply foldPauli.injective
+    apply Subtype.ext
+    simpa [FP₁, FP₂] using (mul_factored_Paulis_correct FP₁ FP₂).symm
+  ext i
+  · have hi : (foldPauli.symm (P₁ * P₂)).2 i = (mul_Pauli1 (FP₁.2 i) (FP₂.2 i)).2 := by
+      simpa [FP₁, FP₂, mul_factored_Paulis, scale_factored_Pauli, mul_Pauli1_tuples] using
+        congrArg (fun fp => fp.2 i) hmul
+    rw [show (Pauli_toBinSympPauli (P₁ * P₂)).1 i =
+        (Z2Z2_Pauli_equiv.symm ((foldPauli.symm (P₁ * P₂)).2 i)).1 by
+          rfl]
+    rw [hi]
+    simpa [Pauli_toBinSympPauli, PauliGroup.map, FP₁, FP₂] using
+      congrArg Prod.fst (local_mul_Pauli_toBinSymp (FP₁.2 i) (FP₂.2 i))
+  · have hi : (foldPauli.symm (P₁ * P₂)).2 i = (mul_Pauli1 (FP₁.2 i) (FP₂.2 i)).2 := by
+      simpa [FP₁, FP₂, mul_factored_Paulis, scale_factored_Pauli, mul_Pauli1_tuples] using
+        congrArg (fun fp => fp.2 i) hmul
+    rw [show (Pauli_toBinSympPauli (P₁ * P₂)).2 i =
+        (Z2Z2_Pauli_equiv.symm ((foldPauli.symm (P₁ * P₂)).2 i)).2 by
+          rfl]
+    rw [hi]
+    simpa [Pauli_toBinSympPauli, PauliGroup.map, FP₁, FP₂] using
+      congrArg Prod.snd (local_mul_Pauli_toBinSymp (FP₁.2 i) (FP₂.2 i))
+
+lemma symplecticProd_succ {n : ℕ} (bp₁ bp₂ : BinSympPauli (n + 1)) :
+    symplecticProd bp₁ bp₂ =
+      ((bp₁.1 0) * (bp₂.2 0) + (bp₁.2 0) * (bp₂.1 0)) +
+        symplecticProd (Fin.tail bp₁.1, Fin.tail bp₁.2) (Fin.tail bp₂.1, Fin.tail bp₂.2) := by
+  unfold symplecticProd dotProduct
+  rw [Fin.sum_univ_succ, Fin.sum_univ_succ]
+  simp [Fin.tail]
+  abel_nf
+
+lemma anticommute_eq_symplecticBool {n : ℕ} (bp₁ bp₂ : BinSympPauli n) :
+    anticommute (BinSympPauli_toPauli bp₁) (BinSympPauli_toPauli bp₂) =
+      Bool.ofNat (symplecticProd bp₁ bp₂).val := by
+  induction n with
+  | zero =>
+      simp [anticommute, anticommuteₘ, symplecticProd, dotProduct]
+  | succ n ih =>
+      rcases bp₁ with ⟨x₁, z₁⟩
+      rcases bp₂ with ⟨x₂, z₂⟩
+      have hmap₁ : PauliGroup.map (BinSympPauli_toPauli (x₁, z₁)) = fun i => Z2Z2_Pauli_equiv (x₁ i, z₁ i) := by
+        simpa using PauliGroup.map_BinSympPauli_toPauli (x₁, z₁)
+      have hmap₂ : PauliGroup.map (BinSympPauli_toPauli (x₂, z₂)) = fun i => Z2Z2_Pauli_equiv (x₂ i, z₂ i) := by
+        simpa using PauliGroup.map_BinSympPauli_toPauli (x₂, z₂)
+      have htail₁ :
+          Fin.tail (fun i => Z2Z2_Pauli_equiv (x₁ i, z₁ i)) =
+            fun i => Z2Z2_Pauli_equiv (Fin.tail x₁ i, Fin.tail z₁ i) := by
+        funext i
+        simp [Fin.tail]
+      have htail₂ :
+          Fin.tail (fun i => Z2Z2_Pauli_equiv (x₂ i, z₂ i)) =
+            fun i => Z2Z2_Pauli_equiv (Fin.tail x₂ i, Fin.tail z₂ i) := by
+        funext i
+        simp [Fin.tail]
+      rw [anticommute, hmap₁, hmap₂, anticommuteₘ, htail₁, htail₂]
+      have htail :=
+        ih (Fin.tail x₁, Fin.tail z₁) (Fin.tail x₂, Fin.tail z₂)
+      rw [show
+          anticommuteₘ (fun i => Z2Z2_Pauli_equiv (Fin.tail x₁ i, Fin.tail z₁ i))
+              (fun i => Z2Z2_Pauli_equiv (Fin.tail x₂ i, Fin.tail z₂ i)) =
+            anticommute (BinSympPauli_toPauli (Fin.tail x₁, Fin.tail z₁))
+              (BinSympPauli_toPauli (Fin.tail x₂, Fin.tail z₂)) by
+              rw [anticommute, PauliGroup.map_BinSympPauli_toPauli, PauliGroup.map_BinSympPauli_toPauli],
+        htail]
+      simpa [symplecticProd_succ] using
+        (local_anticommute_xor_tail
+          (x₁ 0) (z₁ 0) (x₂ 0) (z₂ 0)
+          (symplecticProd (Fin.tail x₁, Fin.tail z₁) (Fin.tail x₂, Fin.tail z₂)))
+
+lemma symplecticProd_comm {n : ℕ} (bp₁ bp₂ : BinSympPauli n) :
+    symplecticProd bp₁ bp₂ = symplecticProd bp₂ bp₁ := by
+  unfold symplecticProd
+  rw [show bp₁.2 ⬝ᵥ bp₂.1 = bp₂.1 ⬝ᵥ bp₁.2 by simpa using dotProduct_comm bp₁.2 bp₂.1]
+  rw [show bp₁.1 ⬝ᵥ bp₂.2 = bp₂.2 ⬝ᵥ bp₁.1 by simpa using dotProduct_comm bp₁.1 bp₂.2]
+  rw [add_comm]
+
+lemma BinSympPauli_toPauli_commute_iff_symplecticProd_zero {n : ℕ} (bp₁ bp₂ : BinSympPauli n) :
+    commute (BinSympPauli_toPauli bp₁) (BinSympPauli_toPauli bp₂) ↔
+      symplecticProd bp₁ bp₂ = 0 := by
+  unfold commute
+  rw [anticommute_eq_symplecticBool]
+  rcases Fin.exists_fin_two.mp ⟨symplecticProd bp₁ bp₂, rfl⟩ with h | h
+  · simp [h]
+  · simp [h, Bool.ofNat]
 
 theorem commutes_of_sympProd_zero {n : ℕ} {bp₁ bp₂ : BinSympPauli n}
-  (h_prod : symplecticProd bp₁ bp₂ = 0) : commute (BinSympPauli_toPauli bp₁) (BinSympPauli_toPauli bp₂) := by
-  sorry
+    (h_prod : symplecticProd bp₁ bp₂ = 0) : commute (BinSympPauli_toPauli bp₁) (BinSympPauli_toPauli bp₂) := by
+  exact (BinSympPauli_toPauli_commute_iff_symplecticProd_zero _ _).2 h_prod
 
 
 structure BinSympMatrix (k n : ℕ) where
@@ -622,97 +578,346 @@ def BinSympMatrix.toStabSet {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.
 def StabCode_of_BinSympMatrix {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) : StabCode n :=
   StabCode_of_StabSet (bsm.toStabSet h_comm)
 
---not using this anymore... delete?
-lemma list_prod_subtype_coe {G : Type*} [Group G] {H : Subgroup G} {L : List H}
-  : (L.prod : G) = (L.map H.subtype).prod := by
-  nth_rw 1 [←List.map_id L]
-  rw [←Subgroup.subtype_apply]
-  rw [←List.prod_map_hom, Function.comp_id]
+abbrev BinSympMatrix.stabClosure {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) :
+    Subgroup ↥(PauliGroup_group n) :=
+  Subgroup.closure (SetLike.coe (bsm.toStabSet h_comm).stabs)
 
-lemma Finset.map_subtype_toList {G : Type*} [DecidableEq G] [Group G] {H : Subgroup G} {F : Finset H}
-  : List.Perm (List.map Subtype.val F.toList) (map ⟨Subtype.val, Subtype.val_injective⟩ F).toList := by
-  induction F using Finset.induction_on with
-  | empty =>
+instance {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) :
+    IsMulCommutative (bsm.stabClosure h_comm) := by
+  change IsMulCommutative (Subgroup.closure (SetLike.coe (bsm.toStabSet h_comm).stabs))
+  infer_instance
+
+instance {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) :
+    IsMulCommutative ↥(bsm.stabClosure h_comm) := by
+  infer_instance
+
+lemma BinSympPauli_toPauli_mul_self_eq_one {n : ℕ} (bp : BinSympPauli n) :
+    BinSympPauli_toPauli bp * BinSympPauli_toPauli bp = 1 := by
+  have hnorm : PauliGroup.normalized (BinSympPauli_toPauli bp) := by
+    unfold PauliGroup.normalized PauliGroup.phase BinSympPauli_toPauli
     simp
-  | @insert a s ha ih =>
-    have hperm:= Finset.toList_insert ha
-    rw [Finset.map_insert]
-    simp only [Function.Embedding.coeFn_mk]
-    apply List.Perm.trans _ (Finset.toList_insert _).symm
-    · have hmap:= (List.map_perm_map_iff (Subtype.val_injective)).2 hperm
-      apply hmap.trans
-      rwa [List.map_cons, List.perm_cons]
-    simpa only [mem_map_mk]
+  have hself : (BinSympPauli_toPauli bp : PauliGroup_group n)⁻¹ = BinSympPauli_toPauli bp :=
+    PauliGroup.norm_self_inv _ hnorm
+  calc
+    BinSympPauli_toPauli bp * BinSympPauli_toPauli bp =
+        BinSympPauli_toPauli bp * (BinSympPauli_toPauli bp)⁻¹ := by rw [hself]
+    _ = 1 := by simp
 
-#check Subgroup.val_list_prod
+def BinSympMatrix.rowStabElem {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) (i : Fin k) :
+    ↥(bsm.stabClosure h_comm) :=
+  ⟨BinSympPauli_toPauli (bsm.row i), by
+    classical
+    unfold BinSympMatrix.stabClosure BinSympMatrix.toStabSet
+    apply Subgroup.subset_closure
+    exact
+      (Finset.mem_image.2
+        ⟨i, Finset.mem_univ i, rfl⟩ :
+          BinSympPauli_toPauli (bsm.row i) ∈
+            Finset.image (fun j : Fin k => BinSympPauli_toPauli (bsm.row j)) Finset.univ)⟩
 
-theorem coe_prod_finset_subset_to_closure_map {n : ℕ} {S : StabSet n} {F : Finset (PauliGroup_group n)}
-  {hF : F ⊆ S.stabs}  :
-  ((finset_subset_to_closure_map hF).toList.prod : PauliGroup_group n) = F.toList.prod := by
-  rw [Submonoid.coe_list_prod]
-  apply list_prod_eq_perm_of_mem_comm_subgroup (Subgroup.closure ((SetLike.coe S.stabs)))
-  · apply @List.Perm.trans _ _ ((Finset.map ⟨Subtype.val, Subtype.val_injective⟩ (finset_subset_to_closure_map hF)).toList)
-    · apply Finset.map_subtype_toList
-    simp only [finset_subset_to_closure_map, to_closure_map, Finset.map_eq_image,
-      Function.Embedding.coeFn_mk, Finset.image_image, Finset.perm_toList]
-    ext a : 1
-    simp only [Finset.mem_image, Finset.mem_attach, Function.comp_apply, true_and, Subtype.exists, exists_prop,
-      exists_eq_right]
-  · apply subset_trans _ Subgroup.subset_closure
-    intro x
-    rw [Finset.mem_coe, Finset.mem_coe, List.mem_toFinset]
-    rw [List.mem_map]
-    rintro ⟨a, ⟨a_mem, rfl⟩⟩
-    apply hF
-    rw [Finset.mem_toList, finset_subset_to_closure_map, Finset.mem_image] at a_mem
-    rcases a_mem with ⟨a', ⟨ha', rfl⟩⟩
-    aesop
-  apply subset_trans _ Subgroup.subset_closure
-  intro x
-  rw [Finset.mem_coe, Finset.mem_coe, List.mem_toFinset, Finset.mem_toList]
-  apply hF
+@[simp]
+lemma BinSympMatrix.rowStabElem_coe {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) (i : Fin k) :
+    ((bsm.rowStabElem h_comm i : bsm.stabClosure h_comm) : ↥(PauliGroup_group n)) =
+      BinSympPauli_toPauli (bsm.row i) := rfl
 
-theorem BinSympPauli_toPauli_prod_eq_sum {n : ℕ} (BSP_set : Finset (BinSympPauli n))
-  : ((Finset.image (fun b => BinSympPauli_toPauli b) BSP_set).toList).prod = (BinSympPauli_toPauli (BSP_set.sum id) : PauliGroup_group n) := sorry
+@[simp]
+lemma BinSympMatrix.rowStabElem_mul_self_eq_one {n k : ℕ} (bsm : BinSympMatrix k n)
+    (h_comm : bsm.isCommuting) (i : Fin k) :
+    bsm.rowStabElem h_comm i * bsm.rowStabElem h_comm i = 1 := by
+  apply Subtype.ext
+  simp [BinSympPauli_toPauli_mul_self_eq_one]
 
---should depend on theorem linking members of closure
-theorem BinSympCode_stab_eq_rowSpace {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) (s : ↥(PauliGroup_group n)) :
-  s ∈ (StabCode_of_BinSympMatrix bsm h_comm).stabs ↔ ∃ ind, BinSympPauli_toPauli (bsm.X.transpose.mulVec ind, bsm.Z.transpose.mulVec ind) = s := by
-  unfold StabCode_of_BinSympMatrix BinSympMatrix.toStabSet
-  rw [mem_stab_iff_prod_subset_stabSet]
-  constructor
-  · simp only
-    rintro ⟨F, ⟨hF, hF₂⟩⟩
-    rw [←hF₂]
-    rw [coe_prod_finset_subset_to_closure_map]
-    rcases Finset.subset_univ_image_iff.1 hF with ⟨R, rfl⟩
-    --need set of BinSympPaulis
-    let BSP_set : Finset (BinSympPauli n) := Finset.image (fun i => bsm.row i) R
-    --PROBLEMATIC: row mapping is not an embedding!
-    --solution: break into cases over whether rows are unique?
-    --or isolate all nonunique rows
-    have BSP_set_eq :  (Finset.image (fun i => BinSympPauli_toPauli (bsm.row i)) R) = Finset.image (fun b => BinSympPauli_toPauli b) BSP_set:= by
-      unfold BSP_set
-      rw [Finset.image_image]
-      rfl
-    rw [BSP_set_eq, BinSympPauli_toPauli_prod_eq_sum]
-    unfold BSP_set
-    let ind := Set.indicator (SetLike.coe R) (fun _ => (1 : ZMod 2))
-    refine ⟨ind, ?_⟩
-    congr 1
-    rw [Prod.ext_iff]
-    refine ⟨?_, ?_⟩
+noncomputable def BinSympMatrix.rowProductSub {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
+    (ind : Fin k → ZMod 2) : ↥(bsm.stabClosure h_comm) :=
+  letI : CommGroup ↥(bsm.stabClosure h_comm) := subgroupCarrierCommGroup (bsm.stabClosure h_comm)
+  Finset.univ.prod (fun i => if ind i = 1 then bsm.rowStabElem h_comm i else (1 : ↥(bsm.stabClosure h_comm)))
+
+def BinSympMatrix.rowProduct {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
+    (ind : Fin k → ZMod 2) : ↥(PauliGroup_group n) :=
+  (bsm.rowProductSub h_comm ind : ↥(PauliGroup_group n))
+
+@[simp]
+lemma BinSympMatrix.rowProduct_zero {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) :
+    bsm.rowProduct h_comm (fun _ => (0 : ZMod 2)) = 1 := by
+  simp [BinSympMatrix.rowProduct, BinSympMatrix.rowProductSub]
+
+lemma BinSympMatrix.rowProduct_single {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) (i : Fin k) :
+    bsm.rowProduct h_comm (Pi.single i (1 : ZMod 2)) = BinSympPauli_toPauli (bsm.row i) := by
+  letI : CommGroup ↥(bsm.stabClosure h_comm) := subgroupCarrierCommGroup (bsm.stabClosure h_comm)
+  have hsub : bsm.rowProductSub h_comm (Pi.single i (1 : ZMod 2)) = bsm.rowStabElem h_comm i := by
+    unfold BinSympMatrix.rowProductSub
+    rw [Finset.prod_eq_single i]
     · simp
-      sorry
-    sorry
-  sorry
+    · intro j hj hij
+      simp [hij]
+    · intro hi
+      simp at hi
+  simpa [BinSympMatrix.rowProduct] using congrArg Subtype.val hsub
+
+lemma BinSympMatrix.rowProductSub_add {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
+    (ind₁ ind₂ : Fin k → ZMod 2) :
+    bsm.rowProductSub h_comm (fun i => ind₁ i + ind₂ i) =
+      bsm.rowProductSub h_comm ind₁ * bsm.rowProductSub h_comm ind₂ := by
+  letI : CommGroup ↥(bsm.stabClosure h_comm) := subgroupCarrierCommGroup (bsm.stabClosure h_comm)
+  let oneSub : ↥(bsm.stabClosure h_comm) := 1
+  let f : Fin k → ↥(bsm.stabClosure h_comm) :=
+    fun i => if ind₁ i = 1 then bsm.rowStabElem h_comm i else oneSub
+  let g : Fin k → ↥(bsm.stabClosure h_comm) :=
+    fun i => if ind₂ i = 1 then bsm.rowStabElem h_comm i else oneSub
+  have hone_left_val (x : ↥(bsm.stabClosure h_comm)) :
+      (((oneSub * x : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) = (x : ↥(PauliGroup_group n)) := by
+    change (((oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n)) *
+        ((x : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) = (x : ↥(PauliGroup_group n))
+    simp [oneSub]
+  have hone_right_val (x : ↥(bsm.stabClosure h_comm)) :
+      (((x * oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) = (x : ↥(PauliGroup_group n)) := by
+    change (((x : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n)) *
+        ((oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) = (x : ↥(PauliGroup_group n))
+    simp [oneSub]
+  have hone_mul_val :
+      (((oneSub * oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) =
+        (oneSub : ↥(PauliGroup_group n)) := by
+    change (((oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n)) *
+        ((oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) =
+        (oneSub : ↥(PauliGroup_group n))
+    simp [oneSub]
+  have hadd :
+      (fun i : Fin k => if ind₁ i + ind₂ i = 1 then bsm.rowStabElem h_comm i else oneSub) =
+        fun i => f i * g i := by
+    funext i
+    rcases Fin.exists_fin_two.mp ⟨ind₁ i, rfl⟩ with h₁ | h₁ <;>
+      rcases Fin.exists_fin_two.mp ⟨ind₂ i, rfl⟩ with h₂ | h₂
+    · unfold f g
+      rw [h₁, h₂]
+      apply Subtype.ext
+      exact hone_mul_val.symm
+    · unfold f g
+      rw [h₁, h₂]
+      apply Subtype.ext
+      exact (hone_left_val (bsm.rowStabElem h_comm i)).symm
+    · unfold f g
+      rw [h₁, h₂]
+      apply Subtype.ext
+      exact (hone_right_val (bsm.rowStabElem h_comm i)).symm
+    · unfold f g
+      rw [h₁, h₂]
+      apply Subtype.ext
+      simp [oneSub]
+  unfold BinSympMatrix.rowProductSub
+  rw [hadd]
+  simpa [f, g] using
+    (Finset.prod_mul_distrib (s := Finset.univ) (f := f) (g := g))
+
+lemma BinSympMatrix.rowProduct_add {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
+    (ind₁ ind₂ : Fin k → ZMod 2) :
+    bsm.rowProduct h_comm (fun i => ind₁ i + ind₂ i) =
+      bsm.rowProduct h_comm ind₁ * bsm.rowProduct h_comm ind₂ := by
+  simpa [BinSympMatrix.rowProduct] using congrArg Subtype.val
+    (BinSympMatrix.rowProductSub_add bsm h_comm ind₁ ind₂)
+
+lemma BinSympMatrix.rowProduct_self_mul_eq_one {n k : ℕ} (bsm : BinSympMatrix k n)
+    (h_comm : bsm.isCommuting) (ind : Fin k → ZMod 2) :
+    bsm.rowProduct h_comm ind * bsm.rowProduct h_comm ind = 1 := by
+  have hzero : (fun i => ind i + ind i) = (fun _ => (0 : ZMod 2)) := by
+    funext i
+    rcases Fin.exists_fin_two.mp ⟨ind i, rfl⟩ with h | h <;> simp [h] ; native_decide
+  rw [← BinSympMatrix.rowProduct_add bsm h_comm ind ind, hzero, BinSympMatrix.rowProduct_zero]
+
+lemma BinSympMatrix.rowProduct_inv_eq_self {n k : ℕ} (bsm : BinSympMatrix k n)
+    (h_comm : bsm.isCommuting) (ind : Fin k → ZMod 2) :
+    (bsm.rowProduct h_comm ind)⁻¹ = bsm.rowProduct h_comm ind :=
+  inv_eq_self_of_mul_self_eq_one (BinSympMatrix.rowProduct_self_mul_eq_one bsm h_comm ind)
+
+lemma BinSympMatrix.rowProduct_binaryImage {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
+    (ind : Fin k → ZMod 2) :
+    Pauli_toBinSympPauli (bsm.rowProduct h_comm ind) = (bsm.X.transpose.mulVec ind, bsm.Z.transpose.mulVec ind) := by
+  letI : CommGroup ↥(bsm.stabClosure h_comm) := subgroupCarrierCommGroup (bsm.stabClosure h_comm)
+  have hsum_aux :
+      ∀ S : Finset (Fin k),
+        Pauli_toBinSympPauli
+          ((((S.prod fun i => if ind i = 1 then bsm.rowStabElem h_comm i else (1 : ↥(bsm.stabClosure h_comm)))
+            : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) =
+          S.sum (fun i => if ind i = 1 then bsm.row i else 0) := by
+    intro S
+    induction S using Finset.induction_on with
+    | empty =>
+        rw [Finset.prod_empty, Finset.sum_empty]
+        have hone : (((1 : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) =
+            (1 : ↥(PauliGroup_group n)) := by
+          simp
+        exact (congrArg Pauli_toBinSympPauli hone).trans (Pauli_toBinSympPauli_one (n := n))
+    | @insert a S ha ih =>
+        rw [Finset.prod_insert ha, Finset.sum_insert ha]
+        have hco :
+            ↑((if ind a = 1 then bsm.rowStabElem h_comm a else (1 : ↥(bsm.stabClosure h_comm))) *
+                ∏ x ∈ S, if ind x = 1 then bsm.rowStabElem h_comm x else (1 : ↥(bsm.stabClosure h_comm))) =
+              ((if ind a = 1 then ((bsm.rowStabElem h_comm a : ↥(bsm.stabClosure h_comm)) :
+                  ↥(PauliGroup_group n)) else ((1 : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) *
+                ↑(∏ x ∈ S, if ind x = 1 then bsm.rowStabElem h_comm x else (1 : ↥(bsm.stabClosure h_comm)))) := by
+          by_cases hia : ind a = 1
+          · rw [if_pos hia, if_pos hia]
+            rfl
+          · rw [if_neg hia, if_neg hia]
+            rfl
+        have hmul :
+            Pauli_toBinSympPauli
+                ((((if ind a = 1 then bsm.rowStabElem h_comm a else (1 : ↥(bsm.stabClosure h_comm))) *
+                    ∏ x ∈ S, if ind x = 1 then bsm.rowStabElem h_comm x else (1 : ↥(bsm.stabClosure h_comm))
+                  : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) =
+              Pauli_toBinSympPauli
+                ((((if ind a = 1 then bsm.rowStabElem h_comm a else (1 : ↥(bsm.stabClosure h_comm))) :
+                    ↥(PauliGroup_group n)) *
+                  (((∏ x ∈ S, if ind x = 1 then bsm.rowStabElem h_comm x else (1 : ↥(bsm.stabClosure h_comm)) :
+                    ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))))) := by
+          exact congrArg Pauli_toBinSympPauli hco
+        rw [hmul, Pauli_to_BinSymp_correct, ih]
+        by_cases hia : ind a = 1
+        · simp [hia, Pauli_toBinSympPauli_BinSympPauli_toPauli]
+        · have hone : Pauli_toBinSympPauli (((1 : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) = 0 := by
+              have hco : (((1 : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) =
+                  (1 : ↥(PauliGroup_group n)) := by
+                simp
+              exact (congrArg Pauli_toBinSympPauli hco).trans (Pauli_toBinSympPauli_one (n := n))
+          simp [hia]
+  have hsum :
+      Pauli_toBinSympPauli (bsm.rowProduct h_comm ind) =
+        Finset.univ.sum (fun i => if ind i = 1 then bsm.row i else 0) := by
+    unfold BinSympMatrix.rowProduct BinSympMatrix.rowProductSub
+    exact hsum_aux Finset.univ
+  ext j
+  · have hx := congrArg (fun bp => bp.1 j) hsum
+    have hpair :
+        (Finset.univ.sum fun i => if ind i = 1 then bsm.row i else 0).1 j =
+          Finset.univ.sum (fun i => if ind i = 1 then bsm.X i j else 0) := by
+      induction (Finset.univ : Finset (Fin k)) using Finset.induction_on with
+      | empty =>
+          simp
+      | @insert a s ha ih =>
+          by_cases hia : ind a = 1
+          · simpa [ha, hia, BinSympMatrix.row] using ih
+          · simpa [ha, hia, BinSympMatrix.row] using ih
+    calc
+      (Pauli_toBinSympPauli (bsm.rowProduct h_comm ind)).1 j
+          = (Finset.univ.sum fun i => if ind i = 1 then bsm.row i else 0).1 j := by
+              simpa using hx
+      _ = Finset.univ.sum (fun i => if ind i = 1 then bsm.X i j else 0) := hpair
+      _ = Finset.univ.sum (fun i => bsm.X i j * ind i) := by
+            rw [sum_univ_if_eq_one]
+      _ = (bsm.X.transpose.mulVec ind) j := by
+            simp [Matrix.mulVec, dotProduct, mul_comm]
+      _ = (bsm.X.transpose.mulVec ind, bsm.Z.transpose.mulVec ind).1 j := by
+            rfl
+  · have hz := congrArg (fun bp => bp.2 j) hsum
+    have hpair :
+        (Finset.univ.sum fun i => if ind i = 1 then bsm.row i else 0).2 j =
+          Finset.univ.sum (fun i => if ind i = 1 then bsm.Z i j else 0) := by
+      induction (Finset.univ : Finset (Fin k)) using Finset.induction_on with
+      | empty =>
+          simp
+      | @insert a s ha ih =>
+          by_cases hia : ind a = 1
+          · simpa [ha, hia, BinSympMatrix.row] using ih
+          · simpa [ha, hia, BinSympMatrix.row] using ih
+    calc
+      (Pauli_toBinSympPauli (bsm.rowProduct h_comm ind)).2 j
+          = (Finset.univ.sum fun i => if ind i = 1 then bsm.row i else 0).2 j := by
+              simpa using hz
+      _ = Finset.univ.sum (fun i => if ind i = 1 then bsm.Z i j else 0) := hpair
+      _ = Finset.univ.sum (fun i => bsm.Z i j * ind i) := by
+            rw [sum_univ_if_eq_one]
+      _ = (bsm.Z.transpose.mulVec ind) j := by
+            simp [Matrix.mulVec, dotProduct, mul_comm]
+      _ = (bsm.X.transpose.mulVec ind, bsm.Z.transpose.mulVec ind).2 j := by
+            rfl
+
+lemma BinSympMatrix.selectedRows_sum_eq_mulVec {n k : ℕ} (bsm : BinSympMatrix k n)
+    (ind : Fin k → ZMod 2) :
+    Finset.univ.sum (fun i => if ind i = 1 then bsm.row i else 0) =
+      (bsm.X.transpose.mulVec ind, bsm.Z.transpose.mulVec ind) := by
+  ext j
+  · have hpair :
+        (Finset.univ.sum fun i => if ind i = 1 then bsm.row i else 0).1 j =
+          Finset.univ.sum (fun i => if ind i = 1 then bsm.X i j else 0) := by
+      induction (Finset.univ : Finset (Fin k)) using Finset.induction_on with
+      | empty =>
+          simp
+      | @insert a s ha ih =>
+          by_cases hia : ind a = 1
+          · simpa [ha, hia, BinSympMatrix.row] using ih
+          · simpa [ha, hia, BinSympMatrix.row] using ih
+    calc
+      (Finset.univ.sum fun i => if ind i = 1 then bsm.row i else 0).1 j
+          = Finset.univ.sum (fun i => if ind i = 1 then bsm.X i j else 0) := hpair
+      _ = Finset.univ.sum (fun i => bsm.X i j * ind i) := by
+            rw [sum_univ_if_eq_one]
+      _ = (bsm.X.transpose.mulVec ind) j := by
+            simp [Matrix.mulVec, dotProduct, mul_comm]
+      _ = (bsm.X.transpose.mulVec ind, bsm.Z.transpose.mulVec ind).1 j := by
+            rfl
+  · have hpair :
+        (Finset.univ.sum fun i => if ind i = 1 then bsm.row i else 0).2 j =
+          Finset.univ.sum (fun i => if ind i = 1 then bsm.Z i j else 0) := by
+      induction (Finset.univ : Finset (Fin k)) using Finset.induction_on with
+      | empty =>
+          simp
+      | @insert a s ha ih =>
+          by_cases hia : ind a = 1
+          · simpa [ha, hia, BinSympMatrix.row] using ih
+          · simpa [ha, hia, BinSympMatrix.row] using ih
+    calc
+      (Finset.univ.sum fun i => if ind i = 1 then bsm.row i else 0).2 j
+          = Finset.univ.sum (fun i => if ind i = 1 then bsm.Z i j else 0) := hpair
+      _ = Finset.univ.sum (fun i => bsm.Z i j * ind i) := by
+            rw [sum_univ_if_eq_one]
+      _ = (bsm.Z.transpose.mulVec ind) j := by
+            simp [Matrix.mulVec, dotProduct, mul_comm]
+      _ = (bsm.X.transpose.mulVec ind, bsm.Z.transpose.mulVec ind).2 j := by
+            rfl
+
+theorem BinSympCode_stab_eq_rowProduct {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
+    (s : ↥(PauliGroup_group n)) :
+    s ∈ (StabCode_of_BinSympMatrix bsm h_comm).stabs ↔ ∃ ind, bsm.rowProduct h_comm ind = s := by
+  constructor
+  · revert s
+    unfold StabCode_of_BinSympMatrix StabCode_of_StabSet BinSympMatrix.toStabSet
+    simp only
+    apply Subgroup.closure_induction
+    · intro x hx
+      simp only [Finset.mem_coe, Finset.mem_image] at hx
+      rcases hx with ⟨i, _, rfl⟩
+      exact ⟨Pi.single i (1 : ZMod 2), BinSympMatrix.rowProduct_single bsm h_comm i⟩
+    · exact ⟨0, BinSympMatrix.rowProduct_zero bsm h_comm⟩
+    · intro x y _ _ hx hy
+      rcases hx with ⟨ind₁, rfl⟩
+      rcases hy with ⟨ind₂, rfl⟩
+      exact ⟨fun i => ind₁ i + ind₂ i, BinSympMatrix.rowProduct_add bsm h_comm ind₁ ind₂⟩
+    · intro x _ hx
+      rcases hx with ⟨ind, rfl⟩
+      exact ⟨ind, (BinSympMatrix.rowProduct_inv_eq_self bsm h_comm ind).symm⟩
+  · rintro ⟨ind, rfl⟩
+    simp [BinSympMatrix.rowProduct, BinSympMatrix.stabClosure, StabCode_of_BinSympMatrix,
+      StabCode_of_StabSet]
+
+theorem BinSympCode_stab_eq_rowSpace {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
+    (s : ↥(PauliGroup_group n)) :
+    s ∈ (StabCode_of_BinSympMatrix bsm h_comm).stabs ↔
+      ∃ ind, bsm.rowProduct h_comm ind = s ∧
+        Pauli_toBinSympPauli s = (bsm.X.transpose.mulVec ind, bsm.Z.transpose.mulVec ind) := by
+  rw [BinSympCode_stab_eq_rowProduct]
+  constructor
+  · rintro ⟨ind, rfl⟩
+    exact ⟨ind, rfl, BinSympMatrix.rowProduct_binaryImage bsm h_comm ind⟩
+  · rintro ⟨ind, hs, _⟩
+    exact ⟨ind, hs⟩
 
 noncomputable instance {n : ℕ} (SC : StabCode n) : DecidablePred fun N => ∀ s ∈ SC.stabs, commute N s
  := Classical.decPred _
 
 def StabCode.normalizer {n : ℕ} (SC : StabCode n) : Finset (PauliGroup n) := {N | ∀ s ∈ SC.stabs, commute N s}
 
-def StabCode.undetectable {n : ℕ} (SC : StabCode n) (E : PauliGroup n) : Prop := E ∈ SC.normalizer ∧ E ∉ SC.stabs ∧ PauliGroup.normalized E
+def StabCode.undetectable {n : ℕ} (SC : StabCode n) (E : PauliGroup n) : Prop :=
+  E ∈ SC.normalizer ∧ (∀ s ∈ SC.stabs, Pauli_toBinSympPauli s ≠ Pauli_toBinSympPauli E) ∧
+    PauliGroup.normalized E
 
 noncomputable instance {n : ℕ} (SC : StabCode n) : DecidablePred fun E => SC.undetectable E
  := Classical.decPred _
@@ -724,11 +929,31 @@ def StabCode.nontrivial {n : ℕ} (SC : StabCode n) : Prop := ∃ ψ₁ ∈ SC.s
 --wait, why is this true again? If there are at least two code words, then the pauli error that maps one to another is undetectable
 theorem StabCode.undetectable_set_nonempty {n : ℕ} (SC : StabCode n) (hnt : SC.nontrivial) : SC.undetectable_set.Nonempty := sorry
 
-def StabCode.distance {n : ℕ} (SC : StabCode n) (hnt : SC.nontrivial) : ℕ := Finset.min' (Finset.image (fun E => pauli_weight E) SC.undetectable_set)
- (Finset.image_nonempty.2 (StabCode.undetectable_set_nonempty SC hnt))
+def StabCode.distance {n : ℕ} (SC : StabCode n) : ℕ :=
+  match Finset.min (SC.undetectable_set.image pauli_weight) with
+  | ⊤ => n + 1
+  | some d => d
 
 lemma commute_iff_norm_commute {n : ℕ} (P₁ P₂ : PauliGroup n) : commute P₁ P₂ ↔ commute (normalize_pauli P₁) P₂ := by
   simp [commute, anticommute_iff_normalize_anticommute P₁ P₂]
+
+lemma commute_symm {n : ℕ} (P₁ P₂ : PauliGroup n) : commute P₁ P₂ ↔ commute P₂ P₁ := by
+  simp [commute, anticommute_sym]
+
+lemma commute_iff_commute_norm_right {n : ℕ} (P₁ P₂ : PauliGroup n) :
+    commute P₁ P₂ ↔ commute P₁ (normalize_pauli P₂) := by
+  rw [commute_symm, commute_iff_norm_commute, commute_symm]
+
+lemma commute_iff_norm_commute_norm {n : ℕ} (P₁ P₂ : PauliGroup n) :
+    commute P₁ P₂ ↔ commute (normalize_pauli P₁) (normalize_pauli P₂) := by
+  rw [commute_iff_norm_commute, commute_iff_commute_norm_right]
+
+lemma commute_iff_symplecticProd_zero {n : ℕ} (P₁ P₂ : PauliGroup n) :
+    commute P₁ P₂ ↔ symplecticProd (Pauli_toBinSympPauli P₁) (Pauli_toBinSympPauli P₂) = 0 := by
+  rw [commute_iff_norm_commute_norm]
+  simpa using
+    (BinSympPauli_toPauli_commute_iff_symplecticProd_zero
+      (Pauli_toBinSympPauli P₁) (Pauli_toBinSympPauli P₂))
 
 lemma mem_normalizer_iff_norm_mem {n : ℕ} (SC : StabCode n) (E : PauliGroup n) : E ∈ SC.normalizer ↔ normalize_pauli E ∈ SC.normalizer := by
   unfold StabCode.normalizer
@@ -742,6 +967,32 @@ theorem StabCode.undetectable_iff_normalized_undetectable {n : ℕ} (SC : StabCo
 -/
 
 def BinSympMatrix.rowSpace {k n : ℕ} (B : BinSympMatrix k n):= Submodule.span (ZMod 2) (Set.range B.row)
+
+lemma BinSympMatrix.mem_rowSpace_iff_exists_indicator {k n : ℕ} (B : BinSympMatrix k n)
+    (bsp : BinSympPauli n) :
+    bsp ∈ B.rowSpace ↔ ∃ ind : Fin k → ZMod 2,
+      (B.X.transpose.mulVec ind, B.Z.transpose.mulVec ind) = bsp := by
+  constructor
+  · intro hbsp
+    rcases (Submodule.mem_span_range_iff_exists_fun (R := ZMod 2) (v := B.row) (x := bsp)).1 hbsp with
+      ⟨ind, hind⟩
+    refine ⟨ind, ?_⟩
+    calc
+      (B.X.transpose.mulVec ind, B.Z.transpose.mulVec ind)
+          = Finset.univ.sum (fun i => if ind i = 1 then B.row i else 0) := by
+              symm
+              exact B.selectedRows_sum_eq_mulVec ind
+      _ = ∑ i, ind i • B.row i := by
+            refine Finset.sum_congr rfl ?_
+            intro i hi
+            rcases Fin.exists_fin_two.mp ⟨ind i, rfl⟩ with h | h <;> simp [h]
+      _ = bsp := hind
+  · rintro ⟨ind, rfl⟩
+    rw [← B.selectedRows_sum_eq_mulVec ind]
+    exact Submodule.sum_mem _ (fun i _ => by
+      rcases Fin.exists_fin_two.mp ⟨ind i, rfl⟩ with h | h
+      · simp [h]
+      · simpa [h] using (Submodule.subset_span (Set.mem_range_self i) : B.row i ∈ B.rowSpace))
 
 def BinSympMatrix.undetectable {k n : ℕ} (B : BinSympMatrix k n) (bsp : BinSympPauli n) : Prop :=
   (∀ i, symplecticProd (B.row i) bsp = 0) ∧ bsp ∉ B.rowSpace
@@ -764,13 +1015,119 @@ theorem BinSympMatrix.undetectable_set_nonempty {k n : ℕ} (B : BinSympMatrix k
   rw [h_empty] at h_dist
   simp at h_dist
 
+lemma BinSympMatrix.binaryImage_mem_rowSpace_of_stab {k n : ℕ} (B : BinSympMatrix k n)
+    (h_comm : B.isCommuting) {s : PauliGroup n}
+    (hs : s ∈ (StabCode_of_BinSympMatrix B h_comm).stabs) :
+    Pauli_toBinSympPauli s ∈ B.rowSpace := by
+  rcases (BinSympCode_stab_eq_rowSpace B h_comm s).1 hs with ⟨ind, _, hsimg⟩
+  exact (B.mem_rowSpace_iff_exists_indicator _).2 ⟨ind, hsimg.symm⟩
+
+lemma BinSympMatrix.exists_stab_of_binaryImage_mem_rowSpace {k n : ℕ} (B : BinSympMatrix k n)
+    (h_comm : B.isCommuting) {bsp : BinSympPauli n} (hbsp : bsp ∈ B.rowSpace) :
+    ∃ s ∈ (StabCode_of_BinSympMatrix B h_comm).stabs, Pauli_toBinSympPauli s = bsp := by
+  rcases (B.mem_rowSpace_iff_exists_indicator bsp).1 hbsp with ⟨ind, rfl⟩
+  refine ⟨B.rowProduct h_comm ind, ?_, B.rowProduct_binaryImage h_comm ind⟩
+  exact (BinSympCode_stab_eq_rowProduct B h_comm _).2 ⟨ind, rfl⟩
+
+lemma BinSympMatrix.mem_normalizer_iff {k n : ℕ} (B : BinSympMatrix k n)
+    (h_comm : B.isCommuting) (E : PauliGroup n) :
+    E ∈ (StabCode_of_BinSympMatrix B h_comm).normalizer ↔
+      ∀ i, symplecticProd (B.row i) (Pauli_toBinSympPauli E) = 0 := by
+  constructor
+  · intro hE i
+    have hcomm :
+        commute E (BinSympPauli_toPauli (B.row i)) := by
+      have hmem : BinSympPauli_toPauli (B.row i) ∈ (StabCode_of_BinSympMatrix B h_comm).stabs := by
+        exact (BinSympCode_stab_eq_rowProduct B h_comm _).2
+          ⟨Pi.single i (1 : ZMod 2), B.rowProduct_single h_comm i⟩
+      unfold StabCode.normalizer at hE
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hE
+      exact hE _ hmem
+    have hs :
+        symplecticProd (Pauli_toBinSympPauli E)
+          (Pauli_toBinSympPauli (BinSympPauli_toPauli (B.row i))) = 0 :=
+      (commute_iff_symplecticProd_zero E (BinSympPauli_toPauli (B.row i))).1 hcomm
+    simpa [symplecticProd_comm] using hs
+  · intro hE
+    unfold StabCode.normalizer
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+    intro s hs
+    have hs' : s ∈ Subgroup.closure (SetLike.coe (B.toStabSet h_comm).stabs) := by
+      simpa [StabCode_of_BinSympMatrix, StabCode_of_StabSet] using hs
+    have hall : commute E s := by
+      refine Subgroup.closure_induction ?_ ?_ ?_ ?_ hs'
+      · intro x hx
+        simp only [BinSympMatrix.toStabSet, Finset.mem_coe, Finset.mem_image] at hx
+        rcases hx with ⟨i, _, rfl⟩
+        exact (commute_iff_symplecticProd_zero E (BinSympPauli_toPauli (B.row i))).2 <|
+          by simpa [symplecticProd_comm] using hE i
+      · simpa [commute, anticommute_sym] using commute_1x E
+      · intro x y _ _ hx hy
+        exact (commute_iff_commute _ _).2 <|
+          (Commute.mul_right
+            ((commute_iff_eq _ _).2 ((commute_iff_commute _ _).1 hx))
+            ((commute_iff_eq _ _).2 ((commute_iff_commute _ _).1 hy))).eq
+      · intro x _ hx
+        exact (commute_iff_commute _ _).2 <|
+          (Commute.inv_right
+            ((commute_iff_eq _ _).2 ((commute_iff_commute _ _).1 hx))).eq
+    exact hall
+
+lemma BinSympMatrix.stabCode_undetectable_iff {k n : ℕ} (B : BinSympMatrix k n)
+    (h_comm : B.isCommuting) (E : PauliGroup n) :
+    (StabCode_of_BinSympMatrix B h_comm).undetectable E ↔
+      B.undetectable (Pauli_toBinSympPauli E) ∧ PauliGroup.normalized E := by
+  constructor
+  · rintro ⟨h_norm, h_not_stab, hE_norm⟩
+    refine ⟨?_, hE_norm⟩
+    constructor
+    · exact (B.mem_normalizer_iff h_comm E).1 h_norm
+    · intro hbsp
+      rcases B.exists_stab_of_binaryImage_mem_rowSpace h_comm hbsp with ⟨s, hs, hsimg⟩
+      exact h_not_stab s hs hsimg
+  · rintro ⟨hbsp, hE_norm⟩
+    refine ⟨(B.mem_normalizer_iff h_comm E).2 hbsp.1, ?_, hE_norm⟩
+    intro s hs hsimg
+    exact hbsp.2 <| hsimg ▸ B.binaryImage_mem_rowSpace_of_stab h_comm hs
+
+lemma BinSympMatrix.stabCode_undetectable_toPauli_iff {k n : ℕ} (B : BinSympMatrix k n)
+    (h_comm : B.isCommuting) (bsp : BinSympPauli n) :
+    (StabCode_of_BinSympMatrix B h_comm).undetectable (BinSympPauli_toPauli bsp) ↔
+      B.undetectable bsp := by
+  simpa [BinSympPauli_toPauli_normalized] using
+    (B.stabCode_undetectable_iff h_comm (BinSympPauli_toPauli bsp))
+
 lemma BinSympMatrix.toStabCodeNontrivial_of_k_pos {k n : ℕ} (B : BinSympMatrix k n) (h_comm : B.isCommuting) (hk : 0 < k) :
   (StabCode_of_BinSympMatrix B h_comm).nontrivial := sorry
 
 --ultimate theorem linking binSymp representation distance
 theorem BinSympMatrix.distance_eq_distance {k n : ℕ} (B : BinSympMatrix k n) (h_comm : B.isCommuting) (hk : 0 < k) :
-  (StabCode_of_BinSympMatrix B h_comm).distance (B.toStabCodeNontrivial_of_k_pos h_comm hk) =
-  B.distance hk := sorry
+  (StabCode_of_BinSympMatrix B h_comm).distance = B.distance hk := by
+  have hweights :
+      (StabCode_of_BinSympMatrix B h_comm).undetectable_set.image pauli_weight =
+        B.undetectable_set.image BinSympPauli.weight := by
+    ext d
+    constructor
+    · intro hd
+      rcases Finset.mem_image.1 hd with ⟨E, hE, rfl⟩
+      have hE' : (StabCode_of_BinSympMatrix B h_comm).undetectable E := by
+        simpa [StabCode.undetectable_set] using hE
+      refine Finset.mem_image.2 ⟨Pauli_toBinSympPauli E, ?_, ?_⟩
+      · have hbsp := (B.stabCode_undetectable_iff h_comm E).1 hE'
+        simpa [BinSympMatrix.undetectable_set] using hbsp.1
+      · exact (pauli_weight_eq_BinSympPauli_weight E).symm
+    · intro hd
+      rcases Finset.mem_image.1 hd with ⟨bsp, hbsp, rfl⟩
+      have hbsp' : B.undetectable bsp := by
+        simpa [BinSympMatrix.undetectable_set] using hbsp
+      refine Finset.mem_image.2 ⟨BinSympPauli_toPauli bsp, ?_, ?_⟩
+      · have hE : (StabCode_of_BinSympMatrix B h_comm).undetectable (BinSympPauli_toPauli bsp) := by
+          simpa [B.stabCode_undetectable_toPauli_iff h_comm bsp]
+            using hbsp'
+        simpa [StabCode.undetectable_set] using hE
+      · exact pauli_weight_BinSympPauli_toPauli bsp
+  unfold StabCode.distance BinSympMatrix.distance
+  rw [hweights]
 end
 
 --TODO:

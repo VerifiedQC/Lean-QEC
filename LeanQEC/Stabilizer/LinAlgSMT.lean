@@ -117,7 +117,7 @@ lemma Finset.fold_range_add_one {β : Type*}
 
 variable {a b : ℕ}
 
-#check (Finset.range b).map (addLeftEmbedding a)
+-- #check (Finset.range b).map (addLeftEmbedding a)
 
 def Finset.range_btw (a b : ℕ) : Finset ℕ := (Finset.range b) \  (Finset.range a)
 

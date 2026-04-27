@@ -26,7 +26,7 @@ def pauli_embedding {n : ℕ} : (Fin n → Pauli) ↪ (Fin n → ↥𝐔ₙ[1]) 
     funext k
     rw [funext_iff] at hm
     have:= hm k
-    simp [←Subtype.ext_iff] at this
+    simp at this
     assumption
 
 instance {n : ℕ} : Coe (Finset (Fin n → Pauli)) (Finset (Fin n → ↥𝐔ₙ[1])) where
@@ -354,7 +354,7 @@ lemma PauliGroup_mem_kron {n₁ n₂ : ℕ}
   U₁ ⊗ₙ U₂ ∈ PauliGroup (n₁+n₂)
   := by
   rw [kron_PaulisE]
-  simp [Finset.coe_mem]
+  simp
 
 def kronOfPauli {n₁ n₂ : ℕ}
   (U₁ : PauliGroup n₁) (U₂ : PauliGroup n₂) :
