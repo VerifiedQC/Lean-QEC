@@ -187,12 +187,6 @@ lemma rowspace_constraints_correct {k n : ℕ}
 
 
 
-def kergen_correct {a b n : ℕ}
-  (M : Matrix (Fin a) (Fin b) (ZMod 2))
-  (gen : Fin n -> Fin b -> ZMod 2) : Prop :=
-  LinearMap.ker M.toLin' =
-  Submodule.span (ZMod 2) (Finset.image gen Finset.univ)
-
 lemma min_weight_ker_not_mem_rowspace_empty
   {n k₁ k₂ : ℕ} [NeZero n] [NeZero k₁] [NeZero (n - k₂)]
   (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
@@ -342,13 +336,13 @@ lemma dist_index_le_sound_contrapositive
     simpa [hindex, hker_bool, hrow_bool] using htest I
 -/
 
-theorem sat_translation_correct
+theorem bitvec_sat_translation_correct
   {n nlog k₁ k₂ : ℕ} [NeZero n] [NeZero k₁] [NeZero k₂] [NeZero (n - k₁)] [NeZero (n - k₂)]
   (css : CSS_pair n k₁ k₂)
   (xkergen : Fin (n - k₁) → Fin n → ZMod 2)
-  (xkergen_correct : kergen_correct css.H₁ xkergen)
+  --(xkergen_correct : kergen_correct css.H₁ xkergen)
   (zkergen : Fin (n - k₂) → Fin n → ZMod 2)
-  (zkergen_correct : kergen_correct css.H₂ zkergen)
+  --(zkergen_correct : kergen_correct css.H₂ zkergen)
   (dist : ℕ) :
   lt_dist_sat (flatten_matrix css.H₁) (flatten_matrix (Matrix.of xkergen)) dist nlog →
   lt_dist_sat (flatten_matrix css.H₂) (flatten_matrix (Matrix.of zkergen)) dist nlog →
