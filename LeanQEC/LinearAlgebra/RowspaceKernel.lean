@@ -1,19 +1,24 @@
-import Smt
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
 import Mathlib.LinearAlgebra.Basis.VectorSpace
 import Mathlib.LinearAlgebra.Finsupp.LinearCombination
 import Mathlib.InformationTheory.Hamming
 import Mathlib.LinearAlgebra.Dual.Lemmas
+import Mathlib.Tactic
 
 noncomputable instance Submodule_set_fintype (C : Submodule (ZMod 2) (Fin n → ZMod 2)) : Fintype ↑(C : Set (Fin n → ZMod 2)) := by
   classical
   infer_instance
 
-def Matrix.rowSpace {α β γ : Type*} [Semiring γ] (M : Matrix α β γ) := (Submodule.span γ (Set.range M.row))
+ lemma zmod2_val_eq_one_of_ne_zero (a : ZMod 2) (ha : a ≠ 0) : a.1 = 1 := by
+  have hlt : a.1 < 2 := a.2
+  have hne : a.1 ≠ 0 := by simpa using ha
+  omega
+
+def Matrix.rowSpace {α β γ : Type*} [Semiring γ] (M : Matrix α β γ) := (Submodule.span γ (Set.range M))
 
 lemma Matrix.row_mem_rowSpace {α β γ : Type*} {i : α} [Semiring γ] {M : Matrix α β γ} :
-  M.row i ∈ M.rowSpace := by
+  M i ∈ M.rowSpace := by
   apply Submodule.mem_span_of_mem (Set.mem_range_self _)
 
 lemma Submodule.mem_span_range_iff_sum {α : Type*} [Fintype α] {n : ℕ} (x : Fin n → (ZMod 2)) (v : α → Fin n → (ZMod 2))
@@ -53,7 +58,7 @@ lemma min_weight_ker_not_mem_rowspace_pos {n k₁ k₂ : ℕ}
   simp at h
 
 lemma mem_ker_iff_dotProd_rows_eq_zero {n k : ℕ} (M : Matrix (Fin k) (Fin n) (ZMod 2)) (x : Fin n → (ZMod 2)) :
-  x ∈ ((LinearMap.ker M.toLin')) ↔ ∀ i, (M.row i) ⬝ᵥ x = 0 := by
+  x ∈ ((LinearMap.ker M.toLin')) ↔ ∀ i, (M i) ⬝ᵥ x = 0 := by
   exact ⟨ fun h i => by simpa [ Matrix.mulVec, dotProduct ] using congr_fun h i, fun h => by ext i; simpa [ Matrix.mulVec, dotProduct ] using h i ⟩
 
 /-
@@ -89,7 +94,7 @@ lemma exists_ker_dotProduct_eq_one_of_not_mem_rowSpace {n k : ℕ} (M : Matrix (
     intro i
     rw [dotProduct_comm]
     rw [← dual_eq_dotProduct]
-    have : f (M.row i) ∈ Submodule.map f (Submodule.span (ZMod 2) (Set.range M.row)) :=
+    have : f (M i) ∈ Submodule.map f (Submodule.span (ZMod 2) (Set.range M)) :=
       Submodule.mem_map_of_mem (Submodule.subset_span (Set.mem_range_self i))
     rw [hf_bot] at this
     exact (Submodule.mem_bot _).mp this
@@ -112,28 +117,76 @@ lemma ex_mem_submodule_non_orth_iff_non_orth_mem_basis {n : ℕ} (S : Set (Fin n
   · exact ⟨ h.choose, Submodule.subset_span h.choose_spec.1, by simpa [ h.choose_spec.2 ] ⟩;
   · exact ⟨ 0, Submodule.zero_mem _, by simp +decide [ h ] ⟩
 
-def finsetOr {α : Type*} (S : Finset α) (f : α → Prop) := S.fold (· ∨ ·) False f
-
-lemma finsetOr_iff_exists {α : Type*} [DecidableEq α] (S : Finset α) (f : α → Prop) :
-  (∃ a ∈ S, f a) ↔ finsetOr S f := by
-  constructor
-  · rintro ⟨a, ha₁, ha₂⟩
-    unfold finsetOr
-    rw [←(Finset.insert_eq_of_mem ha₁), Finset.fold_insert_idem]
-    apply Or.inl ha₂
-  · contrapose!
-    intro h_f
-    induction S using Finset.induction_on with
-    | empty => simp [finsetOr]
-    | insert a s ha ih =>
-      simp [finsetOr]
-      refine' ⟨h_f a (Finset.mem_insert_self _ _), ?_⟩
-      apply ih
-      intro x xs
-      apply h_f _ (Finset.mem_insert_of_mem xs)
-
-
 lemma weight_le_disj {n k : ℕ} {z : Fin n → (ZMod 2)} : hammingNorm z ≤ k ↔ ∑ i, (z i).1 ≤ k := by
   simp +decide only [hammingNorm];
   rw [ Finset.card_filter ];
   exact iff_of_eq ( by congr; ext i; rcases z i with ( _ | _ | i ) <;> trivial )
+
+
+lemma sum_id_dotProduct_eq {n : ℕ} (S : Finset (Fin n → ZMod 2)) (x : Fin n → ZMod 2) :
+  S.sum id ⬝ᵥ x = S.sum (fun s => s ⬝ᵥ x) := by
+  induction' S using Finset.induction_on with a s ha ih
+  · simp [dotProduct]
+  · rw [Finset.sum_insert ha, Finset.sum_insert ha, id, add_dotProduct]; congr 1
+
+
+lemma exists_dotProduct_one_of_sum
+  {n : ℕ} {S : Finset (Fin n → ZMod 2)} {y x : Fin n → ZMod 2}
+  (hS_sum : S.sum id = y) (hy : y ⬝ᵥ x = 1) :
+  ∃ s ∈ S, s ⬝ᵥ x = 1 := by
+  by_contra h_all
+  push_neg at h_all
+  have h_zero : ∀ s ∈ S, s ⬝ᵥ x = 0 := by
+    intro s hs
+    rcases Fin.exists_fin_two.mp ⟨s ⬝ᵥ x, rfl⟩ with h | h
+    · exact h
+    · exact absurd h (h_all s hs)
+  have : S.sum id ⬝ᵥ x = 0 := by
+    rw [sum_id_dotProduct_eq]
+    exact Finset.sum_eq_zero (fun s hs => h_zero s hs)
+  rw [hS_sum] at this
+  exact absurd this (by rw [hy]; decide)
+
+
+lemma Matrix.mem_rowSpace_ZMod2 {n₁ n₂ : ℕ}
+  {M : Matrix (Fin n₁) (Fin n₂) (ZMod 2)}
+  {x : Fin n₂ → (ZMod 2)} :
+  x ∈ M.rowSpace ↔
+  ∃ (S : Finset ((Fin n₂) → (ZMod 2))),
+    S ⊆ (Finset.image M Finset.univ) ∧ S.sum id = x := by
+  constructor <;> intro hx' <;> simp_all +decide [Matrix.rowSpace]
+  · refine' Submodule.span_induction _ _ _ _ hx'
+    · exact fun x hx => ⟨{x}, by aesop⟩
+    · exact ⟨∅, Finset.empty_subset _, rfl⟩
+    · rintro x y hx hy ⟨S, hS₁, hS₂⟩ ⟨T, hT₁, hT₂⟩
+      use S \ T ∪ T \ S
+      simp_all +decide [Finset.subset_iff]
+      rw [Finset.sum_union]
+      · rw [← hS₂, ← hT₂,
+          ← Finset.sum_sdiff (Finset.inter_subset_left : S ∩ T ⊆ S),
+          ← Finset.sum_sdiff (Finset.inter_subset_right : S ∩ T ⊆ T)]
+        simp +decide; ring_nf!; aesop
+      · exact Finset.disjoint_left.mpr fun x hx₁ hx₂ => by aesop
+    · rintro a x hx ⟨S, hS₁, hS₂⟩
+      fin_cases a <;> simp_all +decide
+      · exact ⟨∅, by norm_num⟩
+      · use S
+  · exact hx'.choose_spec.2 ▸ Submodule.sum_mem _ fun y hy =>
+      Submodule.subset_span <| Set.mem_range.mpr <| by
+        have := hx'.choose_spec.1 hy; aesop
+
+
+lemma exists_row_of_exists_mem_rowspace_non_orth {n k : ℕ}
+  {M : Matrix (Fin k) (Fin n) (ZMod 2)}
+  {x y : Fin n → (ZMod 2)}
+  (hy₁ : y ∈ M.rowSpace)
+  (hy₂ : y ⬝ᵥ x = 1) :
+  ∃ r, (M r) ⬝ᵥ x = 1 := by
+  rw [Matrix.mem_rowSpace_ZMod2] at hy₁
+  obtain ⟨S, hS_sub, hS_sum⟩ := hy₁
+  obtain ⟨s, hs_mem, hs_dot⟩ := exists_dotProduct_one_of_sum hS_sum hy₂
+  have hs_row := hS_sub hs_mem
+  simp only [Finset.mem_image, Finset.mem_univ, true_and] at hs_row
+  obtain ⟨i, hi⟩ := hs_row
+  refine ⟨i, ?_⟩
+  rwa [hi]

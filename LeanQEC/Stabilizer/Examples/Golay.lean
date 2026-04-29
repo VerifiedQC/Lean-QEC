@@ -1,4 +1,4 @@
-import LeanQEC.Stabilizer.BitVecSAT
+import LeanQEC.ComputerAlgebra.BitVecSAT
 import Lean.Elab.Tactic.BVDecide
 import Std.Tactic.BVDecide
 

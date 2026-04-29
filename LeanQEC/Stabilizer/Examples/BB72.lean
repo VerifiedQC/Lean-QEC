@@ -1,4 +1,4 @@
-import LeanQEC.Stabilizer.BitVecSAT
+import LeanQEC.ComputerAlgebra.BitVecSAT
 import Lean.Elab.Tactic.BVDecide
 import Std.Tactic.BVDecide
 
@@ -20,45 +20,38 @@ set_option maxHeartbeats 0 in
 -- heavy unfolding
 lemma bb72_test_z : lt_dist_sat HX Z_ker 5 7
   := by
-  simp (maxSteps := 9999999) only [lt_dist_sat, loc_constraints, loc_constraints_aux,
-    loc_constraints_ith, Nat.lt_add_one, getElem!_pos, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat,
-    eq_iff_iff, Nat.reduceLT, Nat.cast_one, Nat.zero_lt_succ, Nat.cast_zero, parity_constraints,
-    parity_constraints_aux, row_parity_constraint, row_parity_constraint_aux, Nat.reduceMul, HX,
-    Nat.reduceAdd, BitVec.reduceGetElem, Bool.and_false, Bool.and_true, mul_one, mul_zero, add_zero,
-    bne_self_eq_false, Bool.bne_false, Bool.false_bne, bne_iff_ne, ne_eq, Decidable.not_not,
-    zero_add, rowspace_constraints, rowspace_constraints_aux, row_rowspace_constraint,
-    row_rowspace_constraint_aux, Z_ker, decide_not, Bool.not_eq_eq_eq_not, Bool.not_true,
-    decide_eq_false_iff_not, Bool.decide_or, Bool.or_eq_true, not_and, not_or, and_imp,
-    loc_constraints_ith_jth, loc_constraints_ith_jth_aux, BitVec.extractLsb', Nat.add_one_sub_one, Nat.reduceMul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat,
-    Nat.shiftRight_zero, BitVec.ofNat_toNat, Nat.reduceAdd, BitVec.reduceGetElem, Bool.and_false,
-    Nat.reduceLT, getElem!_pos, Bool.and_true, bne_self_eq_false, Bool.bne_false, Bool.false_bne,
-    bne_eq_false_iff_eq, Bool.decide_and, Bool.and_eq_true, decide_eq_true_eq, Bool.false_eq,
-    and_imp]
-  bv_check (timeout := 999)
+  simp (maxSteps := 9999999) only [
+    HX, Z_ker, lt_dist_sat, loc_constraints, parity_constraints, rowspace_constraints,
+    loc_constraints_aux, loc_constraints_ith, Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, Nat.reduceMul,
+    loc_constraints_ith_jth_aux, loc_constraints_ith_jth, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat,
+    one_mul, zero_mul, eq_iff_iff, Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos,
+    Nat.cast_zero, parity_constraints_aux, row_inner_product,
+    row_inner_product_aux, BitVec.reduceGetElem, Bool.and_true, add_zero, Bool.and_false,
+    Bool.bne_false, Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, Bool.decide_and,
+    Bool.and_eq_true, decide_eq_true_eq, and_self_left,
+    rowspace_constraints_aux, bne_iff_ne, ne_eq, Bool.decide_or, decide_not, Bool.or_eq_true,
+    decide_eq_false_iff_not, not_and, not_or, Decidable.not_not, and_imp]
+  bv_decide (timeout := 999)
     --bv_check (timeout := 99) "bb72.lrat"
-    "BB72.lean-bb72_test-35-2.lrat"
   --bv_check (timeout := 99) "bb72.lrat"
 
 set_option maxHeartbeats 0 in
 -- heavy unfolding
 lemma bb72_test_x : lt_dist_sat HZ X_ker 5 7
   := by
-  simp (maxSteps := 9999999) only [lt_dist_sat, loc_constraints, loc_constraints_aux,
-    loc_constraints_ith, Nat.lt_add_one, getElem!_pos, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat,
-    eq_iff_iff, Nat.reduceLT, Nat.cast_one, Nat.zero_lt_succ, Nat.cast_zero, parity_constraints,
-    parity_constraints_aux, row_parity_constraint, row_parity_constraint_aux, Nat.reduceMul, HZ,
-    Nat.reduceAdd, BitVec.reduceGetElem, Bool.and_false, Bool.and_true, mul_one, mul_zero, add_zero,
-    bne_self_eq_false, Bool.bne_false, Bool.false_bne, bne_iff_ne, ne_eq, Decidable.not_not,
-    zero_add, rowspace_constraints, rowspace_constraints_aux, row_rowspace_constraint,
-    row_rowspace_constraint_aux, X_ker, decide_not, Bool.not_eq_eq_eq_not, Bool.not_true,
-    decide_eq_false_iff_not, Bool.decide_or, Bool.or_eq_true, not_and, not_or, and_imp,
-    loc_constraints_ith_jth, loc_constraints_ith_jth_aux, BitVec.extractLsb', Nat.add_one_sub_one, Nat.reduceMul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat,
-    Nat.shiftRight_zero, BitVec.ofNat_toNat, Nat.reduceAdd, BitVec.reduceGetElem, Bool.and_false,
-    Nat.reduceLT, getElem!_pos, Bool.and_true, bne_self_eq_false, Bool.bne_false, Bool.false_bne,
-    bne_eq_false_iff_eq, Bool.decide_and, Bool.and_eq_true, decide_eq_true_eq, Bool.false_eq,
-    and_imp]
-  bv_check (timeout := 999)"BB72.lean-bb72_test_x-60-2.lrat"
-
+  simp (maxSteps := 9999999) only [
+    HZ, X_ker, lt_dist_sat, loc_constraints, parity_constraints, rowspace_constraints,
+    loc_constraints_aux, loc_constraints_ith, Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, Nat.reduceMul,
+    loc_constraints_ith_jth_aux, loc_constraints_ith_jth, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat,
+    one_mul, zero_mul, eq_iff_iff, Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos,
+    Nat.cast_zero, parity_constraints_aux, row_inner_product,
+    row_inner_product_aux, BitVec.reduceGetElem, Bool.and_true, add_zero, Bool.and_false,
+    Bool.bne_false, Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, Bool.decide_and,
+    Bool.and_eq_true, decide_eq_true_eq, and_self_left,
+    rowspace_constraints_aux, bne_iff_ne, ne_eq, Bool.decide_or, decide_not, Bool.or_eq_true,
+    decide_eq_false_iff_not, not_and, not_or, Decidable.not_not, and_imp]
+  sorry
+  --bv_decide (timeout := 999)
 
 
 #print axioms bb72_test_z

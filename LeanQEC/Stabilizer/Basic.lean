@@ -1,5 +1,5 @@
 import LeanQEC.States.Basic
-import LeanQEC.Stabilizer.LinAlg
+import LeanQEC.LinearAlgebra.RowspaceKernel
 import LeanQEC.Unitary.Paulis.Basic
 variable {n : ℕ}
 

@@ -1,7 +1,8 @@
 import Mathlib.Data.BitVec
-
+import LeanQEC.LinearAlgebra.RowspaceKernel
 
 --locs : BitVec (k * nlog), where nlog is ceiling of log_2 n
+@[simp]
 def loc_constraints_ith_jth
   {nlog k : ℕ}
   (locs : BitVec (k * nlog))
@@ -10,6 +11,7 @@ def loc_constraints_ith_jth
   --obtain jth entry of locs, which is a BitVec of length nlog
   --and test it against i, which is a natural number
 
+@[simp]
 def loc_constraints_ith_jth_aux
   {nlog k : ℕ}
   (locs : BitVec (k * nlog))
@@ -19,6 +21,7 @@ def loc_constraints_ith_jth_aux
   | j' + 1 => loc_constraints_ith_jth locs i j ∨
               loc_constraints_ith_jth_aux locs i j'
 
+@[simp]
 def loc_constraints_ith
   {n nlog k : ℕ}
   (locs : BitVec (k * nlog))
@@ -26,6 +29,7 @@ def loc_constraints_ith
   (i : ℕ) :=
   errs[i]! = loc_constraints_ith_jth_aux locs i (k-1)
 
+@[simp]
 def loc_constraints_aux
   {n nlog k : ℕ}
   (locs : BitVec (k * nlog))
@@ -43,23 +47,28 @@ def loc_constraints
   (errs : BitVec n) :=
   loc_constraints_aux locs errs (n-1)
 
+@[simp]
 def row_inner_product_aux {n k : ℕ} (M : BitVec (k * n)) (x : BitVec n) (r c : ℕ) : Bool :=
-  let i := (r * k) + c
+  let i := (r * n) + c
   match c with
   | 0 => x[c]! && M[i]!
   | c' + 1 => (x[c]! && M[k]!) ^^ row_inner_product_aux M x r c'
 
+@[simp]
 def row_inner_product {n k : ℕ} (M : BitVec (k * n)) (x : BitVec n) (r : ℕ) : Bool :=
   row_inner_product_aux M x r (n-1)
 
+@[simp]
 def parity_constraints_aux {stabdim n : ℕ} (stabs : BitVec (stabdim * n)) (errs : BitVec n) (r : ℕ) :=
   match r with
   | 0 => !(row_inner_product stabs errs 0)
   | r' + 1 => !(row_inner_product stabs errs r) ∧ parity_constraints_aux stabs errs r'
 
+
 def parity_constraints {stabdim n : ℕ} (stabs : BitVec (stabdim * n)) (errs : BitVec n) :=
   parity_constraints_aux stabs errs (stabdim-1)
 
+@[simp]
 def rowspace_constraints_aux
   {kerdim n : ℕ}
   (ker : BitVec (kerdim * n))

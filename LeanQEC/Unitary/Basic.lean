@@ -3,7 +3,7 @@
 import LeanQEC.QuantumInfoSkeleton
 
 import LeanQEC.States.BitVec
-import LeanQEC.KroneckerLemmas
+import LeanQEC.LinearAlgebra.KroneckerLemmas
 import LeanQEC.States.Phase
 import LeanQEC.AI_Generated.TediousLinearAlgebra
 import LeanQEC.AI_Generated.ne0_unitary

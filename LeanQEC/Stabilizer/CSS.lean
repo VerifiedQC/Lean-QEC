@@ -1,5 +1,4 @@
 import LeanQEC.Stabilizer.Basic
-import LeanQEC.Stabilizer.LinAlg
 import LeanQEC.Classical_EC.Basic
 
 
@@ -158,11 +157,6 @@ private lemma CSS_BSM_rowSpace_iff
         simpa using Submodule.smul_mem ((CSS_BSM H₁ H₂).rowSpace) a hy
     simpa [Prod.ext_iff] using
       Submodule.add_mem ((CSS_BSM H₁ H₂).rowSpace) hx_pair hz_pair
-
-private lemma zmod2_val_eq_one_of_ne_zero (a : ZMod 2) (ha : a ≠ 0) : a.1 = 1 := by
-  have hlt : a.1 < 2 := a.2
-  have hne : a.1 ≠ 0 := by simpa using ha
-  omega
 
 private lemma zmod2_or_val_ge_left (a b : ZMod 2) : a.1 ≤ (ZMod2_or a b).1 := by
   by_cases ha : a = 0
@@ -350,7 +344,7 @@ lemma toCodeSpace_subset_dual_of_orth_gen {n k₁ k₂ : ℕ} (M₁ : Matrix (Fi
   have hsubset : M₁.rowSpace ≤ CodeSpace.dualCode M₂.rowSpace := by
     refine Submodule.span_le.2 ?_
     rintro y ⟨i, rfl⟩
-    show M₁.row i ∈ M₂.rowSpace.orthogonalBilin (dotProductBilin _ _)
+    show M₁ i ∈ M₂.rowSpace.orthogonalBilin (dotProductBilin _ _)
     rw [Submodule.mem_orthogonalBilin_iff]
     intro z hz
     refine Submodule.span_induction ?_ ?_ ?_ ?_ hz
@@ -367,7 +361,7 @@ lemma toCodeSpace_subset_dual_of_orth_gen {n k₁ k₂ : ℕ} (M₁ : Matrix (Fi
   exact hsubset hx
 
 def CSS_pair.of_matrices [NeZero k₁] [NeZero k₂] (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)) (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
-(h_orth : H₁.mutually_orth_rows H₂) (H₁_ind : LinearIndependent (ZMod 2) (H₁.row)) (H₂_ind : LinearIndependent (ZMod 2) (H₂.row)) : CSS_pair n k₁ k₂ where
+(h_orth : H₁.mutually_orth_rows H₂) (H₁_ind : LinearIndependent (ZMod 2) H₁) (H₂_ind : LinearIndependent (ZMod 2) H₂) : CSS_pair n k₁ k₂ where
   C₁ := H₁.toCodeSpace.dualCode
   C₂ := H₂.toCodeSpace.dualCode
   H_dual := by

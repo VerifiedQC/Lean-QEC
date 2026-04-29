@@ -1,6 +1,6 @@
 import LeanQEC.States.BitVec
 import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
-import LeanQEC.Stabilizer.LinAlg
+import LeanQEC.LinearAlgebra.RowspaceKernel
 
 abbrev CodeSpace (n : ℕ) := Submodule (ZMod 2) (Fin n → ZMod 2)
 
@@ -39,7 +39,7 @@ lemma injective_of_linearIndependent {ι} {s : ι → (Fin n → ZMod 2)}
   apply (LinearIndependent.injective hlin)
 
 def CodeSpace.generatorMatrixOf (C : CodeSpace n) (G : Matrix α (Fin n) (ZMod 2))
-  : Prop := (LinearIndependent (ZMod 2) G.row) ∧ Submodule.span (ZMod 2) (Finset.image (fun r => G r) Finset.univ) = C
+  : Prop := (LinearIndependent (ZMod 2) G) ∧ Submodule.span (ZMod 2) (Finset.image (fun r => G r) Finset.univ) = C
 
 lemma CodeSpace.generatorMatrixOf_span_map_eq {C : CodeSpace n} {G : Matrix α (Fin n) (ZMod 2)} (hgen : C.generatorMatrixOf G) :
   Submodule.span (ZMod 2) (Finset.map ⟨(fun r => G r), injective_of_linearIndependent hgen.1⟩ Finset.univ) = C := by
@@ -125,7 +125,7 @@ theorem genMatrix_size_eq {k : ℕ} (C : CodeSpace n) (G : Matrix (Fin k) (Fin n
   rw [←this]
   have:= (finrank_span_eq_card hgen.1) --just converting this got me something really weird
   rw [Fintype.card_fin] at this
-  have h : Set.range G.row = (Finset.image G.row Finset.univ) := by simp
+  have h : Set.range G = (Finset.image G Finset.univ) := by simp
   rw [h] at this
   exact this
 

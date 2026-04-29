@@ -48,14 +48,14 @@ lemma Finset.vec_inner_product_eq_inner_product
   {n k d j : ℕ} {I : ℕ → ℕ}
   {M : Matrix (Fin k) (Fin n) (ZMod 2)} (hj : j < k) :
   vec_inner_product n (indexed_by I d) (M.castnat.castbool j) =
-  Bool.ofNat ((M.row ⟨j, hj⟩) ⬝ᵥ (I_to_vec n d I)).val := by
+  Bool.ofNat ((M ⟨j, hj⟩) ⬝ᵥ (I_to_vec n d I)).val := by
   let w₁ : ℕ → ZMod 2 := fun i => if hi : i < n then I_to_vec n d I ⟨i, hi⟩ else 0
   let w₂ : ℕ → ZMod 2 := fun i => M.castnat j i
   rw [Finset.vec_inner_product_eq_sum_range
     (w₁ := w₁) (w₂ := w₂)]
   · have hsum :
         Finset.sum (Finset.range n) (fun i => w₁ i * w₂ i) =
-          (M.row ⟨j, hj⟩) ⬝ᵥ (I_to_vec n d I) := by
+          (M ⟨j, hj⟩) ⬝ᵥ (I_to_vec n d I) := by
       calc
         Finset.sum (Finset.range n) (fun i => w₁ i * w₂ i)
             = Finset.sum (Finset.range n) (fun i => w₂ i * w₁ i) := by
@@ -65,7 +65,7 @@ lemma Finset.vec_inner_product_eq_inner_product
         _ = ∑ i : Fin n, w₂ i * w₁ i := by
               symm
               exact Fin.sum_univ_eq_sum_range (fun i => w₂ i * w₁ i) n
-        _ = (M.row ⟨j, hj⟩) ⬝ᵥ (I_to_vec n d I) := by
+        _ = (M ⟨j, hj⟩) ⬝ᵥ (I_to_vec n d I) := by
               simp [dotProduct, w₁, w₂, Matrix.castnat, hj]
     rw [hsum]
   · intro i hi
@@ -125,32 +125,6 @@ lemma mem_ker_iff {n k d : ℕ}
   convert (hp ⟨i, hi⟩)
   assumption
 
-lemma Matrix.mem_rowSpace_ZMod2 {n₁ n₂ : ℕ}
-  {M : Matrix (Fin n₁) (Fin n₂) (ZMod 2)}
-  {x : Fin n₂ → (ZMod 2)} :
-  x ∈ M.rowSpace ↔
-  ∃ (S : Finset ((Fin n₂) → (ZMod 2))),
-    S ⊆ (Finset.image M.row Finset.univ) ∧ S.sum id = x := by
-  constructor <;> intro hx' <;> simp_all +decide [Matrix.rowSpace]
-  · refine' Submodule.span_induction _ _ _ _ hx'
-    · exact fun x hx => ⟨{x}, by aesop⟩
-    · exact ⟨∅, Finset.empty_subset _, rfl⟩
-    · rintro x y hx hy ⟨S, hS₁, hS₂⟩ ⟨T, hT₁, hT₂⟩
-      use S \ T ∪ T \ S
-      simp_all +decide [Finset.subset_iff]
-      rw [Finset.sum_union]
-      · rw [← hS₂, ← hT₂,
-          ← Finset.sum_sdiff (Finset.inter_subset_left : S ∩ T ⊆ S),
-          ← Finset.sum_sdiff (Finset.inter_subset_right : S ∩ T ⊆ T)]
-        simp +decide; ring_nf!; aesop
-      · exact Finset.disjoint_left.mpr fun x hx₁ hx₂ => by aesop
-    · rintro a x hx ⟨S, hS₁, hS₂⟩
-      fin_cases a <;> simp_all +decide
-      · exact ⟨∅, by norm_num⟩
-      · use S
-  · exact hx'.choose_spec.2 ▸ Submodule.sum_mem _ fun y hy =>
-      Submodule.subset_span <| Set.mem_range.mpr <| by
-        have := hx'.choose_spec.1 hy; aesop
 
 lemma Matrix.ZMod_sum_dotprod_exists {n₁ n₂ : ℕ} {S : Finset (Fin n₁)} {f : Fin n₁ → (Fin n₂ → (ZMod 2))}
   {x₁ x₂ : Fin n₂ → (ZMod 2)} (hsum : S.sum f = x₁) (hprod : x₁ ⬝ᵥ x₂ = 1) : ∃ r ∈ S, (f r) ⬝ᵥ x₂ = 1 := by
@@ -180,44 +154,6 @@ lemma Matrix.ZMod_sum_dotprod_exists {n₁ n₂ : ℕ} {S : Finset (Fin n₁)} {
     decide
   exact hprod_ne (hsum ▸ hsum_zero)
 
-private lemma sum_id_dotProduct_eq {n : ℕ} (S : Finset (Fin n → ZMod 2)) (x : Fin n → ZMod 2) :
-  S.sum id ⬝ᵥ x = S.sum (fun s => s ⬝ᵥ x) := by
-  induction' S using Finset.induction_on with a s ha ih
-  · simp [dotProduct]
-  · rw [Finset.sum_insert ha, Finset.sum_insert ha, id, add_dotProduct]; congr 1
-
-private lemma exists_dotProduct_one_of_sum
-  {n : ℕ} {S : Finset (Fin n → ZMod 2)} {y x : Fin n → ZMod 2}
-  (hS_sum : S.sum id = y) (hy : y ⬝ᵥ x = 1) :
-  ∃ s ∈ S, s ⬝ᵥ x = 1 := by
-  by_contra h_all
-  push_neg at h_all
-  have h_zero : ∀ s ∈ S, s ⬝ᵥ x = 0 := by
-    intro s hs
-    rcases Fin.exists_fin_two.mp ⟨s ⬝ᵥ x, rfl⟩ with h | h
-    · exact h
-    · exact absurd h (h_all s hs)
-  have : S.sum id ⬝ᵥ x = 0 := by
-    rw [sum_id_dotProduct_eq]
-    exact Finset.sum_eq_zero (fun s hs => h_zero s hs)
-  rw [hS_sum] at this
-  exact absurd this (by rw [hy]; decide)
-
-lemma exists_row_of_exists_mem_rowspace_non_orth {n k : ℕ}
-  {M : Matrix (Fin k) (Fin n) (ZMod 2)}
-  {x y : Fin n → (ZMod 2)}
-  (hy₁ : y ∈ M.rowSpace)
-  (hy₂ : y ⬝ᵥ x = 1) :
-  ∃ r, (M.row r) ⬝ᵥ x = 1 := by
-  rw [Matrix.mem_rowSpace_ZMod2] at hy₁
-  obtain ⟨S, hS_sub, hS_sum⟩ := hy₁
-  obtain ⟨s, hs_mem, hs_dot⟩ := exists_dotProduct_one_of_sum hS_sum hy₂
-  have hs_row := hS_sub hs_mem
-  simp only [Finset.mem_image, Finset.mem_univ, true_and] at hs_row
-  obtain ⟨i, hi⟩ := hs_row
-  refine ⟨i, ?_⟩
-  rwa [hi]
-
 lemma not_mem_rowspace_iff {n k₁ k₂ d : ℕ}
   {M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)}
   {M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)}
@@ -231,7 +167,7 @@ lemma not_mem_rowspace_iff {n k₁ k₂ d : ℕ}
   constructor
   · rintro ⟨i, ⟨hi₁, hi₂⟩⟩
     rw [Finset.vec_inner_product_eq_inner_product] at hi₂
-    refine ⟨M₂.row ⟨i, hi₁⟩, ⟨?_, ?_⟩⟩
+    refine ⟨M₂ ⟨i, hi₁⟩, ⟨?_, ?_⟩⟩
     · rw [←Matrix.toLin'_apply, ←LinearMap.mem_ker, ←hK]
       exact Matrix.row_mem_rowSpace
     rw [Bool.ofNat_ZMod2_true] at hi₂

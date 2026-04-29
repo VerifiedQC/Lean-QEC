@@ -1,5 +1,5 @@
 import LeanQEC.Stabilizer.CSS
-import LeanQEC.Stabilizer.LinAlg
+import LeanQEC.LinearAlgebra.RowspaceKernel
 import LeanQEC.Stabilizer.LinAlgSMT
 
 
@@ -129,7 +129,7 @@ def H_Z_ker_72 : Matrix (Fin 42) (Fin (6*6 + 6*6)) (ZMod 2) :=
 ]
 
 
-lemma BB_A_ker_ker : ∀ i j, dotProduct (H_Z_ker_72.row i) ((BB_castsum H_Z_72).row j) = 0 := by
+lemma BB_A_ker_ker : ∀ i j, dotProduct (H_Z_ker_72 i) ((BB_castsum H_Z_72) j) = 0 := by
   --native_decide
   sorry
 

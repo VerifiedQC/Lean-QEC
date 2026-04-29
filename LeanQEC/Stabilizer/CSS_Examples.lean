@@ -1,5 +1,5 @@
 import LeanQEC.Stabilizer.CSS
-import LeanQEC.Stabilizer.LinAlg
+import LeanQEC.LinearAlgebra.RowspaceKernel
 import LeanQEC.Stabilizer.LinAlgSMT
 import LeanQEC.TranslationCorrectness
 
@@ -17,9 +17,9 @@ def Shor_Z : Matrix (Fin 6) (Fin 9) (ZMod 2) :=  !![
   0, 0, 0, 0, 0, 0, 0, 1, 1;
 ]
 
-lemma Shor_Z_ind : LinearIndependent (ZMod 2) Shor_Z.row := sorry
+lemma Shor_Z_ind : LinearIndependent (ZMod 2) Shor_Z := sorry
 
-lemma Shor_X_ind : LinearIndependent (ZMod 2) Shor_X.row := sorry
+lemma Shor_X_ind : LinearIndependent (ZMod 2) Shor_X := sorry
 
 
 def Shor_Z_cast := Shor_Z.castnat.castbool
