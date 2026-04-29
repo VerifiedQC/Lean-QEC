@@ -1,5 +1,6 @@
 import Mathlib.Data.BitVec
 import LeanQEC.LinearAlgebra.RowspaceKernel
+import Init.Data.BitVec.Basic
 
 --locs : BitVec (k * nlog), where nlog is ceiling of log_2 n
 @[simp]
@@ -47,22 +48,22 @@ def loc_constraints
   (errs : BitVec n) :=
   loc_constraints_aux locs errs (n-1)
 
-@[simp]
-def row_inner_product_aux {n k : ℕ} (M : BitVec (k * n)) (x : BitVec n) (r c : ℕ) : Bool :=
-  let i := (r * n) + c
-  match c with
-  | 0 => x[c]! && M[i]!
-  | c' + 1 => (x[c]! && M[k]!) ^^ row_inner_product_aux M x r c'
 
-@[simp]
-def row_inner_product {n k : ℕ} (M : BitVec (k * n)) (x : BitVec n) (r : ℕ) : Bool :=
-  row_inner_product_aux M x r (n-1)
+def dot_product_aux {n : ℕ} (x y : BitVec n) (c : ℕ) : Bool :=
+  match c with
+  | 0 => x[c]! && y[c]!
+  | c' + 1 => (x[c]! && y[c]!) ^^ dot_product_aux x y c'
+
+def BitVec.dot_product {n : ℕ} (x y : BitVec n) := dot_product_aux x y (n-1)
+
+def BitVec.row {n k : ℕ} (M : BitVec (k * n)) (r : ℕ) : BitVec n := M.extractLsb' (r * n) n
+
 
 @[simp]
 def parity_constraints_aux {stabdim n : ℕ} (stabs : BitVec (stabdim * n)) (errs : BitVec n) (r : ℕ) :=
   match r with
-  | 0 => !(row_inner_product stabs errs 0)
-  | r' + 1 => !(row_inner_product stabs errs r) ∧ parity_constraints_aux stabs errs r'
+  | 0 => !(errs.dot_product (stabs.row 0))
+  | r' + 1 => !(errs.dot_product (stabs.row r)) ∧ parity_constraints_aux stabs errs r'
 
 
 def parity_constraints {stabdim n : ℕ} (stabs : BitVec (stabdim * n)) (errs : BitVec n) :=
@@ -74,8 +75,8 @@ def rowspace_constraints_aux
   (ker : BitVec (kerdim * n))
   (errs : BitVec n) (r : ℕ) :=
   match r with
-  | 0 => (row_inner_product ker errs 0)
-  | r' + 1 => (row_inner_product ker errs r) ∨
+  | 0 => (errs.dot_product (ker.row 0))
+  | r' + 1 => (errs.dot_product (ker.row r)) ∨
       rowspace_constraints_aux ker errs r'
 
 def rowspace_constraints
@@ -91,3 +92,66 @@ def lt_dist_sat
   (k nlog : ℕ) : Prop :=
   ∀ (locs : (BitVec (k * nlog))) (errs : BitVec n),
   ¬ (loc_constraints locs errs ∧ parity_constraints stabs errs ∧ rowspace_constraints ker errs)
+
+
+def mutually_orth_sat_aux
+  {n k₁ k₂ : ℕ}
+  (M₁ : BitVec (k₁ * n))
+  (M₂ : BitVec (k₂ * n))
+  (r₁ r₂ : ℕ) : Bool :=
+  let b := !(M₁.row r₁).dot_product (M₂.row r₂)
+  match r₁ with
+  | 0 => match r₂ with
+    | 0 => b
+    | r₂' + 1 => b && (mutually_orth_sat_aux M₁ M₂ (k₁-1) r₂')
+  | r₁' + 1 => b && (mutually_orth_sat_aux M₁ M₂ r₁' r₂)
+
+
+def bitvec_mutually_orth
+  {n k₁ k₂ : ℕ}
+  (M₁ : BitVec (k₁ * n))
+  (M₂ : BitVec (k₂ * n))
+  := mutually_orth_sat_aux M₁ M₂ (k₁-1) (k₂-1)
+
+
+@[simp]
+def nonzero_aux {r : ℕ} (coeffs : BitVec r) (i : ℕ) :=
+  match i with
+  | 0 => coeffs[0]!
+  | i₀ + 1 => (coeffs[i]!) ∨ nonzero_aux coeffs i₀
+
+@[simp]
+def nonzero {r : ℕ} (coeffs : BitVec r) := nonzero_aux coeffs (r-1)
+
+@[simp]
+def dot_col_aux {n r : ℕ} (coeffs : BitVec r) (mat : BitVec (r * n)) (c : ℕ) (i : ℕ) :=
+  let k := i * n + c
+  match i with
+  | 0 => coeffs[i]! && mat[k]!
+  | i₀ + 1 => (coeffs[i]! && mat[k]!) ^^ dot_col_aux coeffs mat c i₀
+
+@[simp]
+def dot_col_zero {n r : ℕ} (coeffs : BitVec r) (mat : BitVec (r * n)) (c : ℕ) :=
+  let dot := dot_col_aux coeffs mat c (r-1)
+  !dot
+
+@[simp]
+def all_dot_zero_aux {r n : ℕ} (coeffs : BitVec r) (mat : BitVec (r * n)) (c : ℕ) :=
+  match c with
+  | 0 => (dot_col_zero coeffs mat 0)
+  | c₀ + 1 => dot_col_zero coeffs mat c && all_dot_zero_aux coeffs mat c₀
+
+@[simp]
+def all_dot_zero {r n : ℕ} (coeffs : BitVec r) (mat : BitVec (r * n)) := all_dot_zero_aux coeffs mat (n-1)
+
+def linear_indep_SAT {r n : ℕ} (mat : BitVec (r * n)) : Prop := ∀ coeffs, !(nonzero coeffs && all_dot_zero coeffs mat)
+
+
+def BitVec.cpop_manual {n : ℕ} (x : BitVec n) : BitVec n :=
+  let rec go (val : BitVec n) (acc : BitVec n) : Nat → BitVec n
+    | 0 => acc
+    | i + 1 => go (val >>> 1) (acc + (val &&& 1)) i
+  go x 0 n
+
+def BitVec.rank_le {r n : ℕ} (mat : BitVec (r * n)) (k : ℕ): Prop := ∀ coeffs,
+  !(nonzero coeffs && coeffs.cpop_manual ≤ k && all_dot_zero coeffs mat)

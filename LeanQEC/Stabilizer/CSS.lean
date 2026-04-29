@@ -326,9 +326,6 @@ theorem CSS.toBSM_undetectable_set_nonempty (C : CSS_pair n k₁ k₂)
   exact BinSympMatrix.undetectable_set_nonempty C.toBSM (Nat.add_pos_left C.nt₁ _) (by
     rwa [CSS.toBSM_dist_eq])
 
-def Matrix.mutually_orth_rows {α β γ δ : Type*} [Fintype γ] [Mul δ] [AddCommMonoid δ]
-  (M₁ : Matrix α γ δ) (M₂ : Matrix β γ δ) : Prop := ∀ a b, M₁ a ⬝ᵥ M₂ b = 0
-
 lemma toCodeSpace_subset_dual_of_orth_gen {n k₁ k₂ : ℕ} (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
   (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) (h_orth : M₁.mutually_orth_rows M₂) :
   (M₁.toCodeSpace : Set (Fin n → ZMod 2)) ⊆ M₂.toCodeSpace.dualCode := by

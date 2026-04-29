@@ -36,11 +36,6 @@ lemma dist_index_some
     exact False.elim <| non_empty.choose_spec.2 <| h _ non_empty.choose_spec.1
   · have := Finset.mem_of_min h; aesop
 
-def Matrix.is_ker_for {k₁ k₂ n : ℕ} (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)) (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
-  : Prop := M₁.rowSpace = LinearMap.ker M₂.toLin'
-
---i think we actually have to do gaussian elimination...
-
 lemma lt_dist_sat_sound_contrapositive
   {n k₁ k₂ kersize : ℕ} [NeZero n] [NeZero k₁] [NeZero (n - k₂)]
   (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))

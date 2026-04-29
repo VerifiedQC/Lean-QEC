@@ -169,7 +169,7 @@ theorem dist72_1 : dist_index_le 72 (6*6) 42 H_xnb_72 H_zknb_72 1 := by
   intro I
   unfold mem_ker_bool
   dsimp
-  unfold vec_inner_product
+  unfold vec_dot_product
   rw [Finset.fold_range_add_one]
 
 
@@ -241,14 +241,14 @@ theorem dist32_1 : dist_index_le 32 (4*4) 16 HX_32 HZ_ker_32 1 := by
   intro I
   dsimp
   unfold mem_ker_bool
-  simp [Finset.fold_range_add_one, vec_inner_product]
+  simp [Finset.fold_range_add_one, vec_dot_product]
 
   aesop
   /-
   intro I
   dsimp
   unfold mem_ker_bool not_mem_rowspace nontrivial_bool is_index_bool
-  simp [Finset.fold_range_add_one, vec_inner_product]
+  simp [Finset.fold_range_add_one, vec_dot_product]
   unfold indexed_by
   simp
   smt

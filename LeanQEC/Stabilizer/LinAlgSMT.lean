@@ -91,14 +91,14 @@ instance : Std.Commutative Bool.xor := by
   constructor
   simp
 
-def vec_inner_product (n : ℕ) (v₁ v₂ : ℕ → Bool) : Bool :=
+def vec_dot_product (n : ℕ) (v₁ v₂ : ℕ → Bool) : Bool :=
   (Finset.range n).fold xor false (fun i => and (v₁ i) (v₂ i))
 
 def mem_ker_bool (r : ℕ) (n : ℕ) (H : Matrix ℕ ℕ Bool) (x : ℕ → Bool) : Bool :=
-  (Finset.range r).fold and true (fun k => ¬(vec_inner_product n x (H k)))
+  (Finset.range r).fold and true (fun k => ¬(vec_dot_product n x (H k)))
 
 def not_mem_rowspace (ker_size n : ℕ) (H_ker : Matrix ℕ ℕ Bool) (x : ℕ → Bool) : Bool :=
-  (Finset.range ker_size).fold or false (fun k => vec_inner_product n x (H_ker k))
+  (Finset.range ker_size).fold or false (fun k => vec_dot_product n x (H_ker k))
 
 --wait, this is already covered by is_index_bool. taking out of dist_index_le for now
 def nontrivial_bool (n : ℕ) (x : ℕ → Bool) : Bool :=
@@ -228,12 +228,12 @@ elab "prep_smt"
   evalTactic (← `(tactic| unfold mem_ker_bool))
   evalTactic (← `(tactic| unfold_range))
   evalTactic (← `(tactic| rw [Bool.and_true]))
-  evalTactic (← `(tactic| unfold vec_inner_product))
+  evalTactic (← `(tactic| unfold vec_dot_product))
   evalTactic (← `(tactic| unfold_range))
   evalTactic (← `(tactic| rw [Bool.xor_false]))
   evalTactic (← `(tactic| unfold not_mem_rowspace))
   evalTactic (← `(tactic| unfold_range))
-  evalTactic (← `(tactic| unfold vec_inner_product))
+  evalTactic (← `(tactic| unfold vec_dot_product))
   evalTactic (← `(tactic| unfold_range))
   evalTactic (← `(tactic| rw [Bool.xor_false]))
   evalTactic (← `(tactic| unfold indexed_by))

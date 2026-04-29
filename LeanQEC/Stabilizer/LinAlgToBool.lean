@@ -21,37 +21,37 @@ lemma Bool.ofNat_ZMod2_mul (x y : ZMod 2) :
   Bool.and (Bool.ofNat x.val) (Bool.ofNat y.val) = Bool.ofNat ((x * y).val) := by
   fin_cases x <;> fin_cases y <;> decide
 
-lemma Finset.vec_inner_product_eq_sum_range
+lemma Finset.vec_dot_product_eq_sum_range
   {n : ℕ} {v₁ v₂ : ℕ → Bool} {w₁ w₂ : ℕ → ZMod 2}
   (h₁ : ∀ i, i < n → v₁ i = Bool.ofNat (w₁ i).val)
   (h₂ : ∀ i, i < n → v₂ i = Bool.ofNat (w₂ i).val) :
-  vec_inner_product n v₁ v₂ =
+  vec_dot_product n v₁ v₂ =
     Bool.ofNat ((Finset.sum (Finset.range n) fun i => w₁ i * w₂ i).val) := by
   induction n with
   | zero =>
-      simp [vec_inner_product]
+      simp [vec_dot_product]
   | succ n ih =>
-      rw [vec_inner_product, Finset.fold_range_add_one, Finset.sum_range_succ]
+      rw [vec_dot_product, Finset.fold_range_add_one, Finset.sum_range_succ]
       rw [h₁ n (Nat.lt_succ_self _), h₂ n (Nat.lt_succ_self _)]
       have ih' :=
         ih (fun i hi => h₁ i (Nat.lt_succ_of_lt hi)) (fun i hi => h₂ i (Nat.lt_succ_of_lt hi))
       have hfold :
           fold xor false (fun i => v₁ i && v₂ i) (Finset.range n) =
             Bool.ofNat ((Finset.sum (Finset.range n) fun i => w₁ i * w₂ i).val) := by
-        simpa [vec_inner_product] using ih'
+        simpa [vec_dot_product] using ih'
       rw [hfold]
       rw [Bool.ofNat_ZMod2_mul, Bool.ofNat_ZMod2_add]
       congr 1
       abel_nf
 
-lemma Finset.vec_inner_product_eq_inner_product
+lemma Finset.vec_dot_product_eq_dot_product
   {n k d j : ℕ} {I : ℕ → ℕ}
   {M : Matrix (Fin k) (Fin n) (ZMod 2)} (hj : j < k) :
-  vec_inner_product n (indexed_by I d) (M.castnat.castbool j) =
+  vec_dot_product n (indexed_by I d) (M.castnat.castbool j) =
   Bool.ofNat ((M ⟨j, hj⟩) ⬝ᵥ (I_to_vec n d I)).val := by
   let w₁ : ℕ → ZMod 2 := fun i => if hi : i < n then I_to_vec n d I ⟨i, hi⟩ else 0
   let w₂ : ℕ → ZMod 2 := fun i => M.castnat j i
-  rw [Finset.vec_inner_product_eq_sum_range
+  rw [Finset.vec_dot_product_eq_sum_range
     (w₁ := w₁) (w₂ := w₂)]
   · have hsum :
         Finset.sum (Finset.range n) (fun i => w₁ i * w₂ i) =
@@ -117,10 +117,10 @@ lemma mem_ker_iff {n k d : ℕ}
     ext x
     dsimp
     have:= hp x.1 x.2
-    rw [Finset.vec_inner_product_eq_inner_product, Bool.ofNat_ZMod2_false] at this
+    rw [Finset.vec_dot_product_eq_dot_product, Bool.ofNat_ZMod2_false] at this
     exact this
   intro hp i hi
-  rw [Finset.vec_inner_product_eq_inner_product, Bool.ofNat_ZMod2_false]
+  rw [Finset.vec_dot_product_eq_dot_product, Bool.ofNat_ZMod2_false]
   rw [funext_iff] at hp
   convert (hp ⟨i, hi⟩)
   assumption
@@ -166,7 +166,7 @@ lemma not_mem_rowspace_iff {n k₁ k₂ d : ℕ}
   simp [Finset.fold_false_to_prop]
   constructor
   · rintro ⟨i, ⟨hi₁, hi₂⟩⟩
-    rw [Finset.vec_inner_product_eq_inner_product] at hi₂
+    rw [Finset.vec_dot_product_eq_dot_product] at hi₂
     refine ⟨M₂ ⟨i, hi₁⟩, ⟨?_, ?_⟩⟩
     · rw [←Matrix.toLin'_apply, ←LinearMap.mem_ker, ←hK]
       exact Matrix.row_mem_rowSpace
@@ -182,7 +182,7 @@ lemma not_mem_rowspace_iff {n k₁ k₂ d : ℕ}
   simp only [Finset.mem_image, Finset.mem_univ, true_and] at hs_row
   obtain ⟨i, hi⟩ := hs_row
   refine ⟨i.val, i.isLt, ?_⟩
-  rw [Finset.vec_inner_product_eq_inner_product (hj := i.isLt), Bool.ofNat_ZMod2_true]
+  rw [Finset.vec_dot_product_eq_dot_product (hj := i.isLt), Bool.ofNat_ZMod2_true]
   simp only [Fin.eta]
   rw [hi]
   exact hs_dot

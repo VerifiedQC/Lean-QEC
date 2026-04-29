@@ -2,7 +2,7 @@ import Batteries.Data.BitVec.Lemmas
 import Mathlib.Data.Nat.Log
 import LeanQEC.LinearAlgebra.RowspaceKernel
 import LeanQEC.ComputerAlgebra.BitVecSAT
-import LeanQEC.ComputerAlgebra.BitVecInd
+import Mathlib.LinearAlgebra.Matrix.Rank
 
 instance {n : Nat} : Coe ((Fin n) → ZMod 2) ((Fin n) → Bool) where
   coe f := fun i => (f i).val == 1
@@ -29,7 +29,7 @@ def BitVec.appendList {i j : ℕ} (f : (Fin i) → (BitVec j)) : BitVec (i * j) 
   match i with
   | 0 => (BitVec.zero 0).cast (by rw [MulZeroClass.zero_mul])
   | 1 => (f 0).cast (by rw [one_mul])
-  | i' + 1 => (((f ⟨i', Nat.lt_succ_self _⟩).append (BitVec.appendList (fun (j : Fin i') => f ⟨j, by simp⟩)))).cast (by rw [Nat.succ_mul, Nat.add_comm])
+  | i' + 1 => ((f ⟨i', Nat.lt_succ_self _⟩).append (BitVec.appendList (fun (j : Fin i') => f ⟨j, by simp⟩))).cast (by rw [Nat.succ_mul, add_comm])
 
 def Matrix.toBitVecs {i j : ℕ} (M : Matrix (Fin i) (Fin j) (ZMod 2)) : (Fin i) → (BitVec j) :=
   fun a => vec_to_BitVec (M a)
@@ -50,9 +50,16 @@ lemma index_vec_eq_one_of_exists {n k : ℕ} {x : Fin n → ZMod 2} {hx : hammin
   (h_ind : index_vec x hx hx' y = i) :
   x i ≠ 0 := sorry
 
+def T : Matrix (Fin 3) (Fin 7) (ZMod 2) :=
+  !![1, 0, 0, 1, 0, 1, 1;
+    0, 1, 0, 1, 1, 0, 1;
+    0, 0, 1, 0, 1, 1, 1]
+#eval! flatten_matrix T
+def f := flatten_matrix T
+def f_line_one : BitVec 7 := f.extractLsb' 0 7
+#eval! BitVec_to_vec f_line_one
 
---def T : Matrix (Fin 2) (Fin 2) (ZMod 2) := !![1, 1; 0, 1]
---#eval! flatten_matrix T -- evaluates to 11: successully flattened
+ -- evaluates to 11: successully flattened
 --#eval! (flatten_matrix T)[1]
 
 
@@ -118,16 +125,17 @@ lemma loc_constraints_of_index {n k : ℕ} (x : Fin n → (ZMod 2)) (hx : hammin
 
 
 
+def row_correct {k n : ℕ} (M : Matrix (Fin k) (Fin n) (ZMod 2)) (r : Fin k) :
+  (flatten_matrix M).row r = vec_to_BitVec (M r) := sorry
 
-
-def row_inner_product_correct {k n : ℕ} (M : Matrix (Fin k) (Fin n) (ZMod 2)) (x : Fin n → (ZMod 2)) (r : Fin k):
-  row_inner_product (flatten_matrix M) (vec_to_BitVec x) r = ((M r) ⬝ᵥ x == 1) := sorry
+def dot_product_correct {n : ℕ} (x y : Fin n → (ZMod 2)):
+  (vec_to_BitVec x).dot_product (vec_to_BitVec y) =  ( x ⬝ᵥ y == 1) := sorry
 
 lemma parity_constraints_descent {stabdim n : ℕ} {stabs : BitVec (stabdim * n)} {errs : BitVec n} {r : Fin stabdim} (hpc : parity_constraints stabs errs) :
-  !(row_inner_product stabs errs r) := sorry
+  !(errs.dot_product (stabs.row r)) := sorry
 
 lemma parity_constraints_ascent {stabdim n : ℕ} {stabs : BitVec (stabdim * n)}
-{errs : BitVec n} (hpaux : ∀ (r : Fin stabdim), !(row_inner_product stabs errs r))
+{errs : BitVec n} (hpaux : ∀ (r : Fin stabdim), !(errs.dot_product (stabs.row r)))
  : parity_constraints stabs errs := sorry
 
 lemma parity_constraints_correct {k n : ℕ} {M : Matrix (Fin k) (Fin n) (ZMod 2)}
@@ -135,7 +143,7 @@ lemma parity_constraints_correct {k n : ℕ} {M : Matrix (Fin k) (Fin n) (ZMod 2
   parity_constraints (flatten_matrix M) (vec_to_BitVec x) ↔ x ∈ LinearMap.ker M.toLin' := by
   rw [LinearMap.mem_ker]
   have pc_correct_aux : ∀ (i : Fin k),
-  !row_inner_product (flatten_matrix M) (vec_to_BitVec x) i ↔ (M.mulVec x) i = 0 := sorry
+  !((vec_to_BitVec x).dot_product ((flatten_matrix M).row i)) ↔ (M.mulVec x) i = 0 := sorry
   rw [Matrix.toLin'_apply]
   constructor
   · intro hpar
@@ -150,13 +158,13 @@ lemma parity_constraints_correct {k n : ℕ} {M : Matrix (Fin k) (Fin n) (ZMod 2
   simp only [Pi.zero_apply]
 
 lemma rowspace_constraints_descent {kerdim n} {ker : BitVec (kerdim * n)}
-{errs : BitVec n} (r : Fin kerdim) (hr : row_inner_product ker errs r)
+{errs : BitVec n} (r : Fin kerdim) (hr : (errs.dot_product (ker.row r)))
 : rowspace_constraints ker errs := sorry
 
 
 lemma rowspace_constraints_ascent {kerdim n} {ker : BitVec (kerdim * n)}
 {errs : BitVec n} (hconstr : rowspace_constraints ker errs)
-: ∃ (r : Fin kerdim), row_inner_product ker errs r := sorry
+: ∃ (r : Fin kerdim), (errs.dot_product (ker.row r)) := sorry
 
 
 lemma rowspace_constraints_correct {k₁ k₂ n : ℕ}
@@ -172,14 +180,14 @@ lemma rowspace_constraints_correct {k₁ k₂ n : ℕ}
     refine ⟨M₂ r, ⟨?_, ?_⟩⟩
     · rw [←hK]
       exact Matrix.row_mem_rowSpace
-    rw [row_inner_product_correct] at hrp
+    rw [row_correct, dot_product_correct x (M₂ r), dotProduct_comm] at hrp
     simp only [beq_iff_eq] at hrp
     assumption
   rintro ⟨y, ⟨hy₁, hy₂⟩⟩
   rw [←hK] at hy₁
   obtain ⟨s, hs⟩ := exists_row_of_exists_mem_rowspace_non_orth hy₁ hy₂
   apply rowspace_constraints_descent s
-  rwa [row_inner_product_correct, beq_iff_eq]
+  rwa [row_correct, dot_product_correct, dotProduct_comm, beq_iff_eq]
 
 
 lemma nonzero_correct {r : ℕ} (x : Fin r → (ZMod 2))
@@ -216,3 +224,46 @@ lemma linear_indep_SAT_correct {r n : ℕ} (M : Matrix (Fin r) (Fin n) (ZMod 2))
   · apply hz
     rwa [nonzero_correct]
   apply (hd h_f)
+
+lemma mutually_orth_aux_descent
+  {k₁ k₂ n : ℕ}
+  {M₁ : BitVec (k₁ * n)}
+  {M₂ : BitVec (k₂ * n)}
+  (h_orth : bitvec_mutually_orth M₁ M₂)
+  (i : Fin k₁) (j : Fin k₂) :
+  !(M₁.row i).dot_product (M₂.row j) := sorry
+
+lemma mutually_orth_aux_ascent
+  {k₁ k₂ n : ℕ}
+  (M₁ : BitVec (k₁ * n))
+  (M₂ : BitVec (k₂ * n))
+  (h_orth : ∀ (i : Fin k₁) (j : Fin k₂), !(M₁.row i).dot_product (M₂.row j)) :
+  bitvec_mutually_orth M₁ M₂ := sorry
+
+theorem mutually_orth_correct
+  {k₁ k₂ n : ℕ}
+  (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+  (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) :
+  bitvec_mutually_orth (flatten_matrix M₁) (flatten_matrix M₂) ↔ M₁.mutually_orth_rows M₂ := by
+  constructor
+  · intro h_orth i j
+    have h_dp := mutually_orth_aux_descent h_orth i j
+    rw [row_correct, row_correct, dot_product_correct] at h_dp
+    simp only [Bool.not_eq_eq_eq_not, Bool.not_true, beq_eq_false_iff_ne] at h_dp
+    apply zmod2_val_eq_zero_of_ne_one at h_dp
+    rwa [Fin.ext_iff]
+  intro h_orth
+  apply mutually_orth_aux_ascent
+  intro i j
+  rw [row_correct, row_correct, dot_product_correct, h_orth i j]
+  simp only [Bool.not_eq_eq_eq_not, Bool.not_true, beq_eq_false_iff_ne, ne_eq, zero_ne_one,
+    not_false_eq_true]
+
+
+lemma cpop_correct {n : ℕ} (x : Fin n → (ZMod 2)) : hammingNorm x = (vec_to_BitVec x).cpop_manual := sorry
+
+lemma Matrix.rank_le_correct {k n : ℕ}
+ (M : Matrix (Fin k) (Fin n) (ZMod 2))
+ (r : ℕ)
+(hr : (flatten_matrix M).rank_le r) :
+  r ≤ Matrix.rank M := sorry

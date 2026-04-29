@@ -5,6 +5,8 @@ import Mathlib.LinearAlgebra.Finsupp.LinearCombination
 import Mathlib.InformationTheory.Hamming
 import Mathlib.LinearAlgebra.Dual.Lemmas
 import Mathlib.Tactic
+import Mathlib.LinearAlgebra.Matrix.Rank
+
 
 noncomputable instance Submodule_set_fintype (C : Submodule (ZMod 2) (Fin n → ZMod 2)) : Fintype ↑(C : Set (Fin n → ZMod 2)) := by
   classical
@@ -13,6 +15,11 @@ noncomputable instance Submodule_set_fintype (C : Submodule (ZMod 2) (Fin n → 
  lemma zmod2_val_eq_one_of_ne_zero (a : ZMod 2) (ha : a ≠ 0) : a.1 = 1 := by
   have hlt : a.1 < 2 := a.2
   have hne : a.1 ≠ 0 := by simpa using ha
+  omega
+
+lemma zmod2_val_eq_zero_of_ne_one (a : ZMod 2) (ha : a ≠ 1) : a.1 = 0 := by
+  have hlt : a.1 < 2 := a.2
+  have hne : a.1 ≠ 1 := by rwa [←Fin.val_ne_iff] at ha
   omega
 
 def Matrix.rowSpace {α β γ : Type*} [Semiring γ] (M : Matrix α β γ) := (Submodule.span γ (Set.range M))
@@ -190,3 +197,17 @@ lemma exists_row_of_exists_mem_rowspace_non_orth {n k : ℕ}
   obtain ⟨i, hi⟩ := hs_row
   refine ⟨i, ?_⟩
   rwa [hi]
+
+def Matrix.mutually_orth_rows {α β γ δ : Type*} [Fintype γ] [Mul δ] [AddCommMonoid δ]
+  (M₁ : Matrix α γ δ) (M₂ : Matrix β γ δ) : Prop := ∀ a b, M₁ a ⬝ᵥ M₂ b = 0
+
+def Matrix.is_ker_for {k₁ k₂ n : ℕ} (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)) (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
+  : Prop := M₁.rowSpace = LinearMap.ker M₂.toLin'
+
+lemma Matrix.is_ker_for_of_rank_sum_mutually_orth
+  {k₁ k₂ n : ℕ}
+  (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+  (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
+  (hr : M₁.rank + M₂.rank = n)
+  (ho : M₁.mutually_orth_rows M₂) :
+  M₂.is_ker_for M₁ := sorry
