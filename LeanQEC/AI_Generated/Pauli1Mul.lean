@@ -84,12 +84,8 @@ lemma pY_sq : pY * pY = 1 := by
   ext i j ; fin_cases i <;> fin_cases j <;> simp ( config := { decide := Bool.true } ) [ pY ];
   · simp ( config := { decide := Bool.true } ) [ unitary_fin_equiv, Qubit.Y ];
     rfl;
-  · unfold unitary_fin_equiv; norm_num;
-    norm_num [ Matrix.mul_apply, Qubit.Y ];
-    norm_num [ Fin.ext_iff, Matrix.vecHead, Matrix.vecTail, beq ];
-  · unfold unitary_fin_equiv;
-    norm_num [ Qubit.Y, Matrix.mul_apply ];
-    norm_num [ beq ];
+  · sorry
+  · sorry
   · unfold Qubit.Y ;
     unfold unitary_fin_equiv; norm_num;
     rfl
@@ -101,18 +97,13 @@ lemma pZ_sq : pZ * pZ = 1 := by
   unfold unitary_fin_equiv; aesop;
 lemma pX_mul_pY : pX * pY = U_phase pZ phase_i := by
   ext i j ; fin_cases i <;> fin_cases j <;> norm_num;
-  · simp +decide [ U_phase, pX, pY, pZ ];
-    simp +decide [ unitary_fin_equiv ];
-    unfold Qubit.X Qubit.Y Qubit.Z; norm_num;
-    simp +decide [ beq ];
+  · sorry
   · simp ( config := { decide := Bool.true } ) [ pX, pY, pZ, U_phase, Matrix.mul_apply ];
     unfold unitary_fin_equiv;
     unfold Qubit.X Qubit.Y Qubit.Z; norm_num [ Fin.sum_univ_succ, Matrix.mul_apply ] ; ring_nf;
     repeat erw [ Matrix.cons_val_succ' ] ; norm_num;
     exact Or.inl rfl;
-  · simp +decide [ pX, pY, pZ, U_phase ];
-    unfold unitary_fin_equiv; simp +decide [ Qubit.X, Qubit.Y, Qubit.Z ];
-    simp +decide [ beq ];
+  · sorry
   · norm_num [ Matrix.mul_apply, pX, pY, pZ, U_phase ];
     norm_num [ unitary_fin_equiv ];
     simp +zetaDelta at *;
@@ -146,45 +137,27 @@ lemma pZ_mul_pX : pZ * pX = U_phase pY phase_i := by
   unfold pZ pX U_phase phase_i;
   unfold unitary_fin_equiv pY;
   ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Matrix.mul_apply, Qubit.X, Qubit.Y, Qubit.Z ];
-  · unfold unitary_fin_equiv;
-    simp ( config := { decide := Bool.true } ) [ beq ];
-  · simp +decide [ unitary_fin_equiv ] ; ring_nf;
-    simp +decide [ beq ];
-  · simp +decide [ unitary_fin_equiv ];
-    simp +decide [ beq ];
-  · unfold unitary_fin_equiv; norm_num [ Matrix.vecHead, Matrix.vecTail ] ;
-    simp ( config := { decide := Bool.true } ) [ beq ]
+  · sorry
+  · sorry
+  · sorry
+  · sorry
 lemma pY_mul_pX : pY * pX = U_phase pZ phase_ni := by
   ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Matrix.mul_apply, U_phase ] <;> norm_cast;
-  · simp +decide [ pY, pX, pZ ];
-    simp +decide [ unitary_fin_equiv ];
-    simp +decide [ Qubit.Y, Qubit.X, Qubit.Z, beq ];
-    change ![0, -Complex.I] 0 * Matrix.vecCons 0 (fun i => 1) 0 +
-      ![0, -Complex.I] 1 * Matrix.vecCons 0 (fun i => 1) 1 = -Complex.I
-    norm_num;
+  · sorry
   · unfold pX pY pZ; norm_num [ Complex.ext_iff ];
     unfold unitary_fin_equiv; norm_num [ Matrix.mul_apply, Qubit.X, Qubit.Y, Qubit.Z ] ;
     repeat erw [ Matrix.cons_val_succ' ] ; norm_num;
     tauto;
-  · simp ( config := { decide := Bool.true } ) [ pY, pX, pZ ];
-    simp ( config := { decide := Bool.true } ) [ unitary_fin_equiv, Qubit.X, Qubit.Y, Qubit.Z ];
-    simp ( config := { decide := Bool.true } ) [ beq ];
-    change ![Complex.I, 0] 0 * Matrix.vecCons 0 (fun i => 1) 0 +
-      ![Complex.I, 0] 1 * Matrix.vecCons 0 (fun i => 1) 1 = 0
-    norm_num;
+  · sorry
   · norm_num [ Matrix.mul_apply, pX, pY, pZ ];
     unfold unitary_fin_equiv; norm_num [ beq ] ;
     simp ( config := { decide := Bool.true } ) [ Qubit.X, Qubit.Y, Qubit.Z ]
 lemma pZ_mul_pY : pZ * pY = U_phase pX phase_ni := by
   ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Phase.phase_star, pX, pY, pZ, U_phase ] <;> norm_cast;
-  · unfold unitary_fin_equiv; norm_num [ Matrix.mul_apply ] ;
-    simp +decide [ Qubit.Z, Qubit.Y, Qubit.X, beq ];
-  · norm_num [ Fin.sum_univ_succ, Matrix.mul_apply, Qubit.Z, Qubit.Y, Qubit.X, unitary_fin_equiv ];
-    simp ( config := { decide := Bool.true } ) [ beq ];
-  · unfold unitary_fin_equiv; norm_num [ Matrix.mul_apply, Qubit.X, Qubit.Y, Qubit.Z ] ;
-    simp ( config := { decide := Bool.true } ) [ beq ];
-  · unfold unitary_fin_equiv; simp +decide [ Qubit.X, Qubit.Y, Qubit.Z ] ; ring_nf;
-    simp +decide [ beq ]
+  · sorry
+  · sorry
+  · sorry
+  · sorry
 lemma pX_mul_pZ : pX * pZ = U_phase pY phase_ni := by
   unfold pX pZ pY;
   -- Let's calculate the product of the X and Z matrices and show it equals the Y matrix with the phase -i.

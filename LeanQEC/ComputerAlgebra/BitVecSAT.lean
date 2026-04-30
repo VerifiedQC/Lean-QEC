@@ -147,11 +147,10 @@ def all_dot_zero {r n : ℕ} (coeffs : BitVec r) (mat : BitVec (r * n)) := all_d
 def linear_indep_SAT {r n : ℕ} (mat : BitVec (r * n)) : Prop := ∀ coeffs, !(nonzero coeffs && all_dot_zero coeffs mat)
 
 
-def BitVec.cpop_manual {n : ℕ} (x : BitVec n) : BitVec n :=
-  let rec go (val : BitVec n) (acc : BitVec n) : Nat → BitVec n
-    | 0 => acc
-    | i + 1 => go (val >>> 1) (acc + (val &&& 1)) i
-  go x 0 n
+def inds_strict_mono_aux {k r : ℕ} (inds : Fin r → Fin k) (i : Fin r) (prev : ℕ) : Bool :=
+  let b := (inds i).1.blt prev
+  match i with
+  | ⟨0, h⟩ => b
+  | ⟨i' + 1, h⟩ => b && (inds_strict_mono_aux inds ⟨i', (Nat.lt_succ_self _).trans h⟩ (inds i).1)
 
-def BitVec.rank_le {r n : ℕ} (mat : BitVec (r * n)) (k : ℕ): Prop := ∀ coeffs,
-  !(nonzero coeffs && coeffs.cpop_manual ≤ k && all_dot_zero coeffs mat)
+def inds_strict_mono {k r : ℕ} [NeZero r] (inds : Fin r → Fin k) : Prop := inds_strict_mono_aux inds ⟨r-1, Nat.sub_one_lt (NeZero.ne _)⟩ k

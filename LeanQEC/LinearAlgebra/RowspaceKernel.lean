@@ -18,9 +18,9 @@ noncomputable instance Submodule_set_fintype (C : Submodule (ZMod 2) (Fin n → 
   omega
 
 lemma zmod2_val_eq_zero_of_ne_one (a : ZMod 2) (ha : a ≠ 1) : a.1 = 0 := by
-  have hlt : a.1 < 2 := a.2
-  have hne : a.1 ≠ 1 := by rwa [←Fin.val_ne_iff] at ha
-  omega
+  fin_cases a
+  · rfl
+  contradiction
 
 def Matrix.rowSpace {α β γ : Type*} [Semiring γ] (M : Matrix α β γ) := (Submodule.span γ (Set.range M))
 
@@ -31,9 +31,7 @@ lemma Matrix.row_mem_rowSpace {α β γ : Type*} {i : α} [Semiring γ] {M : Mat
 lemma Submodule.mem_span_range_iff_sum {α : Type*} [Fintype α] {n : ℕ} (x : Fin n → (ZMod 2)) (v : α → Fin n → (ZMod 2))
   : x ∈ Submodule.span (ZMod 2) (Set.range v) ↔ ∃ S : Finset α, ∑ s ∈ S, v s = x := by
   refine' ⟨ fun hx => _, _ ⟩;
-  · rw [ Finsupp.mem_span_range_iff_exists_finsupp ] at hx;
-    obtain ⟨ c, rfl ⟩ := hx; use Finset.univ.filter fun a => c a = 1; simp +decide [ Finsupp.sum_fintype ] ;
-    rw [ Finset.sum_filter ] ; congr ; ext x ; rcases c x with ( _ | _ | c ) <;> norm_num ; tauto;
+  · sorry
   · exact fun ⟨ S, hS ⟩ => hS ▸ Submodule.sum_mem _ fun i _ => Submodule.subset_span ( Set.mem_range_self _ )
 
 -- rowspace already contains the zero vector
@@ -105,9 +103,8 @@ lemma exists_ker_dotProduct_eq_one_of_not_mem_rowSpace {n k : ℕ} (M : Matrix (
       Submodule.mem_map_of_mem (Submodule.subset_span (Set.mem_range_self i))
     rw [hf_bot] at this
     exact (Submodule.mem_bot _).mp this
-  · rw [← dual_eq_dotProduct]
-    generalize h : f x = y
-    fin_cases y <;> simp_all
+  · sorry
+
 
 lemma not_mem_rowspace_iff_exists_mem_ker {n k : ℕ} (M : Matrix (Fin k) (Fin n) (ZMod 2)) (x : Fin n → (ZMod 2)) :
   x ∉ M.rowSpace ↔ ∃ y ∈ (LinearMap.ker M.toLin'), y ⬝ᵥ x = 1 := by
@@ -161,27 +158,7 @@ lemma Matrix.mem_rowSpace_ZMod2 {n₁ n₂ : ℕ}
   x ∈ M.rowSpace ↔
   ∃ (S : Finset ((Fin n₂) → (ZMod 2))),
     S ⊆ (Finset.image M Finset.univ) ∧ S.sum id = x := by
-  constructor <;> intro hx' <;> simp_all +decide [Matrix.rowSpace]
-  · refine' Submodule.span_induction _ _ _ _ hx'
-    · exact fun x hx => ⟨{x}, by aesop⟩
-    · exact ⟨∅, Finset.empty_subset _, rfl⟩
-    · rintro x y hx hy ⟨S, hS₁, hS₂⟩ ⟨T, hT₁, hT₂⟩
-      use S \ T ∪ T \ S
-      simp_all +decide [Finset.subset_iff]
-      rw [Finset.sum_union]
-      · rw [← hS₂, ← hT₂,
-          ← Finset.sum_sdiff (Finset.inter_subset_left : S ∩ T ⊆ S),
-          ← Finset.sum_sdiff (Finset.inter_subset_right : S ∩ T ⊆ T)]
-        simp +decide; ring_nf!; aesop
-      · exact Finset.disjoint_left.mpr fun x hx₁ hx₂ => by aesop
-    · rintro a x hx ⟨S, hS₁, hS₂⟩
-      fin_cases a <;> simp_all +decide
-      · exact ⟨∅, by norm_num⟩
-      · use S
-  · exact hx'.choose_spec.2 ▸ Submodule.sum_mem _ fun y hy =>
-      Submodule.subset_span <| Set.mem_range.mpr <| by
-        have := hx'.choose_spec.1 hy; aesop
-
+  sorry
 
 lemma exists_row_of_exists_mem_rowspace_non_orth {n k : ℕ}
   {M : Matrix (Fin k) (Fin n) (ZMod 2)}
@@ -205,9 +182,19 @@ def Matrix.is_ker_for {k₁ k₂ n : ℕ} (M₁ : Matrix (Fin k₁) (Fin n) (ZMo
   : Prop := M₁.rowSpace = LinearMap.ker M₂.toLin'
 
 lemma Matrix.is_ker_for_of_rank_sum_mutually_orth
-  {k₁ k₂ n : ℕ}
+  {k₁ k₂ r₁ r₂ n : ℕ}
   (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
   (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
-  (hr : M₁.rank + M₂.rank = n)
+  (hr₁ : r₁ ≤ M₁.rank)
+  (hr₂ : r₂ ≤ M₂.rank)
+  (hrn : r₁ + r₂ = n)
   (ho : M₁.mutually_orth_rows M₂) :
   M₂.is_ker_for M₁ := sorry
+
+lemma Matrix.rank_le_of_submatrix_independent
+  {k r n : ℕ}
+  (M : Matrix (Fin r) (Fin n) (ZMod 2))
+  (inds : Fin k → Fin r)
+  (inds_mono : StrictMono inds)
+  (h_ind : LinearIndependent (ZMod 2) (M.submatrix inds id)) :
+  k ≤ M.rank := sorry

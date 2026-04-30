@@ -43,9 +43,6 @@ lemma bits_split_eq1 {n₁ n₂ n₃} (s : BitVec (n₁ + n₂ + n₃)) :
   rw [cast_to_bvcast]
   swap; rw [add_assoc]
   simp
-  intro H'
-  have hb : n₁ ≤ n₁ + n₂ := Nat.le_add_right n₁ n₂
-  exact lt_of_lt_of_le H hb
 
 lemma bits_split_eq2 {n₁ n₂ n₃} (s : BitVec (n₁ + n₂ + n₃)) :
   (bits_cat.symm (bits_cat.symm s).1).2 =

@@ -291,8 +291,7 @@ lemma kron_Paulis_aux' {n₁ n₂} (z z' : pgroup_phases) (m : Fin n₁ → Paul
         apply kron_assoc
       rw [ih]
       rw [<- foldPauli_iter]
-      simp_all
-      rfl
+      simp only [pgp_mul_eq, Phase.phase_mul_eq, heq_eq_eq]
     -- TODO more fin extensionalities...
     apply funext; intro i
     rw [cast_fin_append]
@@ -400,7 +399,9 @@ lemma mem_PauliGroup_id : 1 ∈ PauliGroup n := by
   rw [PauliGroup, Finset.mem_map, factored_Pauli_univ]
   exists unfolded1
   constructor
-  · simp [unfolded1, pgroup_phases]
+  · simp only [pgroup_phases, unfolded1, pgphase_1, phase_id]
+    exact Finset.mem_univ _
+
   · apply foldPauli1
 
 def Pauli1 : PauliGroup n := ⟨1, mem_PauliGroup_id⟩

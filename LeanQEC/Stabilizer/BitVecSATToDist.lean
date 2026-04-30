@@ -1,5 +1,4 @@
 import LeanQEC.Stabilizer.CSS
-import LeanQEC.Stabilizer.LinAlgToBool
 import LeanQEC.ComputerAlgebra.BitVecCorrectness
 
 lemma min_weight_ker_not_mem_rowspace_empty

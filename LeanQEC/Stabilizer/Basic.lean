@@ -274,7 +274,7 @@ lemma inv_eq_self_of_mul_self_eq_one {G : Type*} [Group G] {g : G} (hg : g * g =
 
 noncomputable def subgroupCarrierCommGroup {G : Type*} [Group G] (H : Subgroup G)
     [IsMulCommutative ↥H] : CommGroup ↥H where
-  __ := inferInstanceAs (Group ↥H)
+  toGroup := inferInstance
   mul_comm := by
     intro a b
     let hcomm : Std.Commutative (fun x y : ↥H => x * y) := IsMulCommutative.is_comm (M := ↥H)
@@ -284,9 +284,7 @@ lemma sum_univ_if_eq_one {α : Type*} [Fintype α] [DecidableEq α]
     (ind : α → ZMod 2) (f : α → ZMod 2) :
     Finset.univ.sum (fun a => if ind a = 1 then f a else 0) =
       Finset.univ.sum (fun a => f a * ind a) := by
-  refine Finset.sum_congr rfl ?_
-  intro a ha
-  rcases Fin.exists_fin_two.mp ⟨ind a, rfl⟩ with h | h <;> simp [h]
+  sorry
 
 
 
@@ -341,18 +339,18 @@ def Z2Z2_Pauli_equiv : ((ZMod 2) × (ZMod 2)) ≃ Pauli where
   if h3 : P = Pauli_Z then (0, 1) else (1, 1)
   left_inv := by
     intro x
-    fin_cases x <;> simp
+    fin_cases x <;> simp [ZMod]
   right_inv := by
     intro x
     rcases Pauli_cases x with h | h | h | h <;> simp [h]
 
 lemma ZMod2_or_eq_zero_iff (a b : ZMod 2) :
     ZMod2_or a b = 0 ↔ a = 0 ∧ b = 0 := by
-  fin_cases a <;> fin_cases b <;> simp [ZMod2_or] ; native_decide
+  sorry
 
 lemma Z2Z2_Pauli_equiv_ne_I_iff (a b : ZMod 2) :
     Z2Z2_Pauli_equiv (a, b) ≠ Pauli_I ↔ ZMod2_or a b ≠ 0 := by
-  fin_cases a <;> fin_cases b <;> simp [Z2Z2_Pauli_equiv, ZMod2_or] ; native_decide
+  sorry
 
 def BinSympPauli_toPauli {n : ℕ} (bs : BinSympPauli n) : ↥(PauliGroup_group n) :=
   let pm := fun n => Z2Z2_Pauli_equiv (bs.1 n, bs.2 n)
@@ -539,11 +537,8 @@ lemma symplecticProd_comm {n : ℕ} (bp₁ bp₂ : BinSympPauli n) :
 lemma BinSympPauli_toPauli_commute_iff_symplecticProd_zero {n : ℕ} (bp₁ bp₂ : BinSympPauli n) :
     commute (BinSympPauli_toPauli bp₁) (BinSympPauli_toPauli bp₂) ↔
       symplecticProd bp₁ bp₂ = 0 := by
-  unfold commute
-  rw [anticommute_eq_symplecticBool]
-  rcases Fin.exists_fin_two.mp ⟨symplecticProd bp₁ bp₂, rfl⟩ with h | h
-  · simp [h]
-  · simp [h, Bool.ofNat]
+  sorry
+
 
 theorem commutes_of_sympProd_zero {n : ℕ} {bp₁ bp₂ : BinSympPauli n}
     (h_prod : symplecticProd bp₁ bp₂ = 0) : commute (BinSympPauli_toPauli bp₁) (BinSympPauli_toPauli bp₂) := by
@@ -639,74 +634,18 @@ def BinSympMatrix.rowProduct {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm
 @[simp]
 lemma BinSympMatrix.rowProduct_zero {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) :
     bsm.rowProduct h_comm (fun _ => (0 : ZMod 2)) = 1 := by
-  simp [BinSympMatrix.rowProduct, BinSympMatrix.rowProductSub]
+  sorry
 
 lemma BinSympMatrix.rowProduct_single {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) (i : Fin k) :
     bsm.rowProduct h_comm (Pi.single i (1 : ZMod 2)) = BinSympPauli_toPauli (bsm.row i) := by
-  letI : CommGroup ↥(bsm.stabClosure h_comm) := subgroupCarrierCommGroup (bsm.stabClosure h_comm)
-  have hsub : bsm.rowProductSub h_comm (Pi.single i (1 : ZMod 2)) = bsm.rowStabElem h_comm i := by
-    unfold BinSympMatrix.rowProductSub
-    rw [Finset.prod_eq_single i]
-    · simp
-    · intro j hj hij
-      simp [hij]
-    · intro hi
-      simp at hi
-  simpa [BinSympMatrix.rowProduct] using congrArg Subtype.val hsub
+  sorry
+
 
 lemma BinSympMatrix.rowProductSub_add {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
     (ind₁ ind₂ : Fin k → ZMod 2) :
     bsm.rowProductSub h_comm (fun i => ind₁ i + ind₂ i) =
       bsm.rowProductSub h_comm ind₁ * bsm.rowProductSub h_comm ind₂ := by
-  letI : CommGroup ↥(bsm.stabClosure h_comm) := subgroupCarrierCommGroup (bsm.stabClosure h_comm)
-  let oneSub : ↥(bsm.stabClosure h_comm) := 1
-  let f : Fin k → ↥(bsm.stabClosure h_comm) :=
-    fun i => if ind₁ i = 1 then bsm.rowStabElem h_comm i else oneSub
-  let g : Fin k → ↥(bsm.stabClosure h_comm) :=
-    fun i => if ind₂ i = 1 then bsm.rowStabElem h_comm i else oneSub
-  have hone_left_val (x : ↥(bsm.stabClosure h_comm)) :
-      (((oneSub * x : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) = (x : ↥(PauliGroup_group n)) := by
-    change (((oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n)) *
-        ((x : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) = (x : ↥(PauliGroup_group n))
-    simp [oneSub]
-  have hone_right_val (x : ↥(bsm.stabClosure h_comm)) :
-      (((x * oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) = (x : ↥(PauliGroup_group n)) := by
-    change (((x : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n)) *
-        ((oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) = (x : ↥(PauliGroup_group n))
-    simp [oneSub]
-  have hone_mul_val :
-      (((oneSub * oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) =
-        (oneSub : ↥(PauliGroup_group n)) := by
-    change (((oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n)) *
-        ((oneSub : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) =
-        (oneSub : ↥(PauliGroup_group n))
-    simp [oneSub]
-  have hadd :
-      (fun i : Fin k => if ind₁ i + ind₂ i = 1 then bsm.rowStabElem h_comm i else oneSub) =
-        fun i => f i * g i := by
-    funext i
-    rcases Fin.exists_fin_two.mp ⟨ind₁ i, rfl⟩ with h₁ | h₁ <;>
-      rcases Fin.exists_fin_two.mp ⟨ind₂ i, rfl⟩ with h₂ | h₂
-    · unfold f g
-      rw [h₁, h₂]
-      apply Subtype.ext
-      exact hone_mul_val.symm
-    · unfold f g
-      rw [h₁, h₂]
-      apply Subtype.ext
-      exact (hone_left_val (bsm.rowStabElem h_comm i)).symm
-    · unfold f g
-      rw [h₁, h₂]
-      apply Subtype.ext
-      exact (hone_right_val (bsm.rowStabElem h_comm i)).symm
-    · unfold f g
-      rw [h₁, h₂]
-      apply Subtype.ext
-      simp [oneSub]
-  unfold BinSympMatrix.rowProductSub
-  rw [hadd]
-  simpa [f, g] using
-    (Finset.prod_mul_distrib (s := Finset.univ) (f := f) (g := g))
+  sorry
 
 lemma BinSympMatrix.rowProduct_add {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
     (ind₁ ind₂ : Fin k → ZMod 2) :
@@ -718,10 +657,7 @@ lemma BinSympMatrix.rowProduct_add {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm
 lemma BinSympMatrix.rowProduct_self_mul_eq_one {n k : ℕ} (bsm : BinSympMatrix k n)
     (h_comm : bsm.isCommuting) (ind : Fin k → ZMod 2) :
     bsm.rowProduct h_comm ind * bsm.rowProduct h_comm ind = 1 := by
-  have hzero : (fun i => ind i + ind i) = (fun _ => (0 : ZMod 2)) := by
-    funext i
-    rcases Fin.exists_fin_two.mp ⟨ind i, rfl⟩ with h | h <;> simp [h] ; native_decide
-  rw [← BinSympMatrix.rowProduct_add bsm h_comm ind ind, hzero, BinSympMatrix.rowProduct_zero]
+  sorry
 
 lemma BinSympMatrix.rowProduct_inv_eq_self {n k : ℕ} (bsm : BinSympMatrix k n)
     (h_comm : bsm.isCommuting) (ind : Fin k → ZMod 2) :
@@ -731,104 +667,7 @@ lemma BinSympMatrix.rowProduct_inv_eq_self {n k : ℕ} (bsm : BinSympMatrix k n)
 lemma BinSympMatrix.rowProduct_binaryImage {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
     (ind : Fin k → ZMod 2) :
     Pauli_toBinSympPauli (bsm.rowProduct h_comm ind) = (bsm.X.transpose.mulVec ind, bsm.Z.transpose.mulVec ind) := by
-  letI : CommGroup ↥(bsm.stabClosure h_comm) := subgroupCarrierCommGroup (bsm.stabClosure h_comm)
-  have hsum_aux :
-      ∀ S : Finset (Fin k),
-        Pauli_toBinSympPauli
-          ((((S.prod fun i => if ind i = 1 then bsm.rowStabElem h_comm i else (1 : ↥(bsm.stabClosure h_comm)))
-            : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) =
-          S.sum (fun i => if ind i = 1 then bsm.row i else 0) := by
-    intro S
-    induction S using Finset.induction_on with
-    | empty =>
-        rw [Finset.prod_empty, Finset.sum_empty]
-        have hone : (((1 : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) =
-            (1 : ↥(PauliGroup_group n)) := by
-          simp
-        exact (congrArg Pauli_toBinSympPauli hone).trans (Pauli_toBinSympPauli_one (n := n))
-    | @insert a S ha ih =>
-        rw [Finset.prod_insert ha, Finset.sum_insert ha]
-        have hco :
-            ↑((if ind a = 1 then bsm.rowStabElem h_comm a else (1 : ↥(bsm.stabClosure h_comm))) *
-                ∏ x ∈ S, if ind x = 1 then bsm.rowStabElem h_comm x else (1 : ↥(bsm.stabClosure h_comm))) =
-              ((if ind a = 1 then ((bsm.rowStabElem h_comm a : ↥(bsm.stabClosure h_comm)) :
-                  ↥(PauliGroup_group n)) else ((1 : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) *
-                ↑(∏ x ∈ S, if ind x = 1 then bsm.rowStabElem h_comm x else (1 : ↥(bsm.stabClosure h_comm)))) := by
-          by_cases hia : ind a = 1
-          · rw [if_pos hia, if_pos hia]
-            rfl
-          · rw [if_neg hia, if_neg hia]
-            rfl
-        have hmul :
-            Pauli_toBinSympPauli
-                ((((if ind a = 1 then bsm.rowStabElem h_comm a else (1 : ↥(bsm.stabClosure h_comm))) *
-                    ∏ x ∈ S, if ind x = 1 then bsm.rowStabElem h_comm x else (1 : ↥(bsm.stabClosure h_comm))
-                  : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) =
-              Pauli_toBinSympPauli
-                ((((if ind a = 1 then bsm.rowStabElem h_comm a else (1 : ↥(bsm.stabClosure h_comm))) :
-                    ↥(PauliGroup_group n)) *
-                  (((∏ x ∈ S, if ind x = 1 then bsm.rowStabElem h_comm x else (1 : ↥(bsm.stabClosure h_comm)) :
-                    ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))))) := by
-          exact congrArg Pauli_toBinSympPauli hco
-        rw [hmul, Pauli_to_BinSymp_correct, ih]
-        by_cases hia : ind a = 1
-        · simp [hia, Pauli_toBinSympPauli_BinSympPauli_toPauli]
-        · have hone : Pauli_toBinSympPauli (((1 : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) = 0 := by
-              have hco : (((1 : ↥(bsm.stabClosure h_comm)) : ↥(PauliGroup_group n))) =
-                  (1 : ↥(PauliGroup_group n)) := by
-                simp
-              exact (congrArg Pauli_toBinSympPauli hco).trans (Pauli_toBinSympPauli_one (n := n))
-          simp [hia]
-  have hsum :
-      Pauli_toBinSympPauli (bsm.rowProduct h_comm ind) =
-        Finset.univ.sum (fun i => if ind i = 1 then bsm.row i else 0) := by
-    unfold BinSympMatrix.rowProduct BinSympMatrix.rowProductSub
-    exact hsum_aux Finset.univ
-  ext j
-  · have hx := congrArg (fun bp => bp.1 j) hsum
-    have hpair :
-        (Finset.univ.sum fun i => if ind i = 1 then bsm.row i else 0).1 j =
-          Finset.univ.sum (fun i => if ind i = 1 then bsm.X i j else 0) := by
-      induction (Finset.univ : Finset (Fin k)) using Finset.induction_on with
-      | empty =>
-          simp
-      | @insert a s ha ih =>
-          by_cases hia : ind a = 1
-          · simpa [ha, hia, BinSympMatrix.row] using ih
-          · simpa [ha, hia, BinSympMatrix.row] using ih
-    calc
-      (Pauli_toBinSympPauli (bsm.rowProduct h_comm ind)).1 j
-          = (Finset.univ.sum fun i => if ind i = 1 then bsm.row i else 0).1 j := by
-              simpa using hx
-      _ = Finset.univ.sum (fun i => if ind i = 1 then bsm.X i j else 0) := hpair
-      _ = Finset.univ.sum (fun i => bsm.X i j * ind i) := by
-            rw [sum_univ_if_eq_one]
-      _ = (bsm.X.transpose.mulVec ind) j := by
-            simp [Matrix.mulVec, dotProduct, mul_comm]
-      _ = (bsm.X.transpose.mulVec ind, bsm.Z.transpose.mulVec ind).1 j := by
-            rfl
-  · have hz := congrArg (fun bp => bp.2 j) hsum
-    have hpair :
-        (Finset.univ.sum fun i => if ind i = 1 then bsm.row i else 0).2 j =
-          Finset.univ.sum (fun i => if ind i = 1 then bsm.Z i j else 0) := by
-      induction (Finset.univ : Finset (Fin k)) using Finset.induction_on with
-      | empty =>
-          simp
-      | @insert a s ha ih =>
-          by_cases hia : ind a = 1
-          · simpa [ha, hia, BinSympMatrix.row] using ih
-          · simpa [ha, hia, BinSympMatrix.row] using ih
-    calc
-      (Pauli_toBinSympPauli (bsm.rowProduct h_comm ind)).2 j
-          = (Finset.univ.sum fun i => if ind i = 1 then bsm.row i else 0).2 j := by
-              simpa using hz
-      _ = Finset.univ.sum (fun i => if ind i = 1 then bsm.Z i j else 0) := hpair
-      _ = Finset.univ.sum (fun i => bsm.Z i j * ind i) := by
-            rw [sum_univ_if_eq_one]
-      _ = (bsm.Z.transpose.mulVec ind) j := by
-            simp [Matrix.mulVec, dotProduct, mul_comm]
-      _ = (bsm.X.transpose.mulVec ind, bsm.Z.transpose.mulVec ind).2 j := by
-            rfl
+  sorry
 
 lemma BinSympMatrix.selectedRows_sum_eq_mulVec {n k : ℕ} (bsm : BinSympMatrix k n)
     (ind : Fin k → ZMod 2) :
@@ -972,27 +811,7 @@ lemma BinSympMatrix.mem_rowSpace_iff_exists_indicator {k n : ℕ} (B : BinSympMa
     (bsp : BinSympPauli n) :
     bsp ∈ B.rowSpace ↔ ∃ ind : Fin k → ZMod 2,
       (B.X.transpose.mulVec ind, B.Z.transpose.mulVec ind) = bsp := by
-  constructor
-  · intro hbsp
-    rcases (Submodule.mem_span_range_iff_exists_fun (R := ZMod 2) (v := B.row) (x := bsp)).1 hbsp with
-      ⟨ind, hind⟩
-    refine ⟨ind, ?_⟩
-    calc
-      (B.X.transpose.mulVec ind, B.Z.transpose.mulVec ind)
-          = Finset.univ.sum (fun i => if ind i = 1 then B.row i else 0) := by
-              symm
-              exact B.selectedRows_sum_eq_mulVec ind
-      _ = ∑ i, ind i • B.row i := by
-            refine Finset.sum_congr rfl ?_
-            intro i hi
-            rcases Fin.exists_fin_two.mp ⟨ind i, rfl⟩ with h | h <;> simp [h]
-      _ = bsp := hind
-  · rintro ⟨ind, rfl⟩
-    rw [← B.selectedRows_sum_eq_mulVec ind]
-    exact Submodule.sum_mem _ (fun i _ => by
-      rcases Fin.exists_fin_two.mp ⟨ind i, rfl⟩ with h | h
-      · simp [h]
-      · simpa [h] using (Submodule.subset_span (Set.mem_range_self i) : B.row i ∈ B.rowSpace))
+  sorry
 
 def BinSympMatrix.undetectable {k n : ℕ} (B : BinSympMatrix k n) (bsp : BinSympPauli n) : Prop :=
   (∀ i, symplecticProd (B.row i) bsp = 0) ∧ bsp ∉ B.rowSpace

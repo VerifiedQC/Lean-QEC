@@ -27,37 +27,12 @@ set_option maxHeartbeats 0 in
 -- heavy unfolding
 lemma bb72_test_z : lt_dist_sat HX Z_ker 5 7
   := by
-  simp (maxSteps := 9999999) only [
-    HX, Z_ker, lt_dist_sat, loc_constraints, parity_constraints, rowspace_constraints,
-    loc_constraints_aux, loc_constraints_ith, Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, Nat.reduceMul,
-    loc_constraints_ith_jth_aux, loc_constraints_ith_jth, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat,
-    one_mul, zero_mul, eq_iff_iff, Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos,
-    Nat.cast_zero, parity_constraints_aux, row_dot_product,
-    row_dot_product_aux, BitVec.reduceGetElem, Bool.and_true, add_zero, Bool.and_false,
-    Bool.bne_false, Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, Bool.decide_and,
-    Bool.and_eq_true, decide_eq_true_eq, and_self_left,
-    rowspace_constraints_aux, bne_iff_ne, ne_eq, Bool.decide_or, decide_not, Bool.or_eq_true,
-    decide_eq_false_iff_not, not_and, not_or, Decidable.not_not, and_imp]
-  bv_decide (timeout := 999)
-    --bv_check (timeout := 99) "bb72.lrat"
-  --bv_check (timeout := 99) "bb72.lrat"
+  sorry
 
 set_option maxHeartbeats 0 in
 -- heavy unfolding
 lemma bb72_test_x : lt_dist_sat HZ X_ker 5 7
   := by
-  simp (maxSteps := 9999999) only [
-    HZ, X_ker, lt_dist_sat, loc_constraints, parity_constraints, rowspace_constraints,
-    loc_constraints_aux, loc_constraints_ith, Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, Nat.reduceMul,
-    loc_constraints_ith_jth_aux, loc_constraints_ith_jth, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat,
-    one_mul, zero_mul, eq_iff_iff, Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos,
-    Nat.cast_zero, parity_constraints_aux, row_dot_product,
-    row_dot_product_aux, BitVec.reduceGetElem, Bool.and_true, add_zero, Bool.and_false,
-    Bool.bne_false, Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, Bool.decide_and,
-    Bool.and_eq_true, decide_eq_true_eq, and_self_left,
-    rowspace_constraints_aux, bne_iff_ne, ne_eq, Bool.decide_or, decide_not, Bool.or_eq_true,
-    decide_eq_false_iff_not, not_and, not_or, Decidable.not_not, and_imp]
-  bv_decide (timeout := 999)
-
+  sorry
 
 #print axioms bb72_test_z

@@ -27,17 +27,24 @@ lemma steane_mat_correct : steane_mat = flatten_matrix steane_mat' := by decide
 lemma steane_ker_correct : steane_ker = flatten_matrix steane_ker' := by decide
 
 lemma steane_orth : steane_mat'.mutually_orth_rows steane_mat' := by
-  rw [←mutually_orth_correct, ←steane_mat_correct]
+  rw [←mutually_orth_correct, ←steane_mat_correct, steane_mat]
   simp [bitvec_mutually_orth, mutually_orth_sat_aux,
-  BitVec.row, steane_mat, BitVec.dot_product, dot_product_aux]
+  BitVec.row, BitVec.dot_product, dot_product_aux]
+
+lemma steane_mat_ker_orth : steane_mat'.mutually_orth_rows steane_ker' := by
+  rw [←mutually_orth_correct, ←steane_mat_correct, ←steane_ker_correct, steane_mat, steane_ker]
+  simp [bitvec_mutually_orth, mutually_orth_sat_aux,
+  BitVec.row, BitVec.dot_product, dot_product_aux]
+
+
 
 
 lemma steane_ind : LinearIndependent (ZMod 2) steane_mat' := by
-  rw [linear_indep_SAT_correct, ←steane_mat_correct]
+  rw [linear_indep_SAT_correct, ←steane_mat_correct, steane_mat]
   simp only [linear_indep_SAT, nonzero, nonzero_aux, Nat.add_one_sub_one, Nat.lt_add_one,
     getElem!_pos, Nat.one_lt_ofNat, Nat.ofNat_pos, Bool.decide_or, Bool.decide_eq_true,
     Bool.or_eq_true, all_dot_zero, all_dot_zero_aux, dot_col_zero, dot_col_aux, Nat.reduceMul,
-    steane_mat, BitVec.ofNat_eq_ofNat, Nat.reduceAdd, BitVec.reduceGetElem, Bool.and_true, one_mul,
+    BitVec.ofNat_eq_ofNat, Nat.reduceAdd, BitVec.reduceGetElem, Bool.and_true, one_mul,
     Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
     bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
     Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
@@ -48,20 +55,21 @@ set_option maxHeartbeats 0 in
 -- heavy unfolding
 lemma steane_dist : lt_dist_sat (flatten_matrix steane_mat') (flatten_matrix steane_ker') 2 3
   := by
-  rw [←steane_mat_correct, ←steane_ker_correct]
+  rw [←steane_mat_correct, ←steane_ker_correct, steane_mat, steane_ker]
   simp only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
     Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
     loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
     Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
-    parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row, steane_mat,
+    parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
     Bool.not_eq_eq_eq_not, Bool.not_true,
     bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
-    rowspace_constraints_aux, steane_ker, not_and, and_imp]
+    rowspace_constraints_aux, not_and, and_imp]
   bv_decide (timeout := 999)
 
 lemma steane_ker_mat_correct : steane_ker'.is_ker_for steane_mat' := by
-  unfold Matrix.is_ker_for
-  sorry
+  have hr₁ : 3 ≤ steane_mat'.rank := sorry
+  have hr₂ : 4 ≤ steane_ker'.rank := sorry
+  apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ hr₁ hr₂ (by norm_num) steane_mat_ker_orth
 
 
 

@@ -251,7 +251,9 @@ theorem mutually_orth_correct
     rw [row_correct, row_correct, dot_product_correct] at h_dp
     simp only [Bool.not_eq_eq_eq_not, Bool.not_true, beq_eq_false_iff_ne] at h_dp
     apply zmod2_val_eq_zero_of_ne_one at h_dp
-    rwa [Fin.ext_iff]
+    apply (ZMod.val_eq_zero (M₁ i ⬝ᵥ M₂ j)).mp h_dp
+
+
   intro h_orth
   apply mutually_orth_aux_ascent
   intro i j
@@ -259,11 +261,5 @@ theorem mutually_orth_correct
   simp only [Bool.not_eq_eq_eq_not, Bool.not_true, beq_eq_false_iff_ne, ne_eq, zero_ne_one,
     not_false_eq_true]
 
-
-lemma cpop_correct {n : ℕ} (x : Fin n → (ZMod 2)) : hammingNorm x = (vec_to_BitVec x).cpop_manual := sorry
-
-lemma Matrix.rank_le_correct {k n : ℕ}
- (M : Matrix (Fin k) (Fin n) (ZMod 2))
- (r : ℕ)
-(hr : (flatten_matrix M).rank_le r) :
-  r ≤ Matrix.rank M := sorry
+lemma inds_strict_mono_correct {k r : ℕ} [NeZero r] (inds : Fin r → Fin k) :
+  StrictMono inds ↔ inds_strict_mono inds := sorry

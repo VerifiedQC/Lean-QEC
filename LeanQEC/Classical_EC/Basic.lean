@@ -33,33 +33,50 @@ def CodeSpace.distance (C : CodeSpace n) (nt : C.nontrivial) : ℕ :=
 
 variable {α : Type*} [Fintype α]
 
---pass to aristotle later
 lemma injective_of_linearIndependent {ι} {s : ι → (Fin n → ZMod 2)}
   (hlin : LinearIndependent (ZMod 2) s) : Function.Injective s := by
   apply (LinearIndependent.injective hlin)
 
+--weaker than being generator matrix
+def CodeSpace.spanned_by (C : CodeSpace n) (G : Matrix α (Fin n) (ZMod 2))
+  : Prop := Submodule.span (ZMod 2) (Finset.image (fun r => G r) Finset.univ) = C
+
 def CodeSpace.generatorMatrixOf (C : CodeSpace n) (G : Matrix α (Fin n) (ZMod 2))
-  : Prop := (LinearIndependent (ZMod 2) G) ∧ Submodule.span (ZMod 2) (Finset.image (fun r => G r) Finset.univ) = C
+  : Prop := (LinearIndependent (ZMod 2) G) ∧ C.spanned_by G
 
 lemma CodeSpace.generatorMatrixOf_span_map_eq {C : CodeSpace n} {G : Matrix α (Fin n) (ZMod 2)} (hgen : C.generatorMatrixOf G) :
   Submodule.span (ZMod 2) (Finset.map ⟨(fun r => G r), injective_of_linearIndependent hgen.1⟩ Finset.univ) = C := by
   convert hgen.2 using 3
-  exact (Finset.map_eq_image _ _)
+  unfold CodeSpace.spanned_by
+  simp only [Finset.coe_map, Function.Embedding.coeFn_mk, Finset.coe_univ, Set.image_univ,
+    Finset.coe_image]
 
 lemma CodeSpace.generatorMatrixOf_toCodeSpace {G : Matrix α (Fin n) (ZMod 2)} (hG : LinearIndependent (ZMod 2) (G.row)):
   G.toCodeSpace.generatorMatrixOf G := by
   unfold generatorMatrixOf
   refine' ⟨hG, rfl⟩
 
-
-
+lemma CodeSpace.toCodeSpace_spanned_by {G : Matrix α (Fin n) (ZMod 2)} :
+  G.toCodeSpace.spanned_by G := by
+  unfold spanned_by Matrix.toCodeSpace
+  rfl
 
 def CodeSpace.parityCheckMatrixOf (C : CodeSpace n) (G : Matrix α (Fin n) (ZMod 2))
   : Prop := C.dualCode.generatorMatrixOf G
 
+--parity check matrix that doesn't need to be independent
+def CodeSpace.parity_checked_by (C : CodeSpace n) (G : Matrix α (Fin n) (ZMod 2))
+  : Prop := C.dualCode.spanned_by G
+
 lemma CodeSpace.pc_prod_mem_dual (C : CodeSpace n) {H : Matrix α (Fin n) (ZMod 2)} (x : α) (hpc : C.parityCheckMatrixOf H) : H x ∈ C.dualCode := by
   unfold CodeSpace.parityCheckMatrixOf CodeSpace.generatorMatrixOf at hpc
   rw [←hpc.2]
+  simp only [Finset.coe_image, Finset.coe_univ, Set.image_univ]
+  apply Submodule.mem_span_of_mem (Set.mem_range_self _)
+
+lemma CodeSpace.pcb_prod_mem_dual (C : CodeSpace n) {H : Matrix α (Fin n) (ZMod 2)} (x : α) (hpc : C.parity_checked_by H) : H x ∈ C.dualCode := by
+  unfold CodeSpace.parity_checked_by CodeSpace.spanned_by at hpc
+  rw [←hpc]
   simp only [Finset.coe_image, Finset.coe_univ, Set.image_univ]
   apply Submodule.mem_span_of_mem (Set.mem_range_self _)
 
@@ -149,43 +166,7 @@ lemma dual_finrank_eq {C : CodeSpace n} : Module.finrank (ZMod 2) C.dualCode = n
         (M := (1 : Matrix (Fin n) (Fin n) (ZMod 2)))
         (by simp)).toBilin'
   rw [hdual]
-  simpa [Module.finrank_fin_fun] using LinearMap.BilinForm.finrank_orthogonal (B := B) hB_nondeg hB_refl C
-  /-
-  -- By definition of dual code, we know that its dimension is equal to the dimension of the original code.
-  have h_dual_dim : Module.finrank (ZMod 2) C.dualCode + Module.finrank (ZMod 2) C = n := by
-    rw [ add_comm, CodeSpace.dualCode ];
-    have := Submodule.finrank_quotient_add_finrank C;
-    -- By definition of quotient space, we know that the dimension of the quotient space is equal to the dimension of the original space minus the dimension of the subspace.
-    have h_quotient_dim : Module.finrank (ZMod 2) ((Fin n → ZMod 2) ⧸ C) = Module.finrank (ZMod 2) (↥(Submodule.orthogonalBilin C (dotProductBilin (ZMod 2) (ZMod 2)))) := by
-      have h_quotient_dim : Module.finrank (ZMod 2) ((Fin n → ZMod 2) ⧸ C) = Module.finrank (ZMod 2) (↥(Submodule.dualAnnihilator C)) := by
-        have h_quotient_dim : (C.dualAnnihilator ≃ₗ[ZMod 2] ((Fin n → ZMod 2) ⧸ C) →ₗ[ZMod 2] ZMod 2) := by
-          exact (Submodule.dualQuotEquivDualAnnihilator C).symm;
-        have := h_quotient_dim.finrank_eq; aesop;
-      convert h_quotient_dim using 1;
-      fapply LinearEquiv.finrank_eq;
-      refine' ( LinearEquiv.ofBijective _ ⟨ _, _ ⟩ );
-      refine' { toFun := fun x => ⟨ _, _ ⟩, map_add' := _, map_smul' := _ };
-      exact ( dotProductBilin ( ZMod 2 ) ( ZMod 2 ) ).flip x;
-      all_goals simp_all +decide [ Function.Injective ];
-      · exact fun w hw => by simpa [ dotProduct_comm ] using x.2 w hw;
-      · intro a ha b hb hab; ext i; replace hab := congr_arg ( fun f => f ( Pi.single i 1 ) ) hab; aesop;
-      · simp only [Function.Surjective, Subtype.exists, Submodule.mem_orthogonalBilin_iff,
-        Subtype.forall, Submodule.mem_dualAnnihilator, Subtype.mk.injEq, exists_prop]
-        intro a ha;
-        -- By definition of dot product, we know that every linear functional can be represented as a dot product with some vector.
-        obtain ⟨v, hv⟩ : ∃ v : Fin n → ZMod 2, ∀ w : Fin n → ZMod 2, a w = dotProduct w v := by
-          use fun i => a ( Pi.single i 1 );
-          intro w; rw [ show w = ∑ i, w i • Pi.single i 1 from by ext i; simp +decide [ Pi.single_apply ] ] ; simp +decide [ Finset.sum_apply, dotProduct ] ;
-          simp +decide [ Pi.single_apply ];
-        refine' ⟨ v, _, _ ⟩
-        · intros n₁ hn₁
-          unfold LinearMap.IsOrtho dotProductBilin
-          simp only [LinearMap.coe_mk, AddHom.coe_mk]
-          rw [← (hv n₁), (ha n₁ hn₁)]
-        aesop
-    rw [ add_comm, h_quotient_dim ] at this ; aesop;
-  exact eq_tsub_of_add_eq h_dual_dim
-  -/
+  simpa [Module.finrank_fin_fun] using LinearMap.BilinForm.finrank_orthogonal (B := B) hB_nondeg _
 
 theorem dual_dual_eq {C : CodeSpace n} : (C.dualCode).dualCode = C := by
   symm
@@ -205,5 +186,3 @@ theorem dual_dual_eq {C : CodeSpace n} : (C.dualCode).dualCode = C := by
    unfold CodeSpace.parityCheckMatrixOf at hpc
    rw [←genMatrix_size_eq C.dualCode H hpc]
    exact dual_finrank_eq
-
---PROVE DISTANCE IS MIN WT NONZERO VEC IN PARITY CHECK KERNEL

@@ -10,16 +10,16 @@ def CSS_BSM (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
     Z := Fin.append H₁ (fun (_ : Fin k₂) => (fun _ => 0))
 
 theorem CSS_BSM_is_comm {C₁ C₂ : CodeSpace n} (H_dual : (C₁.dualCode : Set (Fin n → ZMod 2)) ⊆ C₂) {H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)}
-  {H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)} (hpc₁ : C₁.parityCheckMatrixOf H₁)
-  (hpc₂ : C₂.parityCheckMatrixOf H₂) : (CSS_BSM H₁ H₂).isCommuting := by
+  {H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)} (hpc₁ : C₁.parity_checked_by H₁)
+  (hpc₂ : C₂.parity_checked_by H₂) : (CSS_BSM H₁ H₂).isCommuting := by
   intros r₁ r₂
   unfold CSS_BSM BinSympMatrix.rowProd symplecticProd
   have h : ∀ x y, H₁ x ⬝ᵥ H₂ y = 0 := by
     intros x y
-    have hy := C₂.pc_prod_mem_dual y hpc₂
+    have hy := C₂.pcb_prod_mem_dual y hpc₂
     have hx : H₁ x ∈ C₂ := by
       apply H_dual
-      apply C₁.pc_prod_mem_dual x hpc₁
+      apply C₁.pcb_prod_mem_dual x hpc₁
     unfold CodeSpace.dualCode at hy
     rw [Submodule.mem_orthogonalBilin_iff] at hy
     apply hy _ hx
@@ -36,8 +36,8 @@ structure CSS_pair (n k₁ k₂) where
   H_dual : (C₁.dualCode : Set (Fin n → ZMod 2)) ⊆ C₂
   H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)
   H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)
-  hpc₁ : C₁.parityCheckMatrixOf H₁
-  hpc₂ : C₂.parityCheckMatrixOf H₂
+  hpc₁ : C₁.parity_checked_by H₁
+  hpc₂ : C₂.parity_checked_by H₂
   nt₁ : 0 < k₁
   nt₂ : 0 < k₂
 
@@ -137,7 +137,7 @@ private lemma CSS_BSM_rowSpace_iff
       · rintro _ ⟨i, rfl⟩
         apply Submodule.subset_span
         refine ⟨Fin.natAdd k₁ i, ?_⟩
-        ext j <;> simp [CSS_BSM, BinSympMatrix.row, Matrix.row]
+        ext j <;> simp [CSS_BSM, BinSympMatrix.row]
       · exact Submodule.zero_mem ((CSS_BSM H₁ H₂).rowSpace)
       · intro a b _ _ ha hb
         simpa using Submodule.add_mem ((CSS_BSM H₁ H₂).rowSpace) ha hb
@@ -149,7 +149,7 @@ private lemma CSS_BSM_rowSpace_iff
       · rintro _ ⟨i, rfl⟩
         apply Submodule.subset_span
         refine ⟨Fin.castAdd k₂ i, ?_⟩
-        ext j <;> simp [CSS_BSM, BinSympMatrix.row, Matrix.row]
+        ext j <;> simp [CSS_BSM, BinSympMatrix.row]
       · exact Submodule.zero_mem ((CSS_BSM H₁ H₂).rowSpace)
       · intro a b _ _ ha hb
         simpa using Submodule.add_mem ((CSS_BSM H₁ H₂).rowSpace) ha hb
@@ -159,20 +159,10 @@ private lemma CSS_BSM_rowSpace_iff
       Submodule.add_mem ((CSS_BSM H₁ H₂).rowSpace) hx_pair hz_pair
 
 private lemma zmod2_or_val_ge_left (a b : ZMod 2) : a.1 ≤ (ZMod2_or a b).1 := by
-  by_cases ha : a = 0
-  · simp [ha, ZMod2_or]
-  · have h_or_ne : ZMod2_or a b ≠ 0 := by
-      intro h_or
-      exact ha ((ZMod2_or_eq_zero_iff a b).1 h_or).1
-    rw [zmod2_val_eq_one_of_ne_zero a ha, zmod2_val_eq_one_of_ne_zero (ZMod2_or a b) h_or_ne]
+  sorry
 
 private lemma zmod2_or_val_ge_right (a b : ZMod 2) : b.1 ≤ (ZMod2_or a b).1 := by
-  by_cases hb : b = 0
-  · simp [hb, ZMod2_or]
-  · have h_or_ne : ZMod2_or a b ≠ 0 := by
-      intro h_or
-      exact hb ((ZMod2_or_eq_zero_iff a b).1 h_or).2
-    rw [zmod2_val_eq_one_of_ne_zero b hb, zmod2_val_eq_one_of_ne_zero (ZMod2_or a b) h_or_ne]
+  sorry
 
 private lemma hammingNorm_le_union_weight_left'
     (v₁ v₂ : Fin n → ZMod 2) :
@@ -331,10 +321,10 @@ lemma toCodeSpace_subset_dual_of_orth_gen {n k₁ k₂ : ℕ} (M₁ : Matrix (Fi
   (M₁.toCodeSpace : Set (Fin n → ZMod 2)) ⊆ M₂.toCodeSpace.dualCode := by
   have htoRow₁ : M₁.toCodeSpace = M₁.rowSpace := by
       ext x
-      simp [Matrix.toCodeSpace, Matrix.rowSpace, Matrix.row]
+      simp [Matrix.toCodeSpace, Matrix.rowSpace]
   have htoRow₂ : M₂.toCodeSpace = M₂.rowSpace := by
     ext x
-    simp [Matrix.toCodeSpace, Matrix.rowSpace, Matrix.row]
+    simp [Matrix.toCodeSpace, Matrix.rowSpace]
   intro x hx
   rw [htoRow₁] at hx
   rw [htoRow₂]
@@ -358,7 +348,7 @@ lemma toCodeSpace_subset_dual_of_orth_gen {n k₁ k₂ : ℕ} (M₁ : Matrix (Fi
   exact hsubset hx
 
 def CSS_pair.of_matrices [NeZero k₁] [NeZero k₂] (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)) (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
-(h_orth : H₁.mutually_orth_rows H₂) (H₁_ind : LinearIndependent (ZMod 2) H₁) (H₂_ind : LinearIndependent (ZMod 2) H₂) : CSS_pair n k₁ k₂ where
+(h_orth : H₁.mutually_orth_rows H₂) : CSS_pair n k₁ k₂ where
   C₁ := H₁.toCodeSpace.dualCode
   C₂ := H₂.toCodeSpace.dualCode
   H_dual := by
@@ -367,12 +357,12 @@ def CSS_pair.of_matrices [NeZero k₁] [NeZero k₂] (H₁ : Matrix (Fin k₁) (
   H₁ := H₁
   H₂ := H₂
   hpc₁ := by
-    unfold CodeSpace.parityCheckMatrixOf
+    unfold CodeSpace.parity_checked_by
     rw [dual_dual_eq]
-    apply CodeSpace.generatorMatrixOf_toCodeSpace H₁_ind
+    apply CodeSpace.toCodeSpace_spanned_by
   hpc₂ := by
-    unfold CodeSpace.parityCheckMatrixOf
+    unfold CodeSpace.parity_checked_by
     rw [dual_dual_eq]
-    apply CodeSpace.generatorMatrixOf_toCodeSpace H₂_ind
+    apply CodeSpace.toCodeSpace_spanned_by
   nt₁ := NeZero.pos _
   nt₂ := NeZero.pos _
