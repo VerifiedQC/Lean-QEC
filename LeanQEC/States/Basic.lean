@@ -21,10 +21,8 @@ def qub_one : PState 1 := {
 }
 
 @[simp] lemma qub_zero_zero : qub_zero 0#1 = 1 := by
-  simp only [qub_zero, beq, Nat.reducePow, BitVec.equivFin, RingEquiv.symm_mk, Ket.apply,
-    Equiv.arrowCongr_apply, Equiv.coe_refl, RingEquiv.coe_coe_toEquiv_symm, RingEquiv.coe_mk,
-    Equiv.coe_fn_mk, Function.comp_apply, BitVec.toFin_ofNat, Fin.ofNat_eq_cast, Fin.natCast_zero,
-    Fin.isValue, Matrix.cons_val_zero, id_eq]
+  simp [qub_zero, beq, BitVec.equivFin, Ket.apply, Equiv.arrowCongr_apply]
+  rfl
 
 lemma qub_zero_vec_zero : qub_zero.vec 0#1 = 1 := by
   rw [<- Ket.apply, qub_zero_zero]
@@ -37,10 +35,8 @@ lemma qub_zero_vec_one : qub_zero.vec 1#1 = 0 := by
   rw [<- Ket.apply, qub_zero_one]
 
 @[simp] lemma qub_one_zero : qub_one 0#1 = 0 := by
-  simp only [qub_one, beq, Nat.reducePow, BitVec.equivFin, RingEquiv.symm_mk, Ket.apply,
-    Equiv.arrowCongr_apply, Equiv.coe_refl, RingEquiv.coe_coe_toEquiv_symm, RingEquiv.coe_mk,
-    Equiv.coe_fn_mk, Function.comp_apply, BitVec.toFin_ofNat, Fin.ofNat_eq_cast, Fin.natCast_zero,
-    Fin.isValue, Matrix.cons_val_zero, id_eq]
+  simp [qub_one, beq, BitVec.equivFin, Ket.apply, Equiv.arrowCongr_apply]
+  rfl
 
 lemma qub_one_vec_zero : qub_one.vec 0#1 = 0 := by
   rw [<- Ket.apply, qub_one_zero]

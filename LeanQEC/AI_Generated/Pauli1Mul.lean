@@ -11,6 +11,7 @@ The following was proved by Aristotle:
   let PQ
 -/
 
+import Mathlib
 import LeanQEC.Unitary.Basic
 import LeanQEC.States.Phase
 import LeanQEC.Unitary.Paulis.Pauli1
@@ -73,98 +74,107 @@ noncomputable section AristotleLemmas
 open Qubit
 
 lemma pX_sq : pX * pX = 1 := by
-  unfold pX;
-  unfold unitary_fin_equiv;
-  ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Matrix.mul_apply, Qubit.X ];
-  · rfl;
-  · rfl;
-  · rfl;
-  · rfl
+  apply Subtype.ext
+  simp only [pX, unitary_fin_equiv]
+  ext i j; fin_cases i <;> fin_cases j <;>
+  simp [Qubit.X, beq, BitVec.equivFin] <;> rfl
+
 lemma pY_sq : pY * pY = 1 := by
-  ext i j ; fin_cases i <;> fin_cases j <;> simp ( config := { decide := Bool.true } ) [ pY ];
-  · simp ( config := { decide := Bool.true } ) [ unitary_fin_equiv, Qubit.Y ];
-    rfl;
-  · sorry
-  · sorry
-  · unfold Qubit.Y ;
-    unfold unitary_fin_equiv; norm_num;
-    rfl
+  apply Subtype.ext
+  simp only [pY, unitary_fin_equiv]
+  ext i j; fin_cases i <;> fin_cases j <;>
+  simp [Qubit.Y, beq, BitVec.equivFin] <;> rfl
+
 lemma pZ_sq : pZ * pZ = 1 := by
-  unfold pZ;
-  -- By definition of matrix multiplication, we can compute each entry of the product.
-  have hZ_sq : (Qubit.Z : Matrix (Fin 2) (Fin 2) ℂ) * (Qubit.Z : Matrix (Fin 2) (Fin 2) ℂ) = 1 := by
-    ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Qubit.Z ];
-  unfold unitary_fin_equiv; aesop;
+  apply Subtype.ext
+  simp only [pZ, unitary_fin_equiv]
+  ext i j; fin_cases i <;> fin_cases j <;>
+  simp [Qubit.Z, beq, BitVec.equivFin] <;> rfl
+
 lemma pX_mul_pY : pX * pY = U_phase pZ phase_i := by
-  ext i j ; fin_cases i <;> fin_cases j <;> norm_num;
-  · sorry
-  · simp ( config := { decide := Bool.true } ) [ pX, pY, pZ, U_phase, Matrix.mul_apply ];
-    unfold unitary_fin_equiv;
-    unfold Qubit.X Qubit.Y Qubit.Z; norm_num [ Fin.sum_univ_succ, Matrix.mul_apply ] ; ring_nf;
-    repeat erw [ Matrix.cons_val_succ' ] ; norm_num;
-    exact Or.inl rfl;
-  · sorry
-  · norm_num [ Matrix.mul_apply, pX, pY, pZ, U_phase ];
-    norm_num [ unitary_fin_equiv ];
-    simp +zetaDelta at *;
-    erw [ show ( beq.symm 0#1 : Fin 2 ) = 0 from rfl, show ( beq.symm 1#1 : Fin 2 ) = 1 from rfl ] ; norm_num [ Qubit.X, Qubit.Y, Qubit.Z ]
+  unfold pX pY pZ U_phase;
+  ext i j ; fin_cases i <;> fin_cases j <;> simp +decide [ unitary_fin_equiv, X, Y, Z ];
+  · simp +decide [ beq ];
+  · simp +decide [ beq ];
+  · simp +decide [ beq ];
+  · simp +decide [ beq ]
+
 lemma pY_mul_pZ : pY * pZ = U_phase pX phase_i := by
-  ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Matrix.mul_apply, Complex.ext_iff, Fin.sum_univ_succ ] <;> ring_nf;
-  · unfold U_phase pX pY pZ; norm_num [ Fin.sum_univ_succ, Matrix.mul_apply, Complex.ext_iff, Fin.sum_univ_succ ] ;
-    unfold unitary_fin_equiv Qubit.X Qubit.Y Qubit.Z; norm_num [ Fin.sum_univ_succ, Matrix.mul_apply, Complex.ext_iff ] ;
-    repeat erw [ Matrix.cons_val_zero ] ; norm_num;
-  · unfold U_phase; norm_num [ Complex.ext_iff, Matrix.mul_apply ] ;
-    erw [ show ( pY : Matrix ( BitVec 1 ) ( BitVec 1 ) ℂ ) = Matrix.of ( fun i j => if i = 0 ∧ j = 0 then 0 else if i = 0 ∧ j = 1 then -Complex.I else if i = 1 ∧ j = 0 then Complex.I else 0 ) from ?_, show ( pZ : Matrix ( BitVec 1 ) ( BitVec 1 ) ℂ ) = Matrix.of ( fun i j => if i = 0 ∧ j = 0 then 1 else if i = 0 ∧ j = 1 then 0 else if i = 1 ∧ j = 0 then 0 else -1 ) from ?_, show ( pX : Matrix ( BitVec 1 ) ( BitVec 1 ) ℂ ) = Matrix.of ( fun i j => if i = 0 ∧ j = 0 then 0 else if i = 0 ∧ j = 1 then 1 else if i = 1 ∧ j = 0 then 1 else 0 ) from ?_ ] ; norm_num [ Complex.ext_iff, Fin.sum_univ_succ, Matrix.mul_apply ];
-    · simp (config := { decide := true });
-    · ext i j ; fin_cases i ; fin_cases j ; rfl;
-      · rfl;
-      · fin_cases j <;> rfl;
-    · ext i j; fin_cases i; fin_cases j; rfl;
-      · rfl;
-      · fin_cases j <;> rfl;
-    · exact Matrix.ext fun i j => by fin_cases i <;> fin_cases j <;> rfl;
-  · unfold U_phase pX pY pZ; norm_num [ Fin.sum_univ_succ ] ; ring_nf ;
-    unfold unitary_fin_equiv; norm_num [ Qubit.X, Qubit.Y, Qubit.Z ] ;
-    repeat erw [ Matrix.cons_val_succ' ] ; norm_num;
-    repeat erw [ Matrix.cons_val_zero ] ; norm_num;
-    rfl;
-  · unfold U_phase; norm_num [ Complex.ext_iff, Matrix.mul_apply ] ;
-    unfold pX pY pZ; norm_num [ Matrix.mul_apply, Fin.sum_univ_succ ] ; ring_nf;
-    unfold unitary_fin_equiv; norm_num [ Qubit.X, Qubit.Y, Qubit.Z, Fin.sum_univ_succ ] ; ring_nf;
-    repeat erw [ Matrix.cons_val_succ' ] ; norm_num;
-    exact Or.inr rfl
+  unfold pY pZ U_phase;
+  ext i j;
+  fin_cases i <;> fin_cases j <;> simp +decide [ Y, Z, pX ];
+  · simp +decide [ unitary_fin_equiv, X, Y, Z ];
+    simp +decide [ beq ];
+  · simp +decide [ unitary_fin_equiv, X, Y, Z ];
+    simp +decide [ beq ];
+  · simp +decide [ unitary_fin_equiv, X, Y, Z ];
+    simp +decide [ beq ];
+  · simp +decide [ unitary_fin_equiv, X, Y, Z ];
+    simp +decide [ beq ]
+
 lemma pZ_mul_pX : pZ * pX = U_phase pY phase_i := by
-  unfold pZ pX U_phase phase_i;
-  unfold unitary_fin_equiv pY;
-  ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Matrix.mul_apply, Qubit.X, Qubit.Y, Qubit.Z ];
-  · sorry
-  · sorry
-  · sorry
-  · sorry
+  unfold pZ pX U_phase;
+  unfold phase_i pY;
+  ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Matrix.mul_apply, Z, Y, X, unitary_fin_equiv ];
+  · simp +decide [ beq ];
+  · simp +decide [ beq ];
+  · simp +decide [ beq ];
+  · simp +decide [ beq ]
+
 lemma pY_mul_pX : pY * pX = U_phase pZ phase_ni := by
-  ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Matrix.mul_apply, U_phase ] <;> norm_cast;
-  · sorry
-  · unfold pX pY pZ; norm_num [ Complex.ext_iff ];
-    unfold unitary_fin_equiv; norm_num [ Matrix.mul_apply, Qubit.X, Qubit.Y, Qubit.Z ] ;
-    repeat erw [ Matrix.cons_val_succ' ] ; norm_num;
-    tauto;
-  · sorry
-  · norm_num [ Matrix.mul_apply, pX, pY, pZ ];
-    unfold unitary_fin_equiv; norm_num [ beq ] ;
-    simp ( config := { decide := Bool.true } ) [ Qubit.X, Qubit.Y, Qubit.Z ]
+  convert congr_arg Star.star ( pX_mul_pY ) using 1;
+  · unfold pY pX;
+    unfold unitary_fin_equiv;
+    ext; simp +decide [ Matrix.mul_apply, Matrix.reindex_apply ] ;
+    rename_i i j; fin_cases i <;> fin_cases j <;> norm_num [ Y, X ] ;
+    · simp +decide [ beq ];
+    · simp +decide [ beq ];
+    · simp +decide [ beq ];
+    · simp +decide [ beq ];
+  · unfold U_phase;
+    ext i j ; simp +decide [ phase_i, phase_ni ];
+    fin_cases i <;> fin_cases j <;> norm_num [ pZ ];
+    · unfold unitary_fin_equiv; simp +decide [ Z ] ;
+      simp +decide [ beq ];
+    · unfold unitary_fin_equiv; simp +decide [ Z ] ;
+      simp +decide [ beq ];
+    · unfold unitary_fin_equiv; norm_num [ Z ] ;
+      simp +decide [ beq ];
+    · unfold unitary_fin_equiv; simp +decide [ Z ] ;
+      simp +decide [ beq ]
+
 lemma pZ_mul_pY : pZ * pY = U_phase pX phase_ni := by
-  ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Phase.phase_star, pX, pY, pZ, U_phase ] <;> norm_cast;
-  · sorry
-  · sorry
-  · sorry
-  · sorry
+  unfold pZ pY U_phase;
+  ext i j; fin_cases i <;> fin_cases j <;> norm_num [ pX, pY, pZ, phase_ni ] ;
+  · unfold unitary_fin_equiv; norm_num [ Z, Y, X ] ;
+    simp +decide [ beq ];
+  · simp +decide [ unitary_fin_equiv, Z, Y, X ];
+    simp +decide [ beq ];
+  · unfold unitary_fin_equiv; simp +decide [ Z, Y, X ] ;
+    simp +decide [ beq ];
+  · unfold unitary_fin_equiv; norm_num [ Z, Y, X ] ;
+    simp +decide [ beq ]
+
 lemma pX_mul_pZ : pX * pZ = U_phase pY phase_ni := by
-  unfold pX pZ pY;
-  -- Let's calculate the product of the X and Z matrices and show it equals the Y matrix with the phase -i.
-  have h_prod : (Qubit.X * Qubit.Z : Matrix (Fin 2) (Fin 2) ℂ) = (-Complex.I : ℂ) • Qubit.Y := by
-    ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Matrix.mul_apply, Qubit.X, Qubit.Y, Qubit.Z ];
-  refine' Subtype.ext _;
-  unfold unitary_fin_equiv U_phase; aesop;
+  ext i j; fin_cases i <;> fin_cases j <;> simp +decide [ *, Matrix.mul_apply ] ;
+  · unfold U_phase; simp +decide [ Z ] ;
+    unfold pX pY pZ; simp +decide [ BitVec.equivFin ] ;
+    unfold unitary_fin_equiv; simp +decide [ X, Y, Z ] ;
+    simp +decide [ beq ];
+    simp +decide [ BitVec.equivFin ];
+  · unfold pX pZ U_phase; simp +decide ;
+    unfold unitary_fin_equiv; simp +decide [ X, Z, pY ] ;
+    unfold unitary_fin_equiv; simp +decide [ Y ] ;
+    simp +decide [ beq ];
+    simp +decide [ BitVec.equivFin ];
+  · simp +decide [ pX, pZ, U_phase ];
+    simp +decide [ unitary_fin_equiv, X, Z, pY ];
+    simp +decide [ beq, Y ];
+    simp +decide [ BitVec.equivFin ];
+  · simp +decide [ pX, pY, pZ, U_phase ];
+    simp +decide [ unitary_fin_equiv, X, Y, Z ];
+    simp +decide [ beq ];
+    simp +decide [ BitVec.equivFin ]
 
 end AristotleLemmas
 

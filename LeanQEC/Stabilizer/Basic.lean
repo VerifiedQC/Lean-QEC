@@ -1,6 +1,8 @@
+import Mathlib
 import LeanQEC.States.Basic
 import LeanQEC.LinearAlgebra.RowspaceKernel
 import LeanQEC.Unitary.Paulis.Basic
+
 variable {n : ℕ}
 
 def stabilizes (U : 𝐔ₙ[n]) (ψ : PState n) := ψ.apply U = ψ
@@ -284,12 +286,15 @@ lemma sum_univ_if_eq_one {α : Type*} [Fintype α] [DecidableEq α]
     (ind : α → ZMod 2) (f : α → ZMod 2) :
     Finset.univ.sum (fun a => if ind a = 1 then f a else 0) =
       Finset.univ.sum (fun a => f a * ind a) := by
-  sorry
-
-
-
-
-
+  exact Finset.sum_congr rfl fun x _ => by
+    rcases Fin.exists_fin_two.mp ⟨ ind x, rfl ⟩ with h | h;
+    · have h01 : ¬ ((0 : ZMod 2) = 1) := by norm_num;
+      rw [ h ];
+      change (if (0 : ZMod 2) = 1 then f x else 0) = f x * (0 : ZMod 2);
+      simp [ h01 ];
+    · rw [ h ];
+      change (if (1 : ZMod 2) = 1 then f x else 0) = f x * (1 : ZMod 2);
+      simp;
 
 --define binary symplectic representation, yielding Finset of PauliGroup n from matrix
 
@@ -346,11 +351,12 @@ def Z2Z2_Pauli_equiv : ((ZMod 2) × (ZMod 2)) ≃ Pauli where
 
 lemma ZMod2_or_eq_zero_iff (a b : ZMod 2) :
     ZMod2_or a b = 0 ↔ a = 0 ∧ b = 0 := by
-  sorry
+  revert a b
+  native_decide
 
 lemma Z2Z2_Pauli_equiv_ne_I_iff (a b : ZMod 2) :
     Z2Z2_Pauli_equiv (a, b) ≠ Pauli_I ↔ ZMod2_or a b ≠ 0 := by
-  sorry
+  fin_cases a <;> fin_cases b <;> simp [ Z2Z2_Pauli_equiv, ZMod2_or ] <;> native_decide
 
 def BinSympPauli_toPauli {n : ℕ} (bs : BinSympPauli n) : ↥(PauliGroup_group n) :=
   let pm := fun n => Z2Z2_Pauli_equiv (bs.1 n, bs.2 n)
@@ -537,8 +543,9 @@ lemma symplecticProd_comm {n : ℕ} (bp₁ bp₂ : BinSympPauli n) :
 lemma BinSympPauli_toPauli_commute_iff_symplecticProd_zero {n : ℕ} (bp₁ bp₂ : BinSympPauli n) :
     commute (BinSympPauli_toPauli bp₁) (BinSympPauli_toPauli bp₂) ↔
       symplecticProd bp₁ bp₂ = 0 := by
-  sorry
-
+  -- The commutativity of Pauli group elements is equivalent to the symplectic product being zero.
+  unfold commute; simp [anticommute_eq_symplecticBool];
+  cases h : symplecticProd bp₁ bp₂ ; simp_all +decide [ Bool.ofNat ]
 
 theorem commutes_of_sympProd_zero {n : ℕ} {bp₁ bp₂ : BinSympPauli n}
     (h_prod : symplecticProd bp₁ bp₂ = 0) : commute (BinSympPauli_toPauli bp₁) (BinSympPauli_toPauli bp₂) := by
@@ -640,7 +647,6 @@ lemma BinSympMatrix.rowProduct_single {n k : ℕ} (bsm : BinSympMatrix k n) (h_c
     bsm.rowProduct h_comm (Pi.single i (1 : ZMod 2)) = BinSympPauli_toPauli (bsm.row i) := by
   sorry
 
-
 lemma BinSympMatrix.rowProductSub_add {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
     (ind₁ ind₂ : Fin k → ZMod 2) :
     bsm.rowProductSub h_comm (fun i => ind₁ i + ind₂ i) =
@@ -657,7 +663,10 @@ lemma BinSympMatrix.rowProduct_add {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm
 lemma BinSympMatrix.rowProduct_self_mul_eq_one {n k : ℕ} (bsm : BinSympMatrix k n)
     (h_comm : bsm.isCommuting) (ind : Fin k → ZMod 2) :
     bsm.rowProduct h_comm ind * bsm.rowProduct h_comm ind = 1 := by
-  sorry
+  convert bsm.rowProduct_add h_comm ind ind using 1;
+  · rw [ ← bsm.rowProduct_add h_comm ind ind ];
+  · rw [ ← bsm.rowProduct_add h_comm ind ind ];
+    rw [ show ( fun i => ind i + ind i ) = fun _ => 0 from funext fun _ => by simp +decide [ ← two_mul ] ] ; exact Eq.symm ( bsm.rowProduct_zero h_comm )
 
 lemma BinSympMatrix.rowProduct_inv_eq_self {n k : ℕ} (bsm : BinSympMatrix k n)
     (h_comm : bsm.isCommuting) (ind : Fin k → ZMod 2) :
@@ -811,7 +820,18 @@ lemma BinSympMatrix.mem_rowSpace_iff_exists_indicator {k n : ℕ} (B : BinSympMa
     (bsp : BinSympPauli n) :
     bsp ∈ B.rowSpace ↔ ∃ ind : Fin k → ZMod 2,
       (B.X.transpose.mulVec ind, B.Z.transpose.mulVec ind) = bsp := by
-  sorry
+  refine' ⟨ _, fun h ↦ _ ⟩;
+  · intro h;
+    refine' Submodule.span_induction _ _ _ _ h;
+    · rintro _ ⟨ i, rfl ⟩ ; use Pi.single i 1; simp +decide [ Matrix.mulVec ] ;
+      rfl;
+    · exact ⟨ 0, by simp +decide ⟩;
+    · rintro x y hx hy ⟨ ind₁, rfl ⟩ ⟨ ind₂, rfl ⟩ ; use ind₁ + ind₂; simp +decide [ Matrix.mulVec_add ] ;
+    · rintro a x hx ⟨ ind, rfl ⟩ ; use a • ind; simp +decide [ Matrix.mulVec_smul ] ;
+  · obtain ⟨ ind, rfl ⟩ := h;
+    convert Submodule.sum_mem _ _ using 1;
+    convert BinSympMatrix.selectedRows_sum_eq_mulVec B ind |> Eq.symm;
+    intro i hi; split_ifs <;> [ exact Submodule.subset_span ( Set.mem_range_self i ) ; exact Submodule.zero_mem _ ] ;
 
 def BinSympMatrix.undetectable {k n : ℕ} (B : BinSympMatrix k n) (bsp : BinSympPauli n) : Prop :=
   (∀ i, symplecticProd (B.row i) bsp = 0) ∧ bsp ∉ B.rowSpace
@@ -948,170 +968,3 @@ theorem BinSympMatrix.distance_eq_distance {k n : ℕ} (B : BinSympMatrix k n) (
   unfold StabCode.distance BinSympMatrix.distance
   rw [hweights]
 end
-
---TODO:
-
---can i just define the code size as n - number of stabilizer generators? This requires
-
---theory of code size: how to do this without subspace rep due to pstate normalization condition?
-
---order of stabilizer subgroup?
-
---reduce to phase 1 case: lemma that says an undetectable error is still undetectable if phase is set
---to 1
-
---theory of codespace distance
-
---relate codespace distance to matrix vector multiplication of binsymp representation
-
-
-/-
-variable (n : ℕ) (k : ℕ)
-
-def QCode := PState k → PState n
-
-noncomputable section
-
-variable {n : ℕ} {k : ℕ}
-
-def QCode.stabilizers (C : QCode n k) :=
-  {U : PauliGroup n | (∀ ψ, stabilizes U (C ψ))}
-
-
-lemma QCode.stabilizer_closed_under_mul (C : QCode n k) {a b : PauliGroup n} (ha : a ∈ C.stabilizers) (hb : b ∈ C.stabilizers)
-  : ⟨(a : 𝐔ₙ[n]) * b, pauli_mul' _ _⟩  ∈ C.stabilizers := by
-  intros ψ
-  exact mul_stab (ha _) (hb _)
-
-lemma QCode.stabilizer_closed_under_inv (C : QCode n k) {x : PauliGroup n} (hx : x ∈ C.stabilizers) : ⟨x⁻¹, pauli_inv (by aesop)⟩ ∈ C.stabilizers := by
-  intros ψ
-  exact inv_stab (hx ψ)
-
-def stabilizer_group (C : QCode n k) : Subgroup (@PauliGroup_group n) where
-  carrier := C.stabilizers
-  mul_mem' := by intros a b ha hb; exact C.stabilizer_closed_under_mul ha hb
-  one_mem' := fun ψ => one_stab_all (C ψ)
-  inv_mem' := by intros x hx; exact C.stabilizer_closed_under_inv hx
-
-def PState.zero {n : ℕ} := pstate_n_kron (fun (_ : Fin n) => qub_zero)
-
-
---easy proof, see if aristotle can do this
-lemma PState.ne_zero {n : ℕ} {ψ : PState n} : ψ.vec ≠ 0 := by
-  aesop
--/
-
---oops it's not actually easy to state -1 as a pauli
-/-
-lemma neg_one_not_stab (C : QCode n k) : U_neg 1 ∉ C.stabilizers := by
-  rintro ⟨h_stab, h_pauli⟩
-  have:= h_stab PState.zero
-  unfold stabilizes PState.apply u_neg U_phase at this
-  rw [Ket.mk.injEq, Matrix.toLin'_apply] at this
-  simp [Matrix.neg_mulVec] at this
-  apply PState.ne_zero
-  rw [←neg_eq_self]
-  exact this
--/
-
---i messed this one up too
-
-/-
-theorem stab_comm (C : QCode n k) : IsMulCommutative (stabilizer_group C) := by
-  refine ⟨⟨by intro a b
-              rcases pauli_commute_or_anticommute a.1.2 b.1.2 with comm | anticomm
-              ·
-              have abstab := ((stabilizer_group C).mul_mem' ha hb).1 PState.zero
-              rw [anticomm] at abstab
-              unfold stabilizes PState.apply at abstab
-              rw [Ket.mk.injEq, Matrix.toLin'_apply] at abstab
-              simp only [neg_mul, Matrix.neg_unitary_val,
-                Submonoid.coe_mul, Matrix.neg_mulVec, ←Matrix.mulVec_mulVec,
-                stabilizes_apply' (ha.1 _), stabilizes_apply' (hb.1 _)
-                ] at abstab
-              apply absurd (neg_eq_self.1 abstab) (PState.ne_zero)
-  ⟩⟩
--/
-
-/-
-abbrev Pauli_of_stab {k} {C : QCode n k} (S : C.stabilizers) : PauliGroup n :=
-  ⟨S.1, S.2.2⟩
--/
-
---can probably safely forget about all this
-/-
-noncomputable instance {n k} (C : QCode n k) : DecidablePred (fun (N : ↑𝐔ₙ[n]) => ∀ S ∈ C.stabilizers, N * S = S * N) := Classical.decPred _
-
-def QCode.normalizer {k : ℕ} (C : QCode n k)  := {N : PauliGroup n | ∀ S ∈ C.stabilizers, (S : 𝐔ₙ[n]) * N = N * S}
-
-lemma not_mem_normalizer_iff {k : ℕ} (C : QCode n k) (E : PauliGroup n) : E ∉ C.normalizer ↔ ∃ S ∈ C.stabilizers, (S : 𝐔ₙ[n]) * E ≠ E * S := by
-  unfold QCode.normalizer
-  constructor <;> simp
-
-def QCode.normalizer' {k : ℕ} (C : QCode n k) := {N : PauliGroup n | ∀ S ∈ C.stabilizers, (S : 𝐔ₙ[n]) * N = N * S ∧ PauliGroup.phase N = pgphase_1}
-
-def QCode.undetectable {k : ℕ} (C : QCode n k) (E : PauliGroup n) := E ∈ C.normalizer ∧ ↑E ∉ C.stabilizers
-
-def QCode.detectable {k : ℕ} (C : QCode n k) (E : PauliGroup n) := ¬ C.undetectable E
-
-def QCode.corrects_error_set {k : ℕ} (C : QCode n k) (E_set : Finset (PauliGroup n)) :=
-  ∀ E F : (PauliGroup n), E ∈ E_set → F ∈ E_set → ⟨(E.1)⁻¹ * F.1, pauli_mul (pauli_inv (by aesop)) (by aesop)⟩ ∉ (C.normalizer \ C.stabilizers)
-
-def QCode.syndrome {k : ℕ} (C : QCode n k) (E : PauliGroup n)
-   : C.stabilizers → pgroup_phases := fun U => pauli_pauli_phase E U
-
-def QCode.distinguishes (C : QCode n k) (E₁ : PauliGroup n) (E₂ : PauliGroup n) := C.syndrome E₁ ≠ C.syndrome E₂
-
---to detect errors, it suffices to distinguish an error and the I pauli
-def QCode.unique_detects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ (E : PauliGroup n),
-  pauli_weight E ≤ w → E ≠ Pauli1 → C.distinguishes E Pauli1
-
-def QCode.unique_corrects_error_of_weight (C : QCode n k) (w : ℕ) := ∀ (E₁ E₂ : PauliGroup n),
-  (PauliGroup.phase E₁).1 = ⟨1, by norm_num⟩ → (PauliGroup.phase E₂).1 = ⟨1, by norm_num⟩ →
-  pauli_weight E₁ ≤ w → pauli_weight E₂ ≤ w → E₁ ≠ E₂ → C.distinguishes E₁ E₂
-
-def QCode.unique_detects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli):= ∀ (E : PauliGroup n),
-  (pauli_only E P) → pauli_weight E ≤ w → E ≠ Pauli1 → C.distinguishes E Pauli1
-
---unique distinguishing
-def QCode.unique_corrects_P_error_of_weight (C : QCode n k) (w : ℕ) (P : Pauli) := ∀ (E₁ E₂ : PauliGroup n),
-  (pauli_only E₁ P) → (pauli_only E₂ P) →
-  PauliGroup.phase E₁ = 1 → PauliGroup.phase E₂ = 1 →
-  pauli_weight E₁ ≤ w → pauli_weight E₂ ≤ w → E₁ ≠ E₂ → C.distinguishes E₁ E₂
-
-theorem QCode.distinguishes_of_exists_dist_stab {k : ℕ} (C : QCode n k) (E₁ E₂ : PauliGroup n) :
-  C.distinguishes E₁ E₂ ↔
-  ∃ S : C.stabilizers,
-    pauli_pauli_phase E₁ S ≠ pauli_pauli_phase E₂ S := by
-  unfold distinguishes syndrome
-  rw [Function.ne_iff]
-
-
-
-theorem QCode.detectable_of_distinguishes_Pauli1 (C : QCode n k) (E : PauliGroup n) (hd : C.distinguishes E Pauli1) : C.detectable E := by
-  unfold detectable undetectable
-  apply not_and_of_not_left
-  rw [not_mem_normalizer_iff]
-  rw [C.distinguishes_of_exists_dist_stab] at hd
-  rcases hd with ⟨S, hS⟩
-  refine ⟨S, ⟨by aesop, ?_⟩⟩
-  simp_rw [pphase_Pauli1_left] at hS
-  unfold pauli_pauli_phase at hS
-  by_cases h: anticommute E S
-  · suffices h_anti : E * (S : 𝐔ₙ[n]) = - (S * E)
-    · rw [h_anti]
-      symm
-      apply Matrix.unitaryGroup.neg_ne
-    convert anticommute_of_anticommute h
-  simp [←Bool.ne_false_iff, h] at hS
-
-theorem QCode.corrects_of_distinguishes (C : QCode n k) (E_set : Finset (PauliGroup n))
-(hd : ∀ E₁ E₂, E₁ ∈ E_set → E₂ ∈ E_set → C.distinguishes E₁ E₂) :
-  C.corrects_error_set E_set := by
-  unfold corrects_error_set normalizer
-  intros E F hE hF
-  have hdef := hd E F hE hF
-  rw [C.distinguishes_of_exists_dist_stab] at hdef
-  rcases hdef with ⟨S, hS⟩
-  aesop
--/

@@ -1,6 +1,6 @@
+import Mathlib
 import LeanQEC.Stabilizer.Basic
 import LeanQEC.Classical_EC.Basic
-
 
 variable {n k₁ k₂ : ℕ}
 
@@ -159,10 +159,10 @@ private lemma CSS_BSM_rowSpace_iff
       Submodule.add_mem ((CSS_BSM H₁ H₂).rowSpace) hx_pair hz_pair
 
 private lemma zmod2_or_val_ge_left (a b : ZMod 2) : a.1 ≤ (ZMod2_or a b).1 := by
-  sorry
+  native_decide +revert
 
 private lemma zmod2_or_val_ge_right (a b : ZMod 2) : b.1 ≤ (ZMod2_or a b).1 := by
-  sorry
+  native_decide +revert
 
 private lemma hammingNorm_le_union_weight_left'
     (v₁ v₂ : Fin n → ZMod 2) :
