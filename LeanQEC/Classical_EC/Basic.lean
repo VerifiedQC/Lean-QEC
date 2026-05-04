@@ -166,7 +166,7 @@ lemma dual_finrank_eq {C : CodeSpace n} : Module.finrank (ZMod 2) C.dualCode = n
         (M := (1 : Matrix (Fin n) (Fin n) (ZMod 2)))
         (by simp)).toBilin'
   rw [hdual]
-  simpa [Module.finrank_fin_fun] using LinearMap.BilinForm.finrank_orthogonal (B := B) hB_nondeg _
+  simpa [Module.finrank_fin_fun] using LinearMap.BilinForm.finrank_orthogonal (B := B) hB_nondeg C
 
 theorem dual_dual_eq {C : CodeSpace n} : (C.dualCode).dualCode = C := by
   symm
