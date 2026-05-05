@@ -26,8 +26,6 @@ def BB_matrix (l m : ℕ) [NeZero l] [NeZero m] (M₁ M₂ M₃ : Bool × ℕ)
 
 variable {l m : ℕ} [NeZero l] [NeZero m] {M₁ M₂ M₃ : Bool × ℕ}
 
-lemma BB_ind : LinearIndependent (ZMod 2) (BB_matrix l m M₁ M₂ M₃) := sorry
-
 variable {l m : ℕ} [NeZero l] [NeZero m] {A₁ A₂ A₃ B₁ B₂ B₃ : Bool × ℕ}
 
 def BB_72_A :=

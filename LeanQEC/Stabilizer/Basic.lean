@@ -865,9 +865,6 @@ def StabCode.undetectable_set {n : ℕ} (SC : StabCode n) : Finset (PauliGroup n
 
 def StabCode.nontrivial {n : ℕ} (SC : StabCode n) : Prop := ∃ ψ₁ ∈ SC.space, ∃ ψ₂ ∈ SC.space, ψ₁ ≠ ψ₂
 
---wait, why is this true again? If there are at least two code words, then the pauli error that maps one to another is undetectable
-theorem StabCode.undetectable_set_nonempty {n : ℕ} (SC : StabCode n) (hnt : SC.nontrivial) : SC.undetectable_set.Nonempty := sorry
-
 def StabCode.distance {n : ℕ} (SC : StabCode n) : ℕ :=
   match Finset.min (SC.undetectable_set.image pauli_weight) with
   | ⊤ => n + 1
@@ -1026,9 +1023,6 @@ lemma BinSympMatrix.stabCode_undetectable_toPauli_iff {k n : ℕ} (B : BinSympMa
       B.undetectable bsp := by
   simpa [BinSympPauli_toPauli_normalized] using
     (B.stabCode_undetectable_iff h_comm (BinSympPauli_toPauli bsp))
-
-lemma BinSympMatrix.toStabCodeNontrivial_of_k_pos {k n : ℕ} (B : BinSympMatrix k n) (h_comm : B.isCommuting) (hk : 0 < k) :
-  (StabCode_of_BinSympMatrix B h_comm).nontrivial := sorry
 
 --ultimate theorem linking binSymp representation distance
 theorem BinSympMatrix.distance_eq_distance {k n : ℕ} (B : BinSympMatrix k n) (h_comm : B.isCommuting) (hk : 0 < k) :
