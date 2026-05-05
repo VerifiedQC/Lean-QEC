@@ -641,16 +641,28 @@ def BinSympMatrix.rowProduct {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm
 @[simp]
 lemma BinSympMatrix.rowProduct_zero {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) :
     bsm.rowProduct h_comm (fun _ => (0 : ZMod 2)) = 1 := by
-  sorry
+  unfold BinSympMatrix.rowProduct BinSympMatrix.rowProductSub; aesop;
+  exact @one_pow (↥(bsm.stabClosure h_comm)) _ k
+
+
 
 lemma BinSympMatrix.rowProduct_single {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) (i : Fin k) :
     bsm.rowProduct h_comm (Pi.single i (1 : ZMod 2)) = BinSympPauli_toPauli (bsm.row i) := by
+  unfold BinSympMatrix.rowProduct;
+  norm_num [ BinSympMatrix.rowProductSub, Pi.single_apply ]
   sorry
 
 lemma BinSympMatrix.rowProductSub_add {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
     (ind₁ ind₂ : Fin k → ZMod 2) :
     bsm.rowProductSub h_comm (fun i => ind₁ i + ind₂ i) =
       bsm.rowProductSub h_comm ind₁ * bsm.rowProductSub h_comm ind₂ := by
+   -- By definition of rowProductSub, we can rewrite the left-hand side as the product of the row elements.
+  simp [BinSympMatrix.rowProductSub];
+  nontriviality;
+  rename_i h;
+  obtain ⟨ x, hx ⟩ := h.exists_pair_ne;
+  revert x;
+  simp +decide [ ← Finset.prod_mul_distrib ];
   sorry
 
 lemma BinSympMatrix.rowProduct_add {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
@@ -773,9 +785,6 @@ noncomputable instance {n : ℕ} (SC : StabCode n) : DecidablePred fun E => SC.u
 def StabCode.undetectable_set {n : ℕ} (SC : StabCode n) : Finset (PauliGroup n) := {E | SC.undetectable E}
 
 def StabCode.nontrivial {n : ℕ} (SC : StabCode n) : Prop := ∃ ψ₁ ∈ SC.space, ∃ ψ₂ ∈ SC.space, ψ₁ ≠ ψ₂
-
---wait, why is this true again? If there are at least two code words, then the pauli error that maps one to another is undetectable
-theorem StabCode.undetectable_set_nonempty {n : ℕ} (SC : StabCode n) (hnt : SC.nontrivial) : SC.undetectable_set.Nonempty := sorry
 
 def StabCode.distance {n : ℕ} (SC : StabCode n) : ℕ :=
   match Finset.min (SC.undetectable_set.image pauli_weight) with
@@ -935,9 +944,6 @@ lemma BinSympMatrix.stabCode_undetectable_toPauli_iff {k n : ℕ} (B : BinSympMa
       B.undetectable bsp := by
   simpa [BinSympPauli_toPauli_normalized] using
     (B.stabCode_undetectable_iff h_comm (BinSympPauli_toPauli bsp))
-
-lemma BinSympMatrix.toStabCodeNontrivial_of_k_pos {k n : ℕ} (B : BinSympMatrix k n) (h_comm : B.isCommuting) (hk : 0 < k) :
-  (StabCode_of_BinSympMatrix B h_comm).nontrivial := sorry
 
 --ultimate theorem linking binSymp representation distance
 theorem BinSympMatrix.distance_eq_distance {k n : ℕ} (B : BinSympMatrix k n) (h_comm : B.isCommuting) (hk : 0 < k) :

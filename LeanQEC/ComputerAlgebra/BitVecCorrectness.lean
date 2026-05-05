@@ -21,8 +21,6 @@ def vec_to_BitVec' {j n : ℕ} (r : (Fin j) → (Fin n)) : BitVec (j * (Nat.clog
   | 1 => (r 0)
   | j' + 1 => ((r ⟨j', Nat.lt_succ_self _⟩ : BitVec (Nat.clog 2 n)).append (vec_to_BitVec' (fun i : Fin j' => r ⟨i, by simp⟩))).cast (by rw [Nat.succ_mul, Nat.add_comm])
 
-
---terrible?
 def BitVec.appendList {i j : ℕ} (f : (Fin i) → (BitVec j)) : BitVec (i * j) :=
   match i with
   | 0 => (BitVec.zero 0).cast (by rw [MulZeroClass.zero_mul])
@@ -56,13 +54,7 @@ def T : Matrix (Fin 3) (Fin 7) (ZMod 2) :=
   !![1, 0, 0, 1, 0, 1, 1;
     0, 1, 0, 1, 1, 0, 1;
     0, 0, 1, 0, 1, 1, 1]
-#eval! flatten_matrix T
-def f := flatten_matrix T
-def f_line_one : BitVec 7 := f.extractLsb' 0 7
-#eval! BitVec_to_vec f_line_one
 
- -- evaluates to 11: successully flattened
---#eval! (flatten_matrix T)[1]
 
 
 lemma vec_to_BitVec'_correct {i n : ℕ} {r : (Fin i) → (Fin n)} (j : Fin i) :
@@ -84,9 +76,8 @@ lemma vec_to_BitVec_BitVec_to_vec {n : ℕ} (x : BitVec n) : x = (vec_to_BitVec 
   simp +decide [ BitVec_to_vec, BitVec.getElem_ofFnLE ];
   grind
 
-/-- The original statement had incorrect indexing `r * i` instead of `r * j`. -/
--- lemma flatten_matrix_correct {i j : ℕ} (M : Matrix (Fin i) (Fin j) (ZMod 2)) (r : Fin i) (c : Fin j) :
---   (flatten_matrix M)[(r * i) + c]! = ((M r c).val == 1) := sorry
+lemma flatten_matrix_correct {i j : ℕ} (M : Matrix (Fin i) (Fin j) (ZMod 2)) (r : Fin i) (c : Fin j) :
+   (flatten_matrix M)[(r * j) + c]! = ((M r c).val == 1) := sorry
 
 lemma loc_constraints_ascent
   {n nlog k : ℕ}
