@@ -641,29 +641,64 @@ def BinSympMatrix.rowProduct {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm
 @[simp]
 lemma BinSympMatrix.rowProduct_zero {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) :
     bsm.rowProduct h_comm (fun _ => (0 : ZMod 2)) = 1 := by
-  unfold BinSympMatrix.rowProduct BinSympMatrix.rowProductSub; aesop;
-  exact @one_pow (↥(bsm.stabClosure h_comm)) _ k
-
-
+  letI : CommGroup ↥(bsm.stabClosure h_comm) := subgroupCarrierCommGroup (bsm.stabClosure h_comm)
+  have hsub : bsm.rowProductSub h_comm (fun _ => (0 : ZMod 2)) = 1 := by
+    unfold BinSympMatrix.rowProductSub
+    simp only [zero_ne_one, ↓reduceIte]
+    rw [Finset.prod_const]
+    simp only [Finset.card_univ, Fintype.card_fin]
+    exact one_pow k
+  exact congrArg Subtype.val hsub
 
 lemma BinSympMatrix.rowProduct_single {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) (i : Fin k) :
     bsm.rowProduct h_comm (Pi.single i (1 : ZMod 2)) = BinSympPauli_toPauli (bsm.row i) := by
-  unfold BinSympMatrix.rowProduct;
-  norm_num [ BinSympMatrix.rowProductSub, Pi.single_apply ]
-  sorry
+  letI : CommGroup ↥(bsm.stabClosure h_comm) := subgroupCarrierCommGroup (bsm.stabClosure h_comm)
+  have hsub : bsm.rowProductSub h_comm (Pi.single i (1 : ZMod 2)) = bsm.rowStabElem h_comm i := by
+    unfold BinSympMatrix.rowProductSub
+    simp only [Pi.single_apply]
+    rw [show
+      (fun x : Fin k =>
+        if (if x = i then (1 : ZMod 2) else 0) = 1 then bsm.rowStabElem h_comm x else 1) =
+      (fun x : Fin k => if x = i then bsm.rowStabElem h_comm x else 1) from by
+        funext x
+        by_cases h : x = i <;> simp [h]]
+    exact Fintype.prod_ite_eq' i (fun x => bsm.rowStabElem h_comm x)
+  exact congrArg Subtype.val hsub
 
 lemma BinSympMatrix.rowProductSub_add {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
     (ind₁ ind₂ : Fin k → ZMod 2) :
     bsm.rowProductSub h_comm (fun i => ind₁ i + ind₂ i) =
       bsm.rowProductSub h_comm ind₁ * bsm.rowProductSub h_comm ind₂ := by
-   -- By definition of rowProductSub, we can rewrite the left-hand side as the product of the row elements.
-  simp [BinSympMatrix.rowProductSub];
-  nontriviality;
-  rename_i h;
-  obtain ⟨ x, hx ⟩ := h.exists_pair_ne;
-  revert x;
-  simp +decide [ ← Finset.prod_mul_distrib ];
-  sorry
+  letI : CommGroup ↥(bsm.stabClosure h_comm) := subgroupCarrierCommGroup (bsm.stabClosure h_comm)
+  unfold BinSympMatrix.rowProductSub
+  calc
+    (∏ i, if (fun i => ind₁ i + ind₂ i) i = 1 then bsm.rowStabElem h_comm i else 1)
+        = ∏ i, ((if ind₁ i = 1 then bsm.rowStabElem h_comm i else 1) *
+            (if ind₂ i = 1 then bsm.rowStabElem h_comm i else 1)) := by
+          apply Finset.prod_congr rfl
+          intro i _
+          change (if ind₁ i + ind₂ i = 1 then bsm.rowStabElem h_comm i else 1) =
+            (if ind₁ i = 1 then bsm.rowStabElem h_comm i else 1) *
+              (if ind₂ i = 1 then bsm.rowStabElem h_comm i else 1)
+          rcases Fin.exists_fin_two.mp ⟨ind₁ i, rfl⟩ with h₁ | h₁
+          · rcases Fin.exists_fin_two.mp ⟨ind₂ i, rfl⟩ with h₂ | h₂
+            · rw [h₁, h₂]
+              change (1 : ↥(bsm.stabClosure h_comm)) = 1 * 1
+              simp
+            · rw [h₁, h₂]
+              change bsm.rowStabElem h_comm i = 1 * bsm.rowStabElem h_comm i
+              simp
+          · rcases Fin.exists_fin_two.mp ⟨ind₂ i, rfl⟩ with h₂ | h₂
+            · rw [h₁, h₂]
+              change bsm.rowStabElem h_comm i = bsm.rowStabElem h_comm i * 1
+              simp
+            · rw [h₁, h₂]
+              change (1 : ↥(bsm.stabClosure h_comm)) =
+                bsm.rowStabElem h_comm i * bsm.rowStabElem h_comm i
+              exact (BinSympMatrix.rowStabElem_mul_self_eq_one bsm h_comm i).symm
+    _ = (∏ i, if ind₁ i = 1 then bsm.rowStabElem h_comm i else 1) *
+          ∏ i, if ind₂ i = 1 then bsm.rowStabElem h_comm i else 1 := by
+          exact Finset.prod_mul_distrib
 
 lemma BinSympMatrix.rowProduct_add {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
     (ind₁ ind₂ : Fin k → ZMod 2) :
@@ -685,10 +720,54 @@ lemma BinSympMatrix.rowProduct_inv_eq_self {n k : ℕ} (bsm : BinSympMatrix k n)
     (bsm.rowProduct h_comm ind)⁻¹ = bsm.rowProduct h_comm ind :=
   inv_eq_self_of_mul_self_eq_one (BinSympMatrix.rowProduct_self_mul_eq_one bsm h_comm ind)
 
+set_option maxHeartbeats 0 in
 lemma BinSympMatrix.rowProduct_binaryImage {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
     (ind : Fin k → ZMod 2) :
     Pauli_toBinSympPauli (bsm.rowProduct h_comm ind) = (bsm.X.transpose.mulVec ind, bsm.Z.transpose.mulVec ind) := by
-  sorry
+  have h_sum : ∀ (ind : Fin k → ZMod 2),
+      Pauli_toBinSympPauli (bsm.rowProduct h_comm ind) =
+        ∑ i, ind i • Pauli_toBinSympPauli (BinSympPauli_toPauli (bsm.row i)) := by
+    intro ind
+    induction' ind using Pi.single_induction with i ind ih
+    · simp +decide [BinSympMatrix.rowProduct_zero]
+      convert Pauli_toBinSympPauli_one
+      convert BinSympMatrix.rowProduct_zero bsm h_comm
+    · have h_sum :
+          Pauli_toBinSympPauli (bsm.rowProduct h_comm (i + ind)) =
+            Pauli_toBinSympPauli (bsm.rowProduct h_comm i) +
+              Pauli_toBinSympPauli (bsm.rowProduct h_comm ind) := by
+        convert Pauli_to_BinSymp_correct _ _ using 1
+        exact congr_arg _ (BinSympMatrix.rowProduct_add _ _ _ _)
+      simp_all +decide [add_smul, Finset.sum_add_distrib]
+    · rename_i i m
+      fin_cases m
+      · change
+          Pauli_toBinSympPauli
+            (bsm.rowProduct h_comm (Pi.single (M := fun _ : Fin k => ZMod 2) i (0 : ZMod 2))) =
+            ∑ i_1,
+              (Pi.single (M := fun _ : Fin k => ZMod 2) i (0 : ZMod 2)) i_1 •
+                Pauli_toBinSympPauli (BinSympPauli_toPauli (bsm.row i_1))
+        have hzero : Pi.single (M := fun _ : Fin k => ZMod 2) i (0 : ZMod 2) =
+            fun _ => (0 : ZMod 2) := by
+          ext j
+          by_cases h : j = i <;> simp [Pi.single_apply, h]
+        rw [hzero, BinSympMatrix.rowProduct_zero]
+        simp [Pauli_toBinSympPauli_one]
+      · change
+          Pauli_toBinSympPauli
+            (bsm.rowProduct h_comm (Pi.single (M := fun _ : Fin k => ZMod 2) i (1 : ZMod 2))) =
+            ∑ i_1,
+              (Pi.single (M := fun _ : Fin k => ZMod 2) i (1 : ZMod 2)) i_1 •
+                Pauli_toBinSympPauli (BinSympPauli_toPauli (bsm.row i_1))
+        rw [BinSympMatrix.rowProduct_single]
+        simp [Pauli_toBinSympPauli_BinSympPauli_toPauli]
+  ext i
+  simp +decide [h_sum, Matrix.mulVec, dotProduct]
+  · simp +decide [mul_comm, Finset.sum_apply, BinSympMatrix.row]
+    simp +decide [Prod.fst_sum]
+  · simp_all +decide [Finset.sum_apply, dotProduct, Matrix.mulVec, Finset.mul_sum _ _ _]
+    simp +decide [mul_comm, Finset.sum_apply, Prod.snd_sum]
+    rfl
 
 lemma BinSympMatrix.selectedRows_sum_eq_mulVec {n k : ℕ} (bsm : BinSympMatrix k n)
     (ind : Fin k → ZMod 2) :
