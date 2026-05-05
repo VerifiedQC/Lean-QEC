@@ -175,9 +175,42 @@ def row_correct {k n : ℕ} (M : Matrix (Fin k) (Fin n) (ZMod 2)) (r : Fin k) :
           · congr! 1;
           · nlinarith [ Fin.is_lt i ]
 
+lemma zmod2_dot_bool_step (a b s : ZMod 2) :
+    (((a.val == 1) && (b.val == 1)) ^^ (s == 1)) =
+      (s + a * b == 1) := by
+  fin_cases a <;> fin_cases b <;> fin_cases s <;> native_decide
+
 def dot_product_correct {n : ℕ} (x y : Fin n → (ZMod 2)):
   (vec_to_BitVec x).dot_product (vec_to_BitVec y) =  ( x ⬝ᵥ y == 1) := by
-    sorry
+    have h_dot_product_induction (n : ℕ) (x y : Fin n → ZMod 2) : (vec_to_BitVec x).dot_product (vec_to_BitVec y) = ((Finset.sum Finset.univ (fun i => x i * y i)) == 1) := by
+      unfold BitVec.dot_product;
+      have h_dot_product_aux : ∀ (n : ℕ) (x y : Fin n → ZMod 2) (i : Fin n), dot_product_aux (vec_to_BitVec x) (vec_to_BitVec y) i.val = ((Finset.sum (Finset.univ.filter (fun j => j.val ≤ i.val)) (fun j => x j * y j)) == 1) := by
+        intros n x y i
+        induction' i with i ih;
+        induction' i with i ih;
+        · rcases n with ( _ | _ | n ) <;> simp_all +decide [ dot_product_aux ];
+          · native_decide +revert;
+          · simp +decide [ Finset.sum_filter, vec_to_BitVec ];
+            cases Fin.exists_fin_two.mp ⟨ x 0, rfl ⟩ <;> cases Fin.exists_fin_two.mp ⟨ y 0, rfl ⟩ <;> simp +decide [ * ];
+        · simp_all +decide [ Finset.sum_filter, dot_product_aux ];
+          rw [ ih ( Nat.lt_of_succ_lt ‹_› ) ];
+          rw [ show ( ∑ a : Fin n, if ( a : ℕ ) ≤ i + 1 then x a * y a else 0 ) = ( ∑ a : Fin n, if ( a : ℕ ) ≤ i then x a * y a else 0 ) + ( if ( i + 1 : ℕ ) < n then x ⟨ i + 1, by linarith ⟩ * y ⟨ i + 1, by linarith ⟩ else 0 ) from ?_ ];
+          · simp +decide [ *, vec_to_BitVec ];
+            simpa using zmod2_dot_bool_step (x ⟨ i + 1, by linarith ⟩) (y ⟨ i + 1, by linarith ⟩)
+              (∑ a : Fin n, if (a : ℕ) ≤ i then x a * y a else 0)
+          · rw [ Finset.sum_eq_sum_diff_singleton_add ( Finset.mem_univ ⟨ i + 1, by linarith ⟩ ) ];
+            rw [ Finset.sum_congr rfl ];
+            congr! 1;
+            rw [ Finset.sum_subset ];
+            · exact Finset.sdiff_subset;
+            · grind;
+            · aesop;
+            · grind;
+      by_cases hn : n = 0;
+      · aesop;
+      · convert h_dot_product_aux n x y ⟨ n - 1, Nat.sub_lt ( Nat.pos_of_ne_zero hn ) zero_lt_one ⟩ using 1;
+        rw [ Finset.filter_true_of_mem fun i _ => Nat.le_sub_one_of_lt i.2 ];
+    exact h_dot_product_induction n x y
 
 lemma parity_constraints_descent {stabdim n : ℕ} {stabs : BitVec (stabdim * n)} {errs : BitVec n} {r : Fin stabdim} (hpc : parity_constraints stabs errs) :
   !(errs.dot_product (stabs.row r)) := by
