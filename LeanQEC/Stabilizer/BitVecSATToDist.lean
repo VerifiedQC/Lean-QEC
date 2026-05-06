@@ -101,7 +101,8 @@ lemma lt_dist_sat_sound
 
 
 theorem bitvec_sat_translation_correct
-  {n k₁ k₂ xkersize zkersize : ℕ} [NeZero n] [NeZero k₁] [NeZero k₂] [NeZero (n - k₁)] [NeZero (n - k₂)]
+  {n k₁ k₂ xkersize zkersize : ℕ} [NeZero n] [NeZero k₁]
+  [NeZero k₂] [NeZero (n - k₁)] [NeZero (n - k₂)]
   (css : CSS_pair n k₁ k₂)
   (xker : Matrix (Fin xkersize) (Fin n) (ZMod 2))
   (xker_correct : xker.is_ker_for css.H₂)

@@ -126,8 +126,10 @@ lemma vec_to_BitVec_BitVec_to_vec {n : ℕ} (x : BitVec n) : x = (vec_to_BitVec 
   simp +decide [ BitVec_to_vec, BitVec.getElem_ofFnLE ];
   grind
 
+/- --unused
 lemma flatten_matrix_correct {i j : ℕ} (M : Matrix (Fin i) (Fin j) (ZMod 2)) (r : Fin i) (c : Fin j) :
    (flatten_matrix M)[(r * j) + c]! = ((M r c).val == 1) := sorry
+-/
 
 lemma loc_constraints_ascent
   {n nlog k : ℕ}
