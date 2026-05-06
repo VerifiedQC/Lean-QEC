@@ -26,18 +26,6 @@ def steane_ker' : Matrix (Fin 4) (Fin 7) (ZMod 2) :=
 lemma steane_mat_correct : steane_mat = flatten_matrix steane_mat' := by decide
 lemma steane_ker_correct : steane_ker = flatten_matrix steane_ker' := by decide
 
-lemma steane_orth : steane_mat'.mutually_orth_rows steane_mat' := by
-  rw [←mutually_orth_correct, ←steane_mat_correct, steane_mat]
-  simp [bitvec_mutually_orth, mutually_orth_sat_aux,
-  BitVec.row, BitVec.dot_product, dot_product_aux]
-
-lemma steane_mat_ker_orth : steane_mat'.mutually_orth_rows steane_ker' := by
-  rw [←mutually_orth_correct, ←steane_mat_correct, ←steane_ker_correct, steane_mat, steane_ker]
-  simp [bitvec_mutually_orth, mutually_orth_sat_aux,
-  BitVec.row, BitVec.dot_product, dot_product_aux]
-
-
-
 
 lemma steane_ind : LinearIndependent (ZMod 2) steane_mat' := by
   rw [linear_indep_SAT_correct, ←steane_mat_correct, steane_mat]
@@ -49,6 +37,42 @@ lemma steane_ind : LinearIndependent (ZMod 2) steane_mat' := by
     bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
     Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
   bv_decide
+
+lemma steane_ker_ind : LinearIndependent (ZMod 2) steane_ker' := by
+  rw [linear_indep_SAT_correct, ←steane_ker_correct, steane_ker]
+  simp only [linear_indep_SAT, nonzero, nonzero_aux, Nat.add_one_sub_one, Nat.lt_add_one,
+    getElem!_pos, Nat.one_lt_ofNat, Nat.ofNat_pos, Bool.decide_or, Bool.decide_eq_true,
+    Bool.or_eq_true, all_dot_zero, all_dot_zero_aux, dot_col_zero, dot_col_aux, Nat.reduceMul,
+    BitVec.ofNat_eq_ofNat, Nat.reduceAdd, BitVec.reduceGetElem, Bool.and_true, one_mul,
+    Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
+    bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
+    Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
+  bv_decide
+
+lemma steane_mat_rank : 3 ≤ steane_mat'.rank := by
+  apply Matrix.rank_le_of_submatrix_independent _ id (strictMono_id)
+  rw [Matrix.submatrix_id_id]
+  apply steane_ind
+
+lemma steane_ker_rank : 4 ≤ steane_ker'.rank := by
+  apply Matrix.rank_le_of_submatrix_independent _ id (strictMono_id)
+  rw [Matrix.submatrix_id_id]
+  apply steane_ker_ind
+
+
+
+
+lemma steane_orth : steane_mat'.mutually_orth_rows steane_mat' := by
+  rw [←mutually_orth_correct, ←steane_mat_correct, steane_mat]
+  simp [bitvec_mutually_orth, mutually_orth_sat_aux,
+  BitVec.row, BitVec.dot_product, dot_product_aux]
+
+lemma steane_mat_ker_orth : steane_mat'.mutually_orth_rows steane_ker' := by
+  rw [←mutually_orth_correct, ←steane_mat_correct, ←steane_ker_correct, steane_mat, steane_ker]
+  simp [bitvec_mutually_orth, mutually_orth_sat_aux,
+  BitVec.row, BitVec.dot_product, dot_product_aux]
+
+
 
 
 set_option maxHeartbeats 0 in
@@ -67,13 +91,9 @@ lemma steane_dist : lt_dist_sat (flatten_matrix steane_mat') (flatten_matrix ste
   bv_decide (timeout := 999)
 
 lemma steane_ker_mat_correct : steane_ker'.is_ker_for steane_mat' := by
-  have hr₁ : 3 ≤ steane_mat'.rank := sorry
-  have hr₂ : 4 ≤ steane_ker'.rank := sorry
-  apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ hr₁ hr₂ (by norm_num) steane_mat_ker_orth
+  apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ steane_mat_rank steane_ker_rank (by norm_num) steane_mat_ker_orth
 
-
-
-def steane_css : CSS_pair 7 3 3 := CSS_pair.of_matrices steane_mat' steane_mat' steane_orth steane_ind steane_ind
+def steane_css : CSS_pair 7 3 3 := CSS_pair.of_matrices steane_mat' steane_mat' steane_orth
 
 theorem steane_dist_3 : 3 ≤ steane_css.toBSM.distance (by norm_num) := by
   apply bitvec_sat_translation_correct steane_css steane_ker' steane_ker_mat_correct steane_ker' steane_ker_mat_correct (by norm_num) _ _

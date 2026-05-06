@@ -27,12 +27,30 @@ set_option maxHeartbeats 0 in
 -- heavy unfolding
 lemma bb72_test_z : lt_dist_sat HX Z_ker 5 7
   := by
-  sorry
+  rw [HX, Z_ker]
+  simp only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
+    Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
+    loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
+    Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
+    parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
+    Bool.not_eq_eq_eq_not, Bool.not_true,
+    bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
+    rowspace_constraints_aux, not_and, and_imp]
+  bv_decide (timeout := 999)
 
 set_option maxHeartbeats 0 in
 -- heavy unfolding
 lemma bb72_test_x : lt_dist_sat HZ X_ker 5 7
   := by
-  sorry
+  rw [HZ, X_ker]
+  simp only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
+    Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
+    loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
+    Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
+    parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
+    Bool.not_eq_eq_eq_not, Bool.not_true,
+    bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
+    rowspace_constraints_aux, not_and, and_imp]
+  bv_decide (timeout := 999)
 
 #print axioms bb72_test_z
