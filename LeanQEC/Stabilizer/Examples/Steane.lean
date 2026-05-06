@@ -23,9 +23,9 @@ def steane_ker' : Matrix (Fin 4) (Fin 7) (ZMod 2) :=
  1, 0, 1, 0, 0, 1, 0;
  1, 1, 1, 0, 0, 0, 1;]
 
+
 lemma steane_mat_correct : steane_mat = flatten_matrix steane_mat' := by decide
 lemma steane_ker_correct : steane_ker = flatten_matrix steane_ker' := by decide
-
 
 lemma steane_ind : LinearIndependent (ZMod 2) steane_mat' := by
   rw [linear_indep_SAT_correct, ←steane_mat_correct, steane_mat]
@@ -64,19 +64,22 @@ lemma steane_ker_rank : 4 ≤ steane_ker'.rank := by
 
 lemma steane_orth : steane_mat'.mutually_orth_rows steane_mat' := by
   rw [←mutually_orth_correct, ←steane_mat_correct, steane_mat]
-  simp [bitvec_mutually_orth, mutually_orth_sat_aux,
-  BitVec.row, BitVec.dot_product, dot_product_aux]
+  simp only [bitvec_mutually_orth,BitVec.row, BitVec.dot_product, dot_product_aux]
+  bv_decide
+
 
 lemma steane_mat_ker_orth : steane_mat'.mutually_orth_rows steane_ker' := by
   rw [←mutually_orth_correct, ←steane_mat_correct, ←steane_ker_correct, steane_mat, steane_ker]
-  simp [bitvec_mutually_orth, mutually_orth_sat_aux,
-  BitVec.row, BitVec.dot_product, dot_product_aux]
+  simp only [bitvec_mutually_orth,
+  BitVec.row_bv, BitVec.dot_product, dot_product_aux]
+  sorry
+  --bv_decide
+
 
 
 
 
 set_option maxHeartbeats 0 in
--- heavy unfolding
 lemma steane_dist : lt_dist_sat (flatten_matrix steane_mat') (flatten_matrix steane_ker') 2 3
   := by
   rw [←steane_mat_correct, ←steane_ker_correct, steane_mat, steane_ker]
@@ -87,7 +90,8 @@ lemma steane_dist : lt_dist_sat (flatten_matrix steane_mat') (flatten_matrix ste
     parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
     Bool.not_eq_eq_eq_not, Bool.not_true,
     bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
-    rowspace_constraints_aux, not_and, and_imp]
+    rowspace_constraints_aux, not_and, and_imp, BitVec.reduceExtractLsb', BitVec.reduceGetElem, Bool.and_true, Bool.and_false,
+    bne_self_eq_false, Bool.bne_false, Bool.false_bne, bne_iff_ne, ne_eq, not_or, Decidable.not_not]
   bv_decide (timeout := 999)
 
 lemma steane_ker_mat_correct : steane_ker'.is_ker_for steane_mat' := by
@@ -97,5 +101,5 @@ def steane_css : CSS_pair 7 3 3 := CSS_pair.of_matrices steane_mat' steane_mat' 
 
 theorem steane_dist_3 : 3 ≤ steane_css.toBSM.distance (by norm_num) := by
   apply bitvec_sat_translation_correct steane_css steane_ker' steane_ker_mat_correct steane_ker' steane_ker_mat_correct (by norm_num) _ _
-  all_goals simp [steane_css, CSS_pair.of_matrices]
+  all_goals rw [steane_css, CSS_pair.of_matrices]
   all_goals exact steane_dist
