@@ -3,9 +3,9 @@
 This project formalizes and verifies the theory of Quantum Error Correction in Lean in an end-to-end fashion, from basic Quantum theory to abstract properties. Some accomplishments include:
  * Formalizing basic quantum computing concepts such as Qubits, Quantum States, and the Pauli Group.
  * Verifying the link between the Pauli Group and the Binary Symplectic Representation.
- * Formalizing Stabilizer Codes and reasoning about their code properties.
+ * Formalizing Stabilizer Codes and CSS codes, reasoning about their code properties.
  * A SAT-assisted computer algebra pipeline for the verification of Stabilizer Code properties like code distance.
- * Concrete distance verification for a number of CSS codes such as large codes belonging to the Bivariate Bicycle family.
+ * Concrete distance verification for a number of codes such as large codes belonging to the Bivariate Bicycle family.
 
 This project is built on top of Mathlib4.
 
