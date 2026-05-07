@@ -63,19 +63,15 @@ lemma steane_ker_rank : 4 ≤ steane_ker'.rank := by
 
 
 lemma steane_orth : steane_mat'.mutually_orth_rows steane_mat' := by
-  rw [←mutually_orth_nat_correct, ←steane_mat_correct, steane_mat]
-  simp only [bitvec_mutually_orth_nat]
-  simp (maxSteps := 9999999) only [mutually_orth_sat_aux, mutually_orth_row_sat_aux,
-    BitVec.row, BitVec.dot_product, dot_product_aux]
-  bv_decide (timeout := 999) (maxSteps := 9999999)
+  rw [←mutually_orth_nat_correct, ←steane_mat_correct]
+  unfold bitvec_mutually_orth_nat
+  native_decide
 
 
 lemma steane_mat_ker_orth : steane_mat'.mutually_orth_rows steane_ker' := by
-  rw [←mutually_orth_nat_correct, ←steane_mat_correct, ←steane_ker_correct, steane_mat, steane_ker]
-  simp only [bitvec_mutually_orth_nat]
-  simp (maxSteps := 9999999) only [mutually_orth_sat_aux, mutually_orth_row_sat_aux,
-    BitVec.row, BitVec.dot_product, dot_product_aux]
-  bv_decide (timeout := 999) (maxSteps := 9999999)
+  rw [←mutually_orth_nat_correct, ←steane_mat_correct, ←steane_ker_correct]
+  unfold bitvec_mutually_orth_nat
+  native_decide
 
 
 

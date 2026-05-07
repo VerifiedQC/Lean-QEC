@@ -83,11 +83,9 @@ example (i : BitVec 1) :
 set_option exponentiation.threshold 3000
 set_option maxHeartbeats 0
 lemma BB72_XZ_orth : H_X_72.mutually_orth_rows H_Z_72 := by
-  rw [←mutually_orth_nat_correct, ←BB72_X_correct, ←BB72_Z_correct, BB72_X, BB72_Z]
-  simp only [bitvec_mutually_orth_nat]
-  simp (maxSteps := 9999999) only [mutually_orth_sat_aux, mutually_orth_row_sat_aux,
-    BitVec.row, BitVec.dot_product, dot_product_aux]
-  bv_decide (timeout := 999) (maxSteps := 9999999)
+  rw [←mutually_orth_nat_correct, ←BB72_X_correct, ←BB72_Z_correct]
+  unfold bitvec_mutually_orth_nat
+  native_decide
 
 set_option maxHeartbeats 0 in
 -- heavy unfolding
