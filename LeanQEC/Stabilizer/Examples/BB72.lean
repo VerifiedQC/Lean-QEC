@@ -192,3 +192,5 @@ theorem BB72_dist_6 : 6 ≤ BB72_css.toBSM.distance (by norm_num) := by
     exact bb72_test_z
   · rw [BB72_css, CSS_pair.of_matrices, ←BB72_Z_correct, ←BB72_X_ker_correct]
     exact bb72_test_x
+
+#print axioms BB72_dist_6

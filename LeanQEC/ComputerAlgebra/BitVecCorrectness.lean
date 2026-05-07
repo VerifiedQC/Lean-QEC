@@ -316,15 +316,13 @@ theorem fin_toBitVec_toNat_eq' {k : ℕ} [NeZero k] (x : Fin k) :
   apply Nat.mod_lt_of_lt x.isLt
 
 
+/-
+Older runtime-indexed row extraction.  The maintained examples use the
+nat-indexed `BitVec.row` path and `mutually_orth_nat_correct` below.
 lemma row_bv_correct {k n : ℕ} [NeZero k] (M : Matrix (Fin k) (Fin n) (ZMod 2)) (r : BitVec (Nat.clog 2 k)) :
   (flatten_matrix M).row_bv r = vec_to_BitVec (M (bitVecToFin r)) := by
-  unfold BitVec.row_bv
-  simp only [BitVec.truncate_eq_setWidth, BitVec.natCast_eq_ofNat, BitVec.ushiftRight_eq',
-    BitVec.toNat_mul, BitVec.toNat_setWidth, BitVec.toNat_ofNat, Nat.mul_mod_mod, Nat.mod_mul_mod]
-  have h_lt : (r.toNat * n < 2 ^ (k * n))
-  · sorry
-  rw [Nat.mod_eq_of_lt h_lt]
-  sorry
+  ...
+-/
 
 
 lemma BitVec_row_correct {k n : ℕ} [NeZero k] (M : Matrix (Fin k) (Fin n) (ZMod 2)) (r : BitVec (Nat.clog 2 k)) (hr : r.toNat < k) :
@@ -349,14 +347,41 @@ lemma zmod2_dot_bool_step (a b s : ZMod 2) :
 
 def dot_product_correct {n : ℕ} [NeZero n] (x y : Fin n → (ZMod 2)):
   (vec_to_BitVec x).dot_product (vec_to_BitVec y) =  ( x ⬝ᵥ y == 1) := by
-    have h_dot_product_induction (n : ℕ) [NeZero n] (x y : Fin n → ZMod 2) : (vec_to_BitVec x).dot_product (vec_to_BitVec y) = ((Finset.sum Finset.univ (fun i => x i * y i)) == 1) := by
-      unfold BitVec.dot_product;
-      have h_dot_product_aux : ∀ (n : ℕ) [NeZero n] (x y : Fin n → ZMod 2) (i : Fin n), dot_product_aux (vec_to_BitVec x) (vec_to_BitVec y) i.val i.isLt = ((Finset.sum (Finset.univ.filter (fun j => j.val ≤ i.val)) (fun j => x j * y j)) == 1) := by
-        intros n x y i
-        sorry
-      convert h_dot_product_aux n x y ⟨ n - 1, Nat.sub_lt (NeZero.pos _) zero_lt_one ⟩ using 1;
-      rw [ Finset.filter_true_of_mem fun i _ => Nat.le_sub_one_of_lt i.2 ];
-    exact h_dot_product_induction n x y
+  have h_aux : ∀ idx, (hidx : idx < n) →
+      dot_product_aux (vec_to_BitVec x) (vec_to_BitVec y) idx hidx =
+        ((∑ t ∈ Finset.range (idx + 1),
+            if ht : t < n then x ⟨t, ht⟩ * y ⟨t, ht⟩ else 0) == 1) := by
+    intro idx hidx
+    induction' idx with idx ih
+    · change ((vec_to_BitVec x)[0] && (vec_to_BitVec y)[0]) =
+        ((∑ t ∈ Finset.range (0 + 1),
+            if ht : t < n then x ⟨t, ht⟩ * y ⟨t, ht⟩ else 0) == 1)
+      simp [hidx]
+      simp [vec_to_BitVec, hidx]
+      have hbool (a b : ZMod 2) : ((a.val == 1) && (b.val == 1)) = (a * b == 1) := by
+        fin_cases a <;> fin_cases b <;> native_decide
+      exact hbool (x ⟨0, hidx⟩) (y ⟨0, hidx⟩)
+    · have hidx' : idx < n := Nat.lt_of_succ_lt hidx
+      change (((vec_to_BitVec x)[idx + 1] && (vec_to_BitVec y)[idx + 1]) ^^
+              dot_product_aux (vec_to_BitVec x) (vec_to_BitVec y) idx hidx') =
+        ((∑ t ∈ Finset.range (idx + 1 + 1),
+            if ht : t < n then x ⟨t, ht⟩ * y ⟨t, ht⟩ else 0) == 1)
+      rw [ih hidx']
+      conv_rhs => rw [Finset.sum_range_succ]
+      simp [vec_to_BitVec, hidx]
+      simpa +decide using
+        (zmod2_dot_bool_step (x ⟨idx + 1, hidx⟩) (y ⟨idx + 1, hidx⟩)
+          (∑ t ∈ Finset.range (idx + 1),
+            if ht : t < n then x ⟨t, ht⟩ * y ⟨t, ht⟩ else 0))
+  unfold BitVec.dot_product dotProduct
+  rw [h_aux (n - 1) (Nat.sub_lt (NeZero.pos n) zero_lt_one)]
+  congr 1
+  rw [Nat.sub_one_add_one (NeZero.ne n)]
+  rw [← Fin.sum_univ_eq_sum_range
+    (fun t => if ht : t < n then x ⟨t, ht⟩ * y ⟨t, ht⟩ else 0) n]
+  apply Finset.sum_congr rfl
+  intro i _hi
+  simp
 
 lemma parity_constraints_descent {stabdim n : ℕ} [NeZero n] {stabs : BitVec (stabdim * n)} {errs : BitVec n} {r : Fin stabdim} (hpc : parity_constraints stabs errs) :
   !(errs.dot_product (stabs.row r)) := by
@@ -430,13 +455,28 @@ lemma rowspace_constraints_descent {kerdim n} [NeZero n] {ker : BitVec (kerdim *
   generalize_proofs at *; (
   exact h_aux _ le_rfl ⟨ r, Nat.le_sub_one_of_lt r.2, by simpa using hr ⟩)
 
-lemma rowspace_constraints_ascent {kerdim n : ℕ} [NeZero n] {ker : BitVec (kerdim * n)}
+lemma rowspace_constraints_ascent {kerdim n : ℕ} [NeZero kerdim] [NeZero n] {ker : BitVec (kerdim * n)}
 {errs : BitVec n} (hconstr : rowspace_constraints ker errs)
 : ∃ (r : Fin kerdim), (errs.dot_product (ker.row r)) := by
-  sorry
+  unfold rowspace_constraints at hconstr
+  have h_aux : ∀ idx, idx < kerdim →
+      rowspace_constraints_aux ker errs idx = true →
+      ∃ r : Fin kerdim, r.val ≤ idx ∧ errs.dot_product (ker.row r) := by
+    intro idx hidx h
+    induction' idx with idx ih
+    · exact ⟨⟨0, hidx⟩, le_rfl, by simpa [rowspace_constraints_aux] using h⟩
+    · by_cases hlast : errs.dot_product (ker.row (idx + 1))
+      · exact ⟨⟨idx + 1, hidx⟩, le_rfl, hlast⟩
+      · have hprev : rowspace_constraints_aux ker errs idx = true := by
+          simpa [rowspace_constraints_aux, hlast] using h
+        rcases ih (Nat.lt_of_succ_lt hidx) hprev with ⟨r, hrle, hr⟩
+        exact ⟨r, Nat.le_trans hrle (Nat.le_succ idx), hr⟩
+  rcases h_aux (kerdim - 1) (Nat.sub_lt (NeZero.pos kerdim) zero_lt_one) hconstr with
+    ⟨r, _, hr⟩
+  exact ⟨r, hr⟩
 
 lemma rowspace_constraints_correct {k₁ k₂ n : ℕ}
-  [NeZero n]
+  [NeZero k₂] [NeZero n]
   {M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)}
   {M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)}
   (hK : M₂.rowSpace = (LinearMap.ker (M₁.toLin')))
@@ -501,7 +541,26 @@ lemma dot_col_aux_eq_dot_product_aux {r n : ℕ} [NeZero r]
       dot_col_aux (vec_to_BitVec coeffs) (flatten_matrix M) c.val idx =
         dot_product_aux (vec_to_BitVec coeffs) (vec_to_BitVec (fun row => M row c)) idx hr := by
   intro idx hidx
-  sorry
+  induction' idx with idx ih
+  · change ((vec_to_BitVec coeffs)[0]! &&
+        (flatten_matrix M)[0 * n + c.val]!) =
+      ((vec_to_BitVec coeffs)[0] &&
+        (vec_to_BitVec (fun row => M row c))[0])
+    rw [vec_to_BitVec_getElemBang coeffs hidx]
+    rw [flatten_matrix_get M ⟨0, hidx⟩ c]
+    simp [vec_to_BitVec, hidx]
+  · have hidx' : idx < r := Nat.lt_of_succ_lt hidx
+    change (((vec_to_BitVec coeffs)[idx + 1]! &&
+        (flatten_matrix M)[(idx + 1) * n + c.val]!) ^^
+        dot_col_aux (vec_to_BitVec coeffs) (flatten_matrix M) c.val idx) =
+      (((vec_to_BitVec coeffs)[idx + 1] &&
+        (vec_to_BitVec (fun row => M row c))[idx + 1]) ^^
+        dot_product_aux (vec_to_BitVec coeffs)
+          (vec_to_BitVec (fun row => M row c)) idx hidx')
+    rw [ih hidx']
+    rw [vec_to_BitVec_getElemBang coeffs hidx]
+    rw [flatten_matrix_get M ⟨idx + 1, hidx⟩ c]
+    simp [vec_to_BitVec, hidx]
 
 lemma dot_col_zero_correct {r n : ℕ} [NeZero r]
     (M : Matrix (Fin r) (Fin n) (ZMod 2)) (coeffs : Fin r → ZMod 2) (c : Fin n) :
@@ -735,6 +794,10 @@ theorem mutually_orth_nat_correct
   · intro h i _hi j
     exact h i j
 
+/-
+Deprecated: this theorem uses `BitVec.row_bv`, whose runtime-indexed proof
+path is not used by the maintained distance theorems.  Use
+`mutually_orth_nat_correct` instead.
 theorem mutually_orth_correct
   {k₁ k₂ n : ℕ}
   [NeZero k₁]
@@ -773,6 +836,7 @@ theorem mutually_orth_correct
   refine Or.inl (Or.inr ?_)
   sorry
 
+-/
 
 
 

@@ -36,7 +36,7 @@ lemma dist_index_some
   · have := Finset.mem_of_min h; aesop
 
 lemma lt_dist_sat_sound_contrapositive
-  {n k₁ k₂ kersize : ℕ} [NeZero n] [NeZero k₁] [NeZero (n - k₂)]
+  {n k₁ k₂ kersize : ℕ} [NeZero n] [NeZero k₁] [NeZero kersize] [NeZero (n - k₂)]
   (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
   (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
   (H₂_ker : Matrix (Fin kersize) (Fin n) (ZMod 2))
@@ -83,7 +83,7 @@ lemma lt_dist_sat_sound_contrapositive
 
 
 lemma lt_dist_sat_sound
-  {n k₁ k₂ kersize : ℕ} [NeZero n] [NeZero k₁] [NeZero (n - k₂)]
+  {n k₁ k₂ kersize : ℕ} [NeZero n] [NeZero k₁] [NeZero kersize] [NeZero (n - k₂)]
   {H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)}
   {H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)}
   (H₂_ker : Matrix (Fin kersize) (Fin n) (ZMod 2))
@@ -102,7 +102,7 @@ lemma lt_dist_sat_sound
 
 theorem bitvec_sat_translation_correct
   {n k₁ k₂ xkersize zkersize : ℕ} [NeZero n] [NeZero k₁]
-  [NeZero k₂] [NeZero (n - k₁)] [NeZero (n - k₂)]
+  [NeZero k₂] [NeZero xkersize] [NeZero zkersize] [NeZero (n - k₁)] [NeZero (n - k₂)]
   (css : CSS_pair n k₁ k₂)
   (xker : Matrix (Fin xkersize) (Fin n) (ZMod 2))
   (xker_correct : xker.is_ker_for css.H₂)
