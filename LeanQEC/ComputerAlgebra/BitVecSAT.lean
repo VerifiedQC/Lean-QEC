@@ -109,6 +109,36 @@ def bitvec_mutually_orth
   (M₂ : BitVec (k₂ * n)) : Prop :=
   ∀ (i : BitVec (Nat.clog 2 k₁)) (j : BitVec (Nat.clog 2 k₂)), !((M₁.row_bv i).dot_product (M₂.row_bv j) && i < k₁ && j < k₂)
 
+def mutually_orth_row_sat_aux
+  {n k₁ k₂ : ℕ}
+  [NeZero n]
+  (M₁ : BitVec (k₁ * n))
+  (M₂ : BitVec (k₂ * n))
+  (i j : ℕ) : Bool :=
+  match j with
+  | 0 => !((M₁.row i).dot_product (M₂.row 0))
+  | j' + 1 => !((M₁.row i).dot_product (M₂.row j)) && mutually_orth_row_sat_aux M₁ M₂ i j'
+
+def mutually_orth_sat_aux
+  {n k₁ k₂ : ℕ}
+  [NeZero n]
+  [NeZero k₂]
+  (M₁ : BitVec (k₁ * n))
+  (M₂ : BitVec (k₂ * n))
+  (i : ℕ) : Bool :=
+  match i with
+  | 0 => mutually_orth_row_sat_aux M₁ M₂ 0 (k₂ - 1)
+  | i' + 1 => mutually_orth_row_sat_aux M₁ M₂ i (k₂ - 1) && mutually_orth_sat_aux M₁ M₂ i'
+
+def bitvec_mutually_orth_nat
+  {n k₁ k₂ : ℕ}
+  [NeZero n]
+  [NeZero k₁]
+  [NeZero k₂]
+  (M₁ : BitVec (k₁ * n))
+  (M₂ : BitVec (k₂ * n)) : Prop :=
+  mutually_orth_sat_aux M₁ M₂ (k₁ - 1)
+
 @[simp]
 def nonzero_aux {r : ℕ} (coeffs : BitVec r) (i : ℕ) :=
   match i with

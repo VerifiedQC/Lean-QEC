@@ -82,54 +82,41 @@ example (i : BitVec 1) :
 
 set_option exponentiation.threshold 3000
 set_option maxHeartbeats 0
-lemma BB72_X_orth : H_X_72.mutually_orth_rows H_X_72 := by
-  rw [←mutually_orth_correct, ←BB72_X_correct, BB72_X]
-  simp only [bitvec_mutually_orth, BitVec.dot_product, BitVec.row_bv,
-  dot_product_aux, Nat.clog]
-  sorry
-  --bv_decide (timeout := 999)
-
-
-
-
-
-
-
-
-
-
-
-
-
+lemma BB72_XZ_orth : H_X_72.mutually_orth_rows H_Z_72 := by
+  rw [←mutually_orth_nat_correct, ←BB72_X_correct, ←BB72_Z_correct, BB72_X, BB72_Z]
+  simp only [bitvec_mutually_orth_nat]
+  simp (maxSteps := 9999999) only [mutually_orth_sat_aux, mutually_orth_row_sat_aux,
+    BitVec.row, BitVec.dot_product, dot_product_aux]
+  bv_decide (timeout := 999) (maxSteps := 9999999)
 
 set_option maxHeartbeats 0 in
 -- heavy unfolding
-lemma bb72_test_z : lt_dist_sat HX Z_ker 5 7
+lemma bb72_test_z : lt_dist_sat (n := 72) (stabdim := 36) (kerdim := 42) BB72_X BB72_Z_ker 5 7
   := by
-  rw [HX, Z_ker]
   simp only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
     Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
     loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
     Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
+    BB72_X, BB72_Z_ker,
     parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
     Bool.not_eq_eq_eq_not, Bool.not_true,
     bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
     rowspace_constraints_aux, not_and, and_imp]
-  bv_decide (timeout := 999)
+  bv_decide (timeout := 999) (maxSteps := 9999999)
 
 set_option maxHeartbeats 0 in
 -- heavy unfolding
-lemma bb72_test_x : lt_dist_sat HZ X_ker 5 7
+lemma bb72_test_x : lt_dist_sat (n := 72) (stabdim := 36) (kerdim := 42) BB72_Z BB72_X_ker 5 7
   := by
-  rw [HZ, X_ker]
   simp only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
     Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
     loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
     Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
+    BB72_Z, BB72_X_ker,
     parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
     Bool.not_eq_eq_eq_not, Bool.not_true,
     bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
     rowspace_constraints_aux, not_and, and_imp]
-  bv_decide (timeout := 999)
+  bv_decide (timeout := 999) (maxSteps := 9999999)
 
 #print axioms bb72_test_z
