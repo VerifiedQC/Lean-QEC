@@ -5,8 +5,6 @@ import LeanQEC.ComputerAlgebra.BitVecSAT
 instance {n : Nat} : Coe ((Fin n) → ZMod 2) ((Fin n) → Bool) where
   coe f := fun i => (f i).val == 1
 
-
-
 def vec_to_BitVec {j : ℕ} (r : (Fin j) → (ZMod 2)) : BitVec j := BitVec.ofFnLE r
 
 def BitVec_to_vec {n : ℕ} (x : BitVec n) : (Fin n) → (ZMod 2) := fun i => x[i].toNat
@@ -29,7 +27,6 @@ def BitVec.appendList {i j : ℕ} (f : (Fin i) → (BitVec j)) : BitVec (i * j) 
 
 def Matrix.toBitVecs {i j : ℕ} (M : Matrix (Fin i) (Fin j) (ZMod 2)) : (Fin i) → (BitVec j) :=
   fun a => vec_to_BitVec (M a)
-
 
 def flatten_matrix {i j : ℕ} (M : Matrix (Fin i) (Fin j) (ZMod 2)) : BitVec (i * j) :=
   BitVec.appendList M.toBitVecs
@@ -256,14 +253,24 @@ lemma loc_constraints_of_index {n k : ℕ} (x : Fin n → (ZMod 2)) (hx : hammin
     rw [if_pos hjlt]
     simpa [S] using hj
 
-def row_correct {k n : ℕ} (M : Matrix (Fin k) (Fin n) (ZMod 2)) (r : Fin k) :
+lemma BitVec.shift_extract_eq {n k : ℕ} (M : BitVec (k * n)) (r : ℕ) :
+   (M >>> (r * n)).extractLsb' 0 n = M.extractLsb' (r * n) n := by
+   -- 1. Bitvectors are equal if all their bits are equal.
+  ext i hi
+  simp only [getElem_extractLsb', zero_add, getLsbD_ushiftRight]
+
+
+
+lemma row_correct {k n : ℕ} (M : Matrix (Fin k) (Fin n) (ZMod 2)) (r : Fin k) :
   (flatten_matrix M).row r = vec_to_BitVec (M r) := by
+    unfold BitVec.row
+    rw [BitVec.shift_extract_eq]
     -- We'll use induction on the number of rows `k` to prove the equality.
     induction' k with k ih;
     · fin_cases r;
     · refine' Fin.lastCases _ _ r;
       · rcases k with ( _ | k ) <;> simp +decide [ *, flatten_matrix ];
-        · unfold BitVec.row; aesop;
+        · aesop;
         · refine' BitVec.eq_of_getElem_eq _;
           intro i hi; simp +decide [ BitVec.row, BitVec.appendList ] ;
           nontriviality;
@@ -273,7 +280,7 @@ def row_correct {k n : ℕ} (M : Matrix (Fin k) (Fin n) (ZMod 2)) (r : Fin k) :
         unfold flatten_matrix;
         rcases k with ( _ | k ) <;> simp_all +decide [ BitVec.appendList ];
         · fin_cases i;
-        · unfold BitVec.row;
+        ·
           ext j;
           rw [ BitVec.getElem_extractLsb', BitVec.getElem_extractLsb' ];
           rw [ BitVec.getLsbD_cast ];
@@ -281,6 +288,50 @@ def row_correct {k n : ℕ} (M : Matrix (Fin k) (Fin n) (ZMod 2)) (r : Fin k) :
           split_ifs <;> simp_all +decide [ Nat.lt_succ_iff ];
           · congr! 1;
           · nlinarith [ Fin.is_lt i ]
+
+def bitVecToFin {k : ℕ} [NeZero k] (x : BitVec (Nat.clog 2 k)) : Fin k :=
+  ⟨x.toNat % k, Nat.mod_lt _ (Nat.pos_of_neZero _)⟩
+
+theorem bitVecToFin_val_eq {k : ℕ} [NeZero k] (x : BitVec (Nat.clog 2 k)) (hx : x.toNat < k) :
+    (bitVecToFin x).val = x.toNat := by
+  -- Unfold the definition of bitVecToFin
+  simp [bitVecToFin]
+  -- Apply the property that n % k = n when n < k
+  apply Nat.mod_eq_of_lt hx
+
+theorem fin_toBitVec_toNat_eq {k : ℕ} [NeZero k] (x : Fin k) :
+  (x : BitVec (Nat.clog 2 k)).toNat = x := by
+  simp only [BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat]
+  apply Nat.mod_eq_of_lt
+  apply lt_of_lt_of_le x.isLt
+  apply Nat.le_pow_clog (one_lt_two)
+
+theorem fin_toBitVec_toNat_eq' {k : ℕ} [NeZero k] (x : Fin k) :
+  bitVecToFin x = x := by
+  simp only [Fin.ext_iff, bitVecToFin, BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat]
+  rw [Nat.mod_eq_of_lt]
+  · rw [Nat.mod_eq_of_lt]
+    apply lt_of_lt_of_le x.isLt _
+    apply Nat.le_pow_clog (one_lt_two)
+  apply Nat.mod_lt_of_lt x.isLt
+
+
+/-
+Older runtime-indexed row extraction.  The maintained examples use the
+nat-indexed `BitVec.row` path and `mutually_orth_nat_correct` below.
+lemma row_bv_correct {k n : ℕ} [NeZero k] (M : Matrix (Fin k) (Fin n) (ZMod 2)) (r : BitVec (Nat.clog 2 k)) :
+  (flatten_matrix M).row_bv r = vec_to_BitVec (M (bitVecToFin r)) := by
+  ...
+-/
+
+
+lemma BitVec_row_correct {k n : ℕ} [NeZero k] (M : Matrix (Fin k) (Fin n) (ZMod 2)) (r : BitVec (Nat.clog 2 k)) (hr : r.toNat < k) :
+  (flatten_matrix M).row r.toNat = vec_to_BitVec (M (bitVecToFin r)) := by
+  rw [←row_correct, bitVecToFin_val_eq _ hr]
+
+
+
+
 
 lemma flatten_matrix_get {i j : ℕ} (M : Matrix (Fin i) (Fin j) (ZMod 2)) (r : Fin i) (c : Fin j) :
     (flatten_matrix M)[r.val * j + c.val]! = ((M r c).val == 1) := by
@@ -294,39 +345,45 @@ lemma zmod2_dot_bool_step (a b s : ZMod 2) :
       (s + a * b == 1) := by
   fin_cases a <;> fin_cases b <;> fin_cases s <;> native_decide
 
-def dot_product_correct {n : ℕ} (x y : Fin n → (ZMod 2)):
+def dot_product_correct {n : ℕ} [NeZero n] (x y : Fin n → (ZMod 2)):
   (vec_to_BitVec x).dot_product (vec_to_BitVec y) =  ( x ⬝ᵥ y == 1) := by
-    have h_dot_product_induction (n : ℕ) (x y : Fin n → ZMod 2) : (vec_to_BitVec x).dot_product (vec_to_BitVec y) = ((Finset.sum Finset.univ (fun i => x i * y i)) == 1) := by
-      unfold BitVec.dot_product;
-      have h_dot_product_aux : ∀ (n : ℕ) (x y : Fin n → ZMod 2) (i : Fin n), dot_product_aux (vec_to_BitVec x) (vec_to_BitVec y) i.val = ((Finset.sum (Finset.univ.filter (fun j => j.val ≤ i.val)) (fun j => x j * y j)) == 1) := by
-        intros n x y i
-        induction' i with i ih;
-        induction' i with i ih;
-        · rcases n with ( _ | _ | n ) <;> simp_all +decide [ dot_product_aux ];
-          · native_decide +revert;
-          · simp +decide [ Finset.sum_filter, vec_to_BitVec ];
-            cases Fin.exists_fin_two.mp ⟨ x 0, rfl ⟩ <;> cases Fin.exists_fin_two.mp ⟨ y 0, rfl ⟩ <;> simp +decide [ * ];
-        · simp_all +decide [ Finset.sum_filter, dot_product_aux ];
-          rw [ ih ( Nat.lt_of_succ_lt ‹_› ) ];
-          rw [ show ( ∑ a : Fin n, if ( a : ℕ ) ≤ i + 1 then x a * y a else 0 ) = ( ∑ a : Fin n, if ( a : ℕ ) ≤ i then x a * y a else 0 ) + ( if ( i + 1 : ℕ ) < n then x ⟨ i + 1, by linarith ⟩ * y ⟨ i + 1, by linarith ⟩ else 0 ) from ?_ ];
-          · simp +decide [ *, vec_to_BitVec ];
-            simpa using zmod2_dot_bool_step (x ⟨ i + 1, by linarith ⟩) (y ⟨ i + 1, by linarith ⟩)
-              (∑ a : Fin n, if (a : ℕ) ≤ i then x a * y a else 0)
-          · rw [ Finset.sum_eq_sum_diff_singleton_add ( Finset.mem_univ ⟨ i + 1, by linarith ⟩ ) ];
-            rw [ Finset.sum_congr rfl ];
-            congr! 1;
-            rw [ Finset.sum_subset ];
-            · exact Finset.sdiff_subset;
-            · grind;
-            · aesop;
-            · grind;
-      by_cases hn : n = 0;
-      · aesop;
-      · convert h_dot_product_aux n x y ⟨ n - 1, Nat.sub_lt ( Nat.pos_of_ne_zero hn ) zero_lt_one ⟩ using 1;
-        rw [ Finset.filter_true_of_mem fun i _ => Nat.le_sub_one_of_lt i.2 ];
-    exact h_dot_product_induction n x y
+  have h_aux : ∀ idx, (hidx : idx < n) →
+      dot_product_aux (vec_to_BitVec x) (vec_to_BitVec y) idx hidx =
+        ((∑ t ∈ Finset.range (idx + 1),
+            if ht : t < n then x ⟨t, ht⟩ * y ⟨t, ht⟩ else 0) == 1) := by
+    intro idx hidx
+    induction' idx with idx ih
+    · change ((vec_to_BitVec x)[0] && (vec_to_BitVec y)[0]) =
+        ((∑ t ∈ Finset.range (0 + 1),
+            if ht : t < n then x ⟨t, ht⟩ * y ⟨t, ht⟩ else 0) == 1)
+      simp [hidx]
+      simp [vec_to_BitVec, hidx]
+      have hbool (a b : ZMod 2) : ((a.val == 1) && (b.val == 1)) = (a * b == 1) := by
+        fin_cases a <;> fin_cases b <;> native_decide
+      exact hbool (x ⟨0, hidx⟩) (y ⟨0, hidx⟩)
+    · have hidx' : idx < n := Nat.lt_of_succ_lt hidx
+      change (((vec_to_BitVec x)[idx + 1] && (vec_to_BitVec y)[idx + 1]) ^^
+              dot_product_aux (vec_to_BitVec x) (vec_to_BitVec y) idx hidx') =
+        ((∑ t ∈ Finset.range (idx + 1 + 1),
+            if ht : t < n then x ⟨t, ht⟩ * y ⟨t, ht⟩ else 0) == 1)
+      rw [ih hidx']
+      conv_rhs => rw [Finset.sum_range_succ]
+      simp [vec_to_BitVec, hidx]
+      simpa +decide using
+        (zmod2_dot_bool_step (x ⟨idx + 1, hidx⟩) (y ⟨idx + 1, hidx⟩)
+          (∑ t ∈ Finset.range (idx + 1),
+            if ht : t < n then x ⟨t, ht⟩ * y ⟨t, ht⟩ else 0))
+  unfold BitVec.dot_product dotProduct
+  rw [h_aux (n - 1) (Nat.sub_lt (NeZero.pos n) zero_lt_one)]
+  congr 1
+  rw [Nat.sub_one_add_one (NeZero.ne n)]
+  rw [← Fin.sum_univ_eq_sum_range
+    (fun t => if ht : t < n then x ⟨t, ht⟩ * y ⟨t, ht⟩ else 0) n]
+  apply Finset.sum_congr rfl
+  intro i _hi
+  simp
 
-lemma parity_constraints_descent {stabdim n : ℕ} {stabs : BitVec (stabdim * n)} {errs : BitVec n} {r : Fin stabdim} (hpc : parity_constraints stabs errs) :
+lemma parity_constraints_descent {stabdim n : ℕ} [NeZero n] {stabs : BitVec (stabdim * n)} {errs : BitVec n} {r : Fin stabdim} (hpc : parity_constraints stabs errs) :
   !(errs.dot_product (stabs.row r)) := by
     contrapose! hpc; simp_all +decide [ parity_constraints ] ;
     have h_ind : ∀ r' : ℕ, r' ≤ stabdim - 1 → r.val ≤ r' → parity_constraints_aux stabs errs r' = false := by
@@ -334,7 +391,7 @@ lemma parity_constraints_descent {stabdim n : ℕ} {stabs : BitVec (stabdim * n)
       grind +ring;
     exact h_ind _ le_rfl ( Nat.le_sub_one_of_lt r.2 )
 
-lemma parity_constraints_ascent {stabdim n : ℕ} {stabs : BitVec (stabdim * n)}
+lemma parity_constraints_ascent {stabdim n : ℕ} [NeZero n] {stabs : BitVec (stabdim * n)}
 {errs : BitVec n} (hpaux : ∀ (r : Fin stabdim), !(errs.dot_product (stabs.row r)))
  : parity_constraints stabs errs := by
    by_cases h : 0 < stabdim <;> simp_all +decide [ parity_constraints ];
@@ -357,7 +414,7 @@ lemma parity_constraints_ascent {stabdim n : ℕ} {stabs : BitVec (stabdim * n)}
      · simp +decide [ BitVec.extractLsb', vec_to_BitVec ];
        aesop
 
-lemma parity_constraints_correct {k n : ℕ} {M : Matrix (Fin k) (Fin n) (ZMod 2)}
+lemma parity_constraints_correct {k n : ℕ} [NeZero n] {M : Matrix (Fin k) (Fin n) (ZMod 2)}
   {x : Fin n → ZMod 2} :
   parity_constraints (flatten_matrix M) (vec_to_BitVec x) ↔ x ∈ LinearMap.ker M.toLin' := by
   rw [LinearMap.mem_ker]
@@ -388,7 +445,7 @@ lemma parity_constraints_correct {k n : ℕ} {M : Matrix (Fin k) (Fin n) (ZMod 2
   rw [hmul]
   simp only [Pi.zero_apply]
 
-lemma rowspace_constraints_descent {kerdim n} {ker : BitVec (kerdim * n)}
+lemma rowspace_constraints_descent {kerdim n} [NeZero n] {ker : BitVec (kerdim * n)}
 {errs : BitVec n} (r : Fin kerdim) (hr : (errs.dot_product (ker.row r)))
 : rowspace_constraints ker errs := by
   have h_aux : ∀ (r : ℕ), r ≤ kerdim - 1 → (∃ i : Fin kerdim, i.val ≤ r ∧ !(errs.dot_product (ker.row i)) = false) → rowspace_constraints_aux ker errs r = true := by
@@ -398,29 +455,28 @@ lemma rowspace_constraints_descent {kerdim n} {ker : BitVec (kerdim * n)}
   generalize_proofs at *; (
   exact h_aux _ le_rfl ⟨ r, Nat.le_sub_one_of_lt r.2, by simpa using hr ⟩)
 
-lemma rowspace_constraints_ascent {kerdim n} {ker : BitVec (kerdim * n)}
+lemma rowspace_constraints_ascent {kerdim n : ℕ} [NeZero kerdim] [NeZero n] {ker : BitVec (kerdim * n)}
 {errs : BitVec n} (hconstr : rowspace_constraints ker errs)
 : ∃ (r : Fin kerdim), (errs.dot_product (ker.row r)) := by
-  have h_aux : ∀ (kerdim n : ℕ) (ker : BitVec (kerdim * n)) (errs : BitVec n) (r : ℕ), rowspace_constraints_aux ker errs r = true → ∃ s : Fin (r + 1), (errs.dot_product (ker.row s)) := by
-    intros kerdim n ker errs r hr;
-    induction' r with r ih;
-    · exact ⟨ ⟨ 0, Nat.pos_of_ne_zero ( by aesop_cat ) ⟩, hr ⟩;
-    · by_cases h : rowspace_constraints_aux ker errs r = true <;> simp_all +decide [ rowspace_constraints_aux ];
-      · exact ⟨ ⟨ ih.choose, Nat.lt_succ_of_lt ih.choose.2 ⟩, ih.choose_spec ⟩;
-      · exact ⟨ ⟨ r + 1, Nat.succ_lt_succ ( Nat.lt_succ_self _ ) ⟩, hr ⟩;
-  rcases kerdim with ( _ | kerdim ) <;> simp_all +decide [ rowspace_constraints ];
-  -- Since ker is a BitVec of length 0, its row is empty. Therefore, the dot product of errs and the empty row is 0, which contradicts hconstr.
-  have h_empty : ker.row 0 = BitVec.ofNat n 0 := by
-    ext i; simp [BitVec.row];
-  simp_all +decide [ BitVec.dot_product ];
-  have h_empty : ∀ (n : ℕ) (errs : BitVec n) (i : ℕ), i < n → dot_product_aux errs (0#n) i = false := by
-    intros n errs i hi; induction' i with i ih generalizing errs;
-    · cases n <;> simp_all +decide [ dot_product_aux ];
-    · simp +decide [ dot_product_aux, ih errs ( Nat.lt_of_succ_lt hi ) ];
-      grind;
-  cases n <;> simp_all +decide [ dot_product_aux ]
+  unfold rowspace_constraints at hconstr
+  have h_aux : ∀ idx, idx < kerdim →
+      rowspace_constraints_aux ker errs idx = true →
+      ∃ r : Fin kerdim, r.val ≤ idx ∧ errs.dot_product (ker.row r) := by
+    intro idx hidx h
+    induction' idx with idx ih
+    · exact ⟨⟨0, hidx⟩, le_rfl, by simpa [rowspace_constraints_aux] using h⟩
+    · by_cases hlast : errs.dot_product (ker.row (idx + 1))
+      · exact ⟨⟨idx + 1, hidx⟩, le_rfl, hlast⟩
+      · have hprev : rowspace_constraints_aux ker errs idx = true := by
+          simpa [rowspace_constraints_aux, hlast] using h
+        rcases ih (Nat.lt_of_succ_lt hidx) hprev with ⟨r, hrle, hr⟩
+        exact ⟨r, Nat.le_trans hrle (Nat.le_succ idx), hr⟩
+  rcases h_aux (kerdim - 1) (Nat.sub_lt (NeZero.pos kerdim) zero_lt_one) hconstr with
+    ⟨r, _, hr⟩
+  exact ⟨r, hr⟩
 
 lemma rowspace_constraints_correct {k₁ k₂ n : ℕ}
+  [NeZero k₂] [NeZero n]
   {M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2)}
   {M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)}
   (hK : M₂.rowSpace = (LinearMap.ker (M₁.toLin')))
@@ -479,21 +535,34 @@ lemma nonzero_correct {r : ℕ} (x : Fin r → (ZMod 2))
           · grind +splitImp;
         exact h_nonzero_aux _ ( Nat.le_sub_one_of_lt i.2 )
 
-lemma dot_col_aux_eq_dot_product_aux {r n : ℕ}
+lemma dot_col_aux_eq_dot_product_aux {r n : ℕ} [NeZero r]
     (M : Matrix (Fin r) (Fin n) (ZMod 2)) (coeffs : Fin r → ZMod 2) (c : Fin n) :
-    ∀ idx, idx < r →
+    ∀ idx, (hr : idx < r) →
       dot_col_aux (vec_to_BitVec coeffs) (flatten_matrix M) c.val idx =
-        dot_product_aux (vec_to_BitVec coeffs) (vec_to_BitVec (fun row => M row c)) idx := by
+        dot_product_aux (vec_to_BitVec coeffs) (vec_to_BitVec (fun row => M row c)) idx hr := by
   intro idx hidx
   induction' idx with idx ih
-  · have hflat : (flatten_matrix M)[c.val]! = ((M ⟨0, hidx⟩ c).val == 1) := by
-      simpa using flatten_matrix_get M ⟨0, hidx⟩ c
-    simp [dot_col_aux, dot_product_aux, vec_to_BitVec_getElemBang _ hidx, hflat]
+  · change ((vec_to_BitVec coeffs)[0]! &&
+        (flatten_matrix M)[0 * n + c.val]!) =
+      ((vec_to_BitVec coeffs)[0] &&
+        (vec_to_BitVec (fun row => M row c))[0])
+    rw [vec_to_BitVec_getElemBang coeffs hidx]
+    rw [flatten_matrix_get M ⟨0, hidx⟩ c]
+    simp [vec_to_BitVec, hidx]
   · have hidx' : idx < r := Nat.lt_of_succ_lt hidx
-    simp [dot_col_aux, dot_product_aux, ih hidx', vec_to_BitVec_getElemBang _ hidx,
-      flatten_matrix_get M ⟨idx + 1, hidx⟩ c]
+    change (((vec_to_BitVec coeffs)[idx + 1]! &&
+        (flatten_matrix M)[(idx + 1) * n + c.val]!) ^^
+        dot_col_aux (vec_to_BitVec coeffs) (flatten_matrix M) c.val idx) =
+      (((vec_to_BitVec coeffs)[idx + 1] &&
+        (vec_to_BitVec (fun row => M row c))[idx + 1]) ^^
+        dot_product_aux (vec_to_BitVec coeffs)
+          (vec_to_BitVec (fun row => M row c)) idx hidx')
+    rw [ih hidx']
+    rw [vec_to_BitVec_getElemBang coeffs hidx]
+    rw [flatten_matrix_get M ⟨idx + 1, hidx⟩ c]
+    simp [vec_to_BitVec, hidx]
 
-lemma dot_col_zero_correct {r n : ℕ}
+lemma dot_col_zero_correct {r n : ℕ} [NeZero r]
     (M : Matrix (Fin r) (Fin n) (ZMod 2)) (coeffs : Fin r → ZMod 2) (c : Fin n) :
     dot_col_zero (vec_to_BitVec coeffs) (flatten_matrix M) c.val =
       !((M.vecMul coeffs c) == 1) := by
@@ -517,7 +586,7 @@ lemma zmod2_ne_one_iff_eq_zero (a : ZMod 2) : a ≠ 1 ↔ a = 0 := by
     rw [h]
     exact (zero_ne_one : (0 : ZMod 2) ≠ 1)
 
-lemma all_dot_zero_aux_correct {r n : ℕ}
+lemma all_dot_zero_aux_correct {r n : ℕ} [NeZero r]
     (M : Matrix (Fin r) (Fin n) (ZMod 2)) (coeffs : Fin r → ZMod 2) :
     ∀ idx, idx < n →
       (all_dot_zero_aux (vec_to_BitVec coeffs) (flatten_matrix M) idx ↔
@@ -559,7 +628,7 @@ lemma all_dot_zero_aux_correct {r n : ℕ}
       · intro c hc
         exact h c (Nat.le_trans hc (Nat.le_succ idx))
 
-lemma all_dot_zero_correct {r n : ℕ} (M : Matrix (Fin r) (Fin n) (ZMod 2)) (coeffs : Fin r → (ZMod 2))
+lemma all_dot_zero_correct {r n : ℕ} [NeZero r] (M : Matrix (Fin r) (Fin n) (ZMod 2)) (coeffs : Fin r → (ZMod 2))
   : all_dot_zero (vec_to_BitVec coeffs) (flatten_matrix M) ↔ M.vecMul coeffs = 0 := by
   by_cases hn : n = 0
   · subst n
@@ -589,7 +658,7 @@ lemma linear_indep_of_forall_vecmul_nz {r n : ℕ} (M : Matrix (Fin r) (Fin n) (
     · exact fun h coeffs x hx => not_forall.mp fun h' => hx <| h coeffs h' x;
     · intro h g hg i; specialize h g i; contrapose! h; aesop;
 
-lemma linear_indep_SAT_correct {r n : ℕ} (M : Matrix (Fin r) (Fin n) (ZMod 2)) :
+lemma linear_indep_SAT_correct {r n : ℕ} [NeZero r] (M : Matrix (Fin r) (Fin n) (ZMod 2)) :
   LinearIndependent (ZMod 2) M ↔ linear_indep_SAT (flatten_matrix M) := by
   rw [linear_indep_of_forall_vecmul_nz]
   constructor
@@ -614,189 +683,162 @@ lemma linear_indep_SAT_correct {r n : ℕ} (M : Matrix (Fin r) (Fin n) (ZMod 2))
     rwa [nonzero_correct]
   apply (hd h_f)
 
-lemma bitvec_dot_product_zero_left {n : ℕ} (x : BitVec n) : (0#n).dot_product x = false := by
-  have hz : vec_to_BitVec (fun _ : Fin n => (0 : ZMod 2)) = 0#n := by
-    ext i
-    simp [vec_to_BitVec]
-  have hx : vec_to_BitVec (BitVec_to_vec x) = x := (vec_to_BitVec_BitVec_to_vec x).symm
-  rw [←hz, ←hx, dot_product_correct]
-  simp [dotProduct]
-
-lemma bitvec_dot_product_zero_right {n : ℕ} (x : BitVec n) : x.dot_product (0#n) = false := by
-  have hz : vec_to_BitVec (fun _ : Fin n => (0 : ZMod 2)) = 0#n := by
-    ext i
-    simp [vec_to_BitVec]
-  have hx : vec_to_BitVec (BitVec_to_vec x) = x := (vec_to_BitVec_BitVec_to_vec x).symm
-  rw [←hz, ←hx, dot_product_correct]
-  simp [dotProduct]
-
-lemma bitvec_row_of_zero_rows {n : ℕ} (M : BitVec (0 * n)) (r : Nat) : M.row r = 0#n := by
-  refine BitVec.eq_of_getElem_eq ?_
-  intro i hi
-  unfold BitVec.row
-  rw [BitVec.getElem_extractLsb' hi]
-  simp
-
-lemma bitvec_mutually_orth_zero_left {k₂ n : ℕ} (M₁ : BitVec (0 * n)) (M₂ : BitVec (k₂ * n)) :
-    bitvec_mutually_orth M₁ M₂ := by
-  simp [bitvec_mutually_orth]
-  induction' k₂ - 1 with r ih
-  · simp [mutually_orth_sat_aux, bitvec_row_of_zero_rows, bitvec_dot_product_zero_left]
-  · simp [mutually_orth_sat_aux, ih, bitvec_row_of_zero_rows, bitvec_dot_product_zero_left]
-
-lemma bitvec_mutually_orth_zero_right {k₁ n : ℕ} (M₁ : BitVec (k₁ * n)) (M₂ : BitVec (0 * n)) :
-    bitvec_mutually_orth M₁ M₂ := by
-  simp [bitvec_mutually_orth]
-  induction' k₁ - 1 with r ih
-  · simp [mutually_orth_sat_aux, bitvec_row_of_zero_rows, bitvec_dot_product_zero_right]
-  · simp [mutually_orth_sat_aux, ih, bitvec_row_of_zero_rows, bitvec_dot_product_zero_right]
+lemma mutually_orth_row_sat_aux_correct
+    {k₁ k₂ n : ℕ}
+    [NeZero n]
+    (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+    (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
+    (i : Fin k₁) :
+    ∀ idx, idx < k₂ →
+      (mutually_orth_row_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) i.val idx ↔
+        ∀ j : Fin k₂, j.val ≤ idx → M₁ i ⬝ᵥ M₂ j = 0) := by
+  intro idx hidx
+  induction' idx with idx ih
+  · rw [show mutually_orth_row_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) i.val 0 =
+        !(((flatten_matrix M₁).row i.val).dot_product ((flatten_matrix M₂).row 0)) by rfl]
+    rw [row_correct M₁ i, row_correct M₂ ⟨0, hidx⟩, dot_product_correct]
+    constructor
+    · intro h j hj
+      have hj0 : j = ⟨0, hidx⟩ := by
+        apply Fin.ext
+        exact Nat.eq_zero_of_le_zero hj
+      subst hj0
+      simp only [Bool.not_eq_eq_eq_not, Bool.not_true, beq_eq_false_iff_ne] at h
+      exact (zmod2_ne_one_iff_eq_zero _).1 h
+    · intro h
+      have hz := h ⟨0, hidx⟩ le_rfl
+      rw [hz]
+      decide
+  · have hidx' : idx < k₂ := Nat.lt_of_succ_lt hidx
+    change (!(((flatten_matrix M₁).row i.val).dot_product ((flatten_matrix M₂).row (idx + 1))) &&
+        mutually_orth_row_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) i.val idx ↔
+      ∀ j : Fin k₂, j.val ≤ idx + 1 → M₁ i ⬝ᵥ M₂ j = 0)
+    rw [row_correct M₁ i, row_correct M₂ ⟨idx + 1, hidx⟩, dot_product_correct]
+    simp only [Bool.and_eq_true, ih hidx']
+    constructor
+    · rintro ⟨hlast, hprev⟩ j hj
+      by_cases hjval : j.val = idx + 1
+      · have hjfin : j = ⟨idx + 1, hidx⟩ := Fin.ext hjval
+        subst hjfin
+        simp only [Bool.not_eq_eq_eq_not, Bool.not_true, beq_eq_false_iff_ne] at hlast
+        exact (zmod2_ne_one_iff_eq_zero _).1 hlast
+      · exact hprev j (Nat.le_of_lt_succ (lt_of_le_of_ne hj hjval))
+    · intro h
+      constructor
+      · have hz := h ⟨idx + 1, hidx⟩ le_rfl
+        rw [hz]
+        decide
+      · intro j hj
+        exact h j (Nat.le_trans hj (Nat.le_succ idx))
 
 lemma mutually_orth_sat_aux_correct
-  {k₁ k₂ n : ℕ}
-  (M₁ : BitVec (k₁ * n))
-  (M₂ : BitVec (k₂ * n))
-  (hk₁ : 0 < k₁) :
-  ∀ r₂, r₂ < k₂ → ∀ r₁, r₁ < k₁ →
-    (mutually_orth_sat_aux M₁ M₂ r₁ r₂ = true ↔
-      (∀ i : Fin k₁, i.val ≤ r₁ → !(M₁.row i.val).dot_product (M₂.row r₂)) ∧
-      (∀ j : Fin k₂, j.val < r₂ → ∀ i : Fin k₁,
-        !(M₁.row i.val).dot_product (M₂.row j.val))) := by
-  intro r₂ hr₂
-  induction' r₂ with r₂ ih₂
-  · intro r₁ hr₁
-    induction' r₁ with r₁ ih₁
-    · simp [mutually_orth_sat_aux]
+    {k₁ k₂ n : ℕ}
+    [NeZero n]
+    [NeZero k₂]
+    (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+    (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) :
+    ∀ idx, idx < k₁ →
+      (mutually_orth_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) idx ↔
+        ∀ i : Fin k₁, i.val ≤ idx → ∀ j : Fin k₂, M₁ i ⬝ᵥ M₂ j = 0) := by
+  intro idx hidx
+  induction' idx with idx ih
+  · rw [show mutually_orth_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) 0 =
+        mutually_orth_row_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) 0 (k₂ - 1) by rfl]
+    rw [mutually_orth_row_sat_aux_correct M₁ M₂ ⟨0, hidx⟩ (k₂ - 1)
+      (Nat.sub_lt (NeZero.pos k₂) zero_lt_one)]
+    constructor
+    · intro h i hi j
+      have hi0 : i = ⟨0, hidx⟩ := by
+        apply Fin.ext
+        exact Nat.eq_zero_of_le_zero hi
+      subst hi0
+      exact h j (Nat.le_sub_one_of_lt j.2)
+    · intro h j hj
+      exact h ⟨0, hidx⟩ le_rfl j
+  · have hidx' : idx < k₁ := Nat.lt_of_succ_lt hidx
+    change (mutually_orth_row_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) (idx + 1) (k₂ - 1) &&
+        mutually_orth_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) idx ↔
+      ∀ i : Fin k₁, i.val ≤ idx + 1 → ∀ j : Fin k₂, M₁ i ⬝ᵥ M₂ j = 0)
+    simp only [
+      Bool.and_eq_true,
+      mutually_orth_row_sat_aux_correct M₁ M₂ ⟨idx + 1, hidx⟩ (k₂ - 1)
+        (Nat.sub_lt (NeZero.pos k₂) zero_lt_one),
+      ih hidx']
+    constructor
+    · rintro ⟨hlast, hprev⟩ i hi j
+      by_cases hival : i.val = idx + 1
+      · have hifin : i = ⟨idx + 1, hidx⟩ := Fin.ext hival
+        subst hifin
+        exact hlast j (Nat.le_sub_one_of_lt j.2)
+      · exact hprev i (Nat.le_of_lt_succ (lt_of_le_of_ne hi hival)) j
+    · intro h
       constructor
-      · intro h i hi
-        have hi0 : i = ⟨0, hk₁⟩ := by
-          apply Fin.ext
-          exact hi
-        simpa [hi0] using h
-      · intro h
-        exact h ⟨0, hk₁⟩ rfl
-    · have hr₁' : r₁ < k₁ := Nat.lt_of_succ_lt hr₁
-      have ih := ih₁ hr₁'
-      simp [mutually_orth_sat_aux, ih]
-      constructor
-      · rintro ⟨hhead, htail⟩ i hi
-        by_cases hival : i.val = r₁ + 1
-        · have hifin : i = ⟨r₁ + 1, hr₁⟩ := Fin.ext hival
-          simpa [hifin] using hhead
-        · exact htail i (Nat.le_of_lt_succ (lt_of_le_of_ne hi hival))
-      · intro h
-        constructor
-        · exact h ⟨r₁ + 1, hr₁⟩ le_rfl
-        · intro i hi
-          exact h i (Nat.le_trans hi (Nat.le_succ r₁))
-  · intro r₁ hr₁
-    induction' r₁ with r₁ ih₁
-    · have hr₂' : r₂ < k₂ := Nat.lt_of_succ_lt hr₂
-      have hprev := ih₂ hr₂' (k₁ - 1) (Nat.sub_lt hk₁ zero_lt_one)
-      simp [mutually_orth_sat_aux, hprev]
-      constructor
-      · rintro ⟨hhead, hprev_current, hprev_prev⟩
-        constructor
-        · intro i hi
-          have hi0 : i = ⟨0, hk₁⟩ := by
-            apply Fin.ext
-            exact hi
-          simpa [hi0] using hhead
-        · intro j hj i
-          by_cases hjval : j.val = r₂
-          · have hjfin : j = ⟨r₂, hr₂'⟩ := Fin.ext hjval
-            subst hjfin
-            exact hprev_current i (Nat.le_sub_one_of_lt i.2)
-          · exact hprev_prev j (lt_of_le_of_ne hj hjval) i
-      · intro h
-        constructor
-        · exact h.1 ⟨0, hk₁⟩ rfl
-        · constructor
-          · intro i _
-            exact h.2 ⟨r₂, hr₂'⟩ le_rfl i
-          · intro j hj i
-            exact h.2 j (Nat.le_of_lt hj) i
-    · have hr₁' : r₁ < k₁ := Nat.lt_of_succ_lt hr₁
-      have ih := ih₁ hr₁'
-      simp [mutually_orth_sat_aux, ih]
-      constructor
-      · rintro ⟨hhead, htail_current, htail_prev⟩
-        constructor
-        · intro i hi
-          by_cases hival : i.val = r₁ + 1
-          · have hifin : i = ⟨r₁ + 1, hr₁⟩ := Fin.ext hival
-            simpa [hifin] using hhead
-          · exact htail_current i (Nat.le_of_lt_succ (lt_of_le_of_ne hi hival))
-        · exact htail_prev
-      · intro h
-        constructor
-        · exact h.1 ⟨r₁ + 1, hr₁⟩ le_rfl
-        · constructor
-          · intro i hi
-            exact h.1 i (Nat.le_trans hi (Nat.le_succ r₁))
-          · exact h.2
+      · intro j hj
+        exact h ⟨idx + 1, hidx⟩ le_rfl j
+      · intro i hi j
+        exact h i (Nat.le_trans hi (Nat.le_succ idx)) j
 
-lemma mutually_orth_aux_descent
+theorem mutually_orth_nat_correct
   {k₁ k₂ n : ℕ}
-  {M₁ : BitVec (k₁ * n)}
-  {M₂ : BitVec (k₂ * n)}
-  (h_orth : bitvec_mutually_orth M₁ M₂)
-  (i : Fin k₁) (j : Fin k₂) :
-  !(M₁.row i).dot_product (M₂.row j) := by
-  have hk₁ : 0 < k₁ := lt_of_le_of_lt (Nat.zero_le i.val) i.2
-  have hk₂ : 0 < k₂ := lt_of_le_of_lt (Nat.zero_le j.val) j.2
-  have hscan : mutually_orth_sat_aux M₁ M₂ (k₁ - 1) (k₂ - 1) = true := by
-    simpa [bitvec_mutually_orth] using h_orth
-  have h := (mutually_orth_sat_aux_correct M₁ M₂ hk₁
-    (k₂ - 1) (Nat.sub_lt hk₂ zero_lt_one)
-    (k₁ - 1) (Nat.sub_lt hk₁ zero_lt_one)).1 hscan
-  by_cases hj : j.val = k₂ - 1
-  · simpa [hj] using h.1 i (Nat.le_sub_one_of_lt i.2)
-  · exact h.2 j (lt_of_le_of_ne (Nat.le_sub_one_of_lt j.2) hj) i
+  [NeZero k₁]
+  [NeZero k₂]
+  [NeZero n]
+  (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+  (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) :
+  bitvec_mutually_orth_nat (flatten_matrix M₁) (flatten_matrix M₂) ↔ M₁.mutually_orth_rows M₂ := by
+  unfold bitvec_mutually_orth_nat
+  rw [mutually_orth_sat_aux_correct M₁ M₂ (k₁ - 1) (Nat.sub_lt (NeZero.pos k₁) zero_lt_one)]
+  constructor
+  · intro h i j
+    exact h i (Nat.le_sub_one_of_lt i.2) j
+  · intro h i _hi j
+    exact h i j
 
-lemma mutually_orth_aux_ascent
-  {k₁ k₂ n : ℕ}
-  (M₁ : BitVec (k₁ * n))
-  (M₂ : BitVec (k₂ * n))
-  (h_orth : ∀ (i : Fin k₁) (j : Fin k₂), !(M₁.row i).dot_product (M₂.row j)) :
-  bitvec_mutually_orth M₁ M₂ := by
-  by_cases hk₁ : 0 < k₁
-  · by_cases hk₂ : 0 < k₂
-    · have hscan := (mutually_orth_sat_aux_correct M₁ M₂ hk₁
-        (k₂ - 1) (Nat.sub_lt hk₂ zero_lt_one)
-        (k₁ - 1) (Nat.sub_lt hk₁ zero_lt_one)).2
-      have hres := hscan
-        ⟨
-          (fun i _ => by simpa using h_orth i ⟨k₂ - 1, Nat.sub_lt hk₂ zero_lt_one⟩),
-          (fun j _ i => h_orth i j)
-        ⟩
-      simpa [bitvec_mutually_orth] using hres
-    · have hk₂0 : k₂ = 0 := Nat.eq_zero_of_not_pos hk₂
-      subst k₂
-      exact bitvec_mutually_orth_zero_right M₁ M₂
-  · have hk₁0 : k₁ = 0 := Nat.eq_zero_of_not_pos hk₁
-    subst k₁
-    exact bitvec_mutually_orth_zero_left M₁ M₂
-
+/-
+Deprecated: this theorem uses `BitVec.row_bv`, whose runtime-indexed proof
+path is not used by the maintained distance theorems.  Use
+`mutually_orth_nat_correct` instead.
 theorem mutually_orth_correct
   {k₁ k₂ n : ℕ}
+  [NeZero k₁]
+  [NeZero k₂]
+  [NeZero n]
   (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
   (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) :
   bitvec_mutually_orth (flatten_matrix M₁) (flatten_matrix M₂) ↔ M₁.mutually_orth_rows M₂ := by
   constructor
   · intro h_orth i j
-    have h_dp := mutually_orth_aux_descent h_orth i j
-    rw [row_correct, row_correct, dot_product_correct] at h_dp
-    simp only [Bool.not_eq_eq_eq_not, Bool.not_true, beq_eq_false_iff_ne] at h_dp
-    apply zmod2_val_eq_zero_of_ne_one at h_dp
-    apply (ZMod.val_eq_zero (M₁ i ⬝ᵥ M₂ j)).mp h_dp
+    unfold bitvec_mutually_orth at h_orth
+    have hij:= (h_orth i j)
+    simp only [Bool.not_and, Bool.or_eq_true,
+      Bool.not_eq_eq_eq_not, Bool.not_true, decide_eq_false_iff_not, not_lt, fin_toBitVec_toNat_eq] at hij
+    rcases hij with (hij | hge) | hge
+    · rw [row_bv_correct, row_bv_correct, dot_product_correct] at hij
+      simp only [beq_eq_false_iff_ne, ne_eq, zmod2_ne_one_iff_eq_zero] at hij
+      rw [fin_toBitVec_toNat_eq', fin_toBitVec_toNat_eq'] at hij
+      assumption
+    · sorry
+    sorry
 
 
-  intro h_orth
-  apply mutually_orth_aux_ascent
-  intro i j
-  rw [row_correct, row_correct, dot_product_correct, h_orth i j]
-  simp only [Bool.not_eq_eq_eq_not, Bool.not_true, beq_eq_false_iff_ne, ne_eq, zero_ne_one,
-    not_false_eq_true]
+  intro h_orth i j
+  simp only [Bool.not_and, Bool.or_eq_true, Bool.not_eq_eq_eq_not, Bool.not_true,
+    decide_eq_false_iff_not, not_lt]
+  by_cases hi : i.toNat < k₁
+  · by_cases hj : j.toNat < k₂
+    · refine Or.inl (Or.inl ?_)
+      rw [row_bv_correct, row_bv_correct, dot_product_correct]
+      simp only [beq_eq_false_iff_ne]
+      rw [zmod2_ne_one_iff_eq_zero]
+      apply h_orth
+    refine Or.inr ?_
+    sorry
+  refine Or.inl (Or.inr ?_)
+  sorry
+
+-/
+
+
 
 lemma inds_strict_mono_aux_descent {k r : ℕ} (inds : Fin r → Fin k) :
     ∀ (idx : ℕ) (hidx : idx < r) (prev : ℕ),

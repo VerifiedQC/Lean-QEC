@@ -49,29 +49,35 @@ def loc_constraints
   loc_constraints_aux locs errs (n-1)
 
 
-def dot_product_aux {n : ℕ} (x y : BitVec n) (c : ℕ) : Bool :=
+def dot_product_aux {n : ℕ} [NeZero n] (x y : BitVec n) (c : ℕ) (hc : c < n) : Bool :=
+  let b := x[c] && y[c]
   match c with
-  | 0 => x[c]! && y[c]!
-  | c' + 1 => (x[c]! && y[c]!) ^^ dot_product_aux x y c'
+  | 0 => b
+  | c' + 1 => b ^^ dot_product_aux x y c' (lt_of_le_of_lt (Nat.le_succ _) hc)
 
-def BitVec.dot_product {n : ℕ} (x y : BitVec n) := dot_product_aux x y (n-1)
+def BitVec.dot_product {n : ℕ} [NeZero n] (x y : BitVec n) := dot_product_aux x y (n-1) (Nat.sub_one_lt (NeZero.ne _))
 
-def BitVec.row {n k : ℕ} (M : BitVec (k * n)) (r : ℕ) : BitVec n := M.extractLsb' (r * n) n
+--updated definition to account for r unknown at runtime
+def BitVec.row {n k : ℕ} (M : BitVec (k * n)) (r : ℕ) : BitVec n := (M >>> (r * n)).extractLsb' 0 n
+
+def BitVec.row_bv {n k klog : ℕ} (M : BitVec (k * n)) (r : BitVec klog) : BitVec n := (M >>> ((r.zeroExtend (k * n) * (n : BitVec (k * n))))).extractLsb' 0 n
+
 
 
 @[simp]
-def parity_constraints_aux {stabdim n : ℕ} (stabs : BitVec (stabdim * n)) (errs : BitVec n) (r : ℕ) :=
+def parity_constraints_aux {stabdim n : ℕ} [NeZero n] (stabs : BitVec (stabdim * n)) (errs : BitVec n) (r : ℕ) :=
   match r with
   | 0 => !(errs.dot_product (stabs.row 0))
   | r' + 1 => !(errs.dot_product (stabs.row r)) ∧ parity_constraints_aux stabs errs r'
 
 
-def parity_constraints {stabdim n : ℕ} (stabs : BitVec (stabdim * n)) (errs : BitVec n) :=
+def parity_constraints {stabdim n : ℕ} [NeZero n] (stabs : BitVec (stabdim * n)) (errs : BitVec n) :=
   parity_constraints_aux stabs errs (stabdim-1)
 
 @[simp]
 def rowspace_constraints_aux
   {kerdim n : ℕ}
+  [NeZero n]
   (ker : BitVec (kerdim * n))
   (errs : BitVec n) (r : ℕ) :=
   match r with
@@ -81,12 +87,14 @@ def rowspace_constraints_aux
 
 def rowspace_constraints
   {kerdim n : ℕ}
+  [NeZero n]
   (ker : BitVec (kerdim * n))
   (errs : BitVec n) :=
   rowspace_constraints_aux ker errs (kerdim - 1)
 
 def lt_dist_sat
   {n stabdim kerdim : ℕ}
+  [NeZero n]
   (stabs : BitVec (stabdim * n))
   (ker : BitVec (kerdim * n))
   (k nlog : ℕ) : Prop :=
@@ -94,25 +102,42 @@ def lt_dist_sat
   ¬ (loc_constraints locs errs ∧ parity_constraints stabs errs ∧ rowspace_constraints ker errs)
 
 
-def mutually_orth_sat_aux
-  {n k₁ k₂ : ℕ}
-  (M₁ : BitVec (k₁ * n))
-  (M₂ : BitVec (k₂ * n))
-  (r₁ r₂ : ℕ) : Bool :=
-  let b := !(M₁.row r₁).dot_product (M₂.row r₂)
-  match r₁ with
-  | 0 => match r₂ with
-    | 0 => b
-    | r₂' + 1 => b && (mutually_orth_sat_aux M₁ M₂ (k₁-1) r₂')
-  | r₁' + 1 => b && (mutually_orth_sat_aux M₁ M₂ r₁' r₂)
-
-
 def bitvec_mutually_orth
   {n k₁ k₂ : ℕ}
+  [NeZero n]
+  (M₁ : BitVec (k₁ * n))
+  (M₂ : BitVec (k₂ * n)) : Prop :=
+  ∀ (i : BitVec (Nat.clog 2 k₁)) (j : BitVec (Nat.clog 2 k₂)), !((M₁.row_bv i).dot_product (M₂.row_bv j) && i < k₁ && j < k₂)
+
+def mutually_orth_row_sat_aux
+  {n k₁ k₂ : ℕ}
+  [NeZero n]
   (M₁ : BitVec (k₁ * n))
   (M₂ : BitVec (k₂ * n))
-  := mutually_orth_sat_aux M₁ M₂ (k₁-1) (k₂-1)
+  (i j : ℕ) : Bool :=
+  match j with
+  | 0 => !((M₁.row i).dot_product (M₂.row 0))
+  | j' + 1 => !((M₁.row i).dot_product (M₂.row j)) && mutually_orth_row_sat_aux M₁ M₂ i j'
 
+def mutually_orth_sat_aux
+  {n k₁ k₂ : ℕ}
+  [NeZero n]
+  [NeZero k₂]
+  (M₁ : BitVec (k₁ * n))
+  (M₂ : BitVec (k₂ * n))
+  (i : ℕ) : Bool :=
+  match i with
+  | 0 => mutually_orth_row_sat_aux M₁ M₂ 0 (k₂ - 1)
+  | i' + 1 => mutually_orth_row_sat_aux M₁ M₂ i (k₂ - 1) && mutually_orth_sat_aux M₁ M₂ i'
+
+def bitvec_mutually_orth_nat
+  {n k₁ k₂ : ℕ}
+  [NeZero n]
+  [NeZero k₁]
+  [NeZero k₂]
+  (M₁ : BitVec (k₁ * n))
+  (M₂ : BitVec (k₂ * n)) : Prop :=
+  mutually_orth_sat_aux M₁ M₂ (k₁ - 1)
 
 @[simp]
 def nonzero_aux {r : ℕ} (coeffs : BitVec r) (i : ℕ) :=
@@ -150,7 +175,7 @@ def linear_indep_SAT {r n : ℕ} (mat : BitVec (r * n)) : Prop := ∀ coeffs, !(
 def inds_strict_mono_aux {k r : ℕ} (inds : Fin r → Fin k) (i : Fin r) (prev : ℕ) : Bool :=
   let b := (inds i).1.blt prev
   match i with
-  | ⟨0, h⟩ => b
+  | ⟨0, _⟩ => b
   | ⟨i' + 1, h⟩ => b && (inds_strict_mono_aux inds ⟨i', (Nat.lt_succ_self _).trans h⟩ (inds i).1)
 
 def inds_strict_mono {k r : ℕ} [NeZero r] (inds : Fin r → Fin k) : Prop := inds_strict_mono_aux inds ⟨r-1, Nat.sub_one_lt (NeZero.ne _)⟩ k

@@ -102,5 +102,11 @@ def prod_kraus_is_kraus_prod {κ₁ κ₂ : Type*} [Fintype κ₁] [DecidableEq 
 --def two_qubit_bit_flip (p : ℝ) (hp1 : 0 ≤ p) (hp2 : 0 ≤ 1-p) := (bit_flip_channel p hp1 hp2) ⊗ₖ (bit_flip_channel p hp1 hp2)
 
 
+/-
+Unused sketch.  The maintained distance examples do not import the channel
+development, and the intended API for arbitrary probability-unitary Kraus
+families is not settled yet.
 def of_kraus_prob_unitary {n : ℕ} (pfun : Fin n → ℝ) (hpfun1 : ∀ i, 0 ≤ pfun i) (hpfun2 : ∀ i, 0 ≤ 1 - pfun i)
-: CPTPMap Qubit Qubit ℂ := by admit
+: CPTPMap Qubit Qubit ℂ := by
+  ...
+-/
