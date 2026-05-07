@@ -624,6 +624,117 @@ lemma linear_indep_SAT_correct {r n : ℕ} [NeZero r] (M : Matrix (Fin r) (Fin n
     rwa [nonzero_correct]
   apply (hd h_f)
 
+lemma mutually_orth_row_sat_aux_correct
+    {k₁ k₂ n : ℕ}
+    [NeZero n]
+    (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+    (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2))
+    (i : Fin k₁) :
+    ∀ idx, idx < k₂ →
+      (mutually_orth_row_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) i.val idx ↔
+        ∀ j : Fin k₂, j.val ≤ idx → M₁ i ⬝ᵥ M₂ j = 0) := by
+  intro idx hidx
+  induction' idx with idx ih
+  · rw [show mutually_orth_row_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) i.val 0 =
+        !(((flatten_matrix M₁).row i.val).dot_product ((flatten_matrix M₂).row 0)) by rfl]
+    rw [row_correct M₁ i, row_correct M₂ ⟨0, hidx⟩, dot_product_correct]
+    constructor
+    · intro h j hj
+      have hj0 : j = ⟨0, hidx⟩ := by
+        apply Fin.ext
+        exact Nat.eq_zero_of_le_zero hj
+      subst hj0
+      simp only [Bool.not_eq_eq_eq_not, Bool.not_true, beq_eq_false_iff_ne] at h
+      exact (zmod2_ne_one_iff_eq_zero _).1 h
+    · intro h
+      have hz := h ⟨0, hidx⟩ le_rfl
+      rw [hz]
+      decide
+  · have hidx' : idx < k₂ := Nat.lt_of_succ_lt hidx
+    change (!(((flatten_matrix M₁).row i.val).dot_product ((flatten_matrix M₂).row (idx + 1))) &&
+        mutually_orth_row_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) i.val idx ↔
+      ∀ j : Fin k₂, j.val ≤ idx + 1 → M₁ i ⬝ᵥ M₂ j = 0)
+    rw [row_correct M₁ i, row_correct M₂ ⟨idx + 1, hidx⟩, dot_product_correct]
+    simp only [Bool.and_eq_true, ih hidx']
+    constructor
+    · rintro ⟨hlast, hprev⟩ j hj
+      by_cases hjval : j.val = idx + 1
+      · have hjfin : j = ⟨idx + 1, hidx⟩ := Fin.ext hjval
+        subst hjfin
+        simp only [Bool.not_eq_eq_eq_not, Bool.not_true, beq_eq_false_iff_ne] at hlast
+        exact (zmod2_ne_one_iff_eq_zero _).1 hlast
+      · exact hprev j (Nat.le_of_lt_succ (lt_of_le_of_ne hj hjval))
+    · intro h
+      constructor
+      · have hz := h ⟨idx + 1, hidx⟩ le_rfl
+        rw [hz]
+        decide
+      · intro j hj
+        exact h j (Nat.le_trans hj (Nat.le_succ idx))
+
+lemma mutually_orth_sat_aux_correct
+    {k₁ k₂ n : ℕ}
+    [NeZero n]
+    [NeZero k₂]
+    (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+    (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) :
+    ∀ idx, idx < k₁ →
+      (mutually_orth_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) idx ↔
+        ∀ i : Fin k₁, i.val ≤ idx → ∀ j : Fin k₂, M₁ i ⬝ᵥ M₂ j = 0) := by
+  intro idx hidx
+  induction' idx with idx ih
+  · rw [show mutually_orth_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) 0 =
+        mutually_orth_row_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) 0 (k₂ - 1) by rfl]
+    rw [mutually_orth_row_sat_aux_correct M₁ M₂ ⟨0, hidx⟩ (k₂ - 1)
+      (Nat.sub_lt (NeZero.pos k₂) zero_lt_one)]
+    constructor
+    · intro h i hi j
+      have hi0 : i = ⟨0, hidx⟩ := by
+        apply Fin.ext
+        exact Nat.eq_zero_of_le_zero hi
+      subst hi0
+      exact h j (Nat.le_sub_one_of_lt j.2)
+    · intro h j hj
+      exact h ⟨0, hidx⟩ le_rfl j
+  · have hidx' : idx < k₁ := Nat.lt_of_succ_lt hidx
+    change (mutually_orth_row_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) (idx + 1) (k₂ - 1) &&
+        mutually_orth_sat_aux (flatten_matrix M₁) (flatten_matrix M₂) idx ↔
+      ∀ i : Fin k₁, i.val ≤ idx + 1 → ∀ j : Fin k₂, M₁ i ⬝ᵥ M₂ j = 0)
+    simp only [
+      Bool.and_eq_true,
+      mutually_orth_row_sat_aux_correct M₁ M₂ ⟨idx + 1, hidx⟩ (k₂ - 1)
+        (Nat.sub_lt (NeZero.pos k₂) zero_lt_one),
+      ih hidx']
+    constructor
+    · rintro ⟨hlast, hprev⟩ i hi j
+      by_cases hival : i.val = idx + 1
+      · have hifin : i = ⟨idx + 1, hidx⟩ := Fin.ext hival
+        subst hifin
+        exact hlast j (Nat.le_sub_one_of_lt j.2)
+      · exact hprev i (Nat.le_of_lt_succ (lt_of_le_of_ne hi hival)) j
+    · intro h
+      constructor
+      · intro j hj
+        exact h ⟨idx + 1, hidx⟩ le_rfl j
+      · intro i hi j
+        exact h i (Nat.le_trans hi (Nat.le_succ idx)) j
+
+theorem mutually_orth_nat_correct
+  {k₁ k₂ n : ℕ}
+  [NeZero k₁]
+  [NeZero k₂]
+  [NeZero n]
+  (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+  (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) :
+  bitvec_mutually_orth_nat (flatten_matrix M₁) (flatten_matrix M₂) ↔ M₁.mutually_orth_rows M₂ := by
+  unfold bitvec_mutually_orth_nat
+  rw [mutually_orth_sat_aux_correct M₁ M₂ (k₁ - 1) (Nat.sub_lt (NeZero.pos k₁) zero_lt_one)]
+  constructor
+  · intro h i j
+    exact h i (Nat.le_sub_one_of_lt i.2) j
+  · intro h i _hi j
+    exact h i j
+
 theorem mutually_orth_correct
   {k₁ k₂ n : ℕ}
   [NeZero k₁]
