@@ -53,6 +53,8 @@ This theorem gives a lower bound for the distance of the 72-qubit bivariate bicy
  - Open the directory in VSCode for infoview access to files.
 
  ## Future Directions
+ - Figure out how far the framework currently scales, and where the bottlenecks are.
+   Then, push further until we reach the $$[[144, 12, 12]]$$ BB code, or even $$[[288, 12, 18]]$$.
  - Formalization of codes with pen-and-paper-proof-based distance specifications like the Toric Code.
  - Including different error channels and proving the correctness of code distance under them.
  - Expansion to qudit codes.
