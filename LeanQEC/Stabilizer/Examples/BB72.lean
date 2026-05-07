@@ -3,6 +3,7 @@ import Lean.Elab.Tactic.BVDecide
 import Std.Tactic.BVDecide
 import LeanQEC.ComputerAlgebra.BitVecCorrectness
 import LeanQEC.Stabilizer.BB
+import LeanQEC.Stabilizer.BitVecSATToDist
 
 set_option maxRecDepth 9999999
 
@@ -18,10 +19,25 @@ def BB72_Z : BitVec (36 * 72) :=
 def BB72_Z_ker : BitVec (42 * 72) :=
   0x80000004e0000c2524400000082000863b61200000041000c31db010000008800061a44608000004400030da03040000087000184cd202000008c0000013450100000460000209a2008000086000032d2200400004300001969100200008900000e1f60010000490000073b60008000cb0000032d30004000cd000003bf70002000ce000003f650001000c20000036410000800c40000032d30000400c700000309a0000200810008229f000001004d0004117b500000808e00020a16400000404700010589200000208b0000806d70000010480000400060000008850000229f300000044f00001179400000028f00000a15400000014a0000053e700000002d000000b6d00000001b0000006db000000000800104904000000000400082482000000000200041241000000000100820920000000000080410490000000000040208248000000000020824804000000000010412402000000000008209201000000000004124120000000000002092090000000000001049048
 
+def bitvecMatrix {r n : Nat} (M : BitVec (r * n)) : Matrix (Fin r) (Fin n) (ZMod 2) :=
+  fun i j => if M[i.val * n + j.val]! then 1 else 0
+
+def BB72_X_ker_mat : Matrix (Fin 42) (Fin 72) (ZMod 2) :=
+  bitvecMatrix BB72_X_ker
+
+def BB72_Z_ker_mat : Matrix (Fin 42) (Fin 72) (ZMod 2) :=
+  bitvecMatrix BB72_Z_ker
+
 set_option exponentiation.threshold 3000 in
 lemma BB72_X_correct : BB72_X = flatten_matrix H_X_72 := by decide
 set_option exponentiation.threshold 3000 in
 lemma BB72_Z_correct : BB72_Z = flatten_matrix H_Z_72 := by decide
+
+set_option exponentiation.threshold 4000 in
+lemma BB72_X_ker_correct : BB72_X_ker = flatten_matrix BB72_X_ker_mat := by decide
+
+set_option exponentiation.threshold 4000 in
+lemma BB72_Z_ker_correct : BB72_Z_ker = flatten_matrix BB72_Z_ker_mat := by decide
 
 def indrows : Fin 30 → Fin 36 := ![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 30, 31]
 
@@ -70,6 +86,34 @@ lemma BB_Z_rank : 30 ≤ H_Z_72.rank := by
     bv_decide
   exact StrictMono_indrows
 
+set_option maxHeartbeats 0 in
+lemma BB_X_ker_rank : 42 ≤ BB72_X_ker_mat.rank := by
+  apply Matrix.rank_le_of_submatrix_independent _ id (strictMono_id)
+  rw [Matrix.submatrix_id_id]
+  rw [linear_indep_SAT_correct, ←BB72_X_ker_correct, BB72_X_ker]
+  simp only [linear_indep_SAT, nonzero, nonzero_aux, Nat.add_one_sub_one, Nat.lt_add_one,
+    getElem!_pos, Nat.one_lt_ofNat, Nat.ofNat_pos, Bool.decide_or, Bool.decide_eq_true,
+    Bool.or_eq_true, all_dot_zero, all_dot_zero_aux, dot_col_zero, dot_col_aux, Nat.reduceMul,
+    BitVec.ofNat_eq_ofNat, Nat.reduceAdd, BitVec.reduceGetElem, Bool.and_true, one_mul,
+    Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
+    bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
+    Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
+  bv_decide
+
+set_option maxHeartbeats 0 in
+lemma BB_Z_ker_rank : 42 ≤ BB72_Z_ker_mat.rank := by
+  apply Matrix.rank_le_of_submatrix_independent _ id (strictMono_id)
+  rw [Matrix.submatrix_id_id]
+  rw [linear_indep_SAT_correct, ←BB72_Z_ker_correct, BB72_Z_ker]
+  simp only [linear_indep_SAT, nonzero, nonzero_aux, Nat.add_one_sub_one, Nat.lt_add_one,
+    getElem!_pos, Nat.one_lt_ofNat, Nat.ofNat_pos, Bool.decide_or, Bool.decide_eq_true,
+    Bool.or_eq_true, all_dot_zero, all_dot_zero_aux, dot_col_zero, dot_col_aux, Nat.reduceMul,
+    BitVec.ofNat_eq_ofNat, Nat.reduceAdd, BitVec.reduceGetElem, Bool.and_true, one_mul,
+    Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
+    bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
+    Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
+  bv_decide
+
 -- can extractLsb with uncertain index at runtime by right shifting then extract
 example (x : BitVec 5) (y : BitVec 3) : ((y >>> x).extractLsb' 0 3) ≤ 7 := by
   bv_decide
@@ -84,6 +128,20 @@ set_option exponentiation.threshold 3000
 set_option maxHeartbeats 0
 lemma BB72_XZ_orth : H_X_72.mutually_orth_rows H_Z_72 := by
   rw [←mutually_orth_nat_correct, ←BB72_X_correct, ←BB72_Z_correct]
+  unfold bitvec_mutually_orth_nat
+  native_decide
+
+set_option exponentiation.threshold 3000
+set_option maxHeartbeats 0
+lemma BB72_X_ker_orth : H_X_72.mutually_orth_rows BB72_X_ker_mat := by
+  rw [←mutually_orth_nat_correct, ←BB72_X_correct, ←BB72_X_ker_correct]
+  unfold bitvec_mutually_orth_nat
+  native_decide
+
+set_option exponentiation.threshold 3000
+set_option maxHeartbeats 0
+lemma BB72_Z_ker_orth : H_Z_72.mutually_orth_rows BB72_Z_ker_mat := by
+  rw [←mutually_orth_nat_correct, ←BB72_Z_correct, ←BB72_Z_ker_correct]
   unfold bitvec_mutually_orth_nat
   native_decide
 
@@ -117,4 +175,20 @@ lemma bb72_test_x : lt_dist_sat (n := 72) (stabdim := 36) (kerdim := 42) BB72_Z 
     rowspace_constraints_aux, not_and, and_imp]
   bv_decide (timeout := 999) (maxSteps := 9999999)
 
-#print axioms bb72_test_z
+lemma BB72_X_ker_mat_correct : BB72_X_ker_mat.is_ker_for H_X_72 := by
+  apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ BB_X_rank BB_X_ker_rank (by norm_num) BB72_X_ker_orth
+
+lemma BB72_Z_ker_mat_correct : BB72_Z_ker_mat.is_ker_for H_Z_72 := by
+  apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ BB_Z_rank BB_Z_ker_rank (by norm_num) BB72_Z_ker_orth
+
+def BB72_css : CSS_pair 72 36 36 :=
+  CSS_pair.of_matrices H_X_72 H_Z_72 BB72_XZ_orth
+
+theorem BB72_dist_6 : 6 ≤ BB72_css.toBSM.distance (by norm_num) := by
+  apply bitvec_sat_translation_correct BB72_css
+    BB72_Z_ker_mat BB72_Z_ker_mat_correct
+    BB72_X_ker_mat BB72_X_ker_mat_correct (by norm_num) _ _
+  · rw [BB72_css, CSS_pair.of_matrices, ←BB72_X_correct, ←BB72_Z_ker_correct]
+    exact bb72_test_z
+  · rw [BB72_css, CSS_pair.of_matrices, ←BB72_Z_correct, ←BB72_X_ker_correct]
+    exact bb72_test_x
