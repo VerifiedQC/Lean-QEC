@@ -40,6 +40,12 @@ theorem bitvec_sat_translation_correct
 
 This theorem links the Binary Symplectic distance of a CSS code to the SAT formulation of the distance, allowing for automatic distance verification.
 
+```lean
+theorem BB72_dist_6 : 6 ≤ BB72_css.toBSM.distance (by norm_num)
+```
+
+This theorem gives a lower bound for the distance of the 72-qubit bivariate bicycle code.
+
  ## Installing Lean-QEC
  - Clone this repository.
  - In a terminal in the top-level directory, run `lake exe cache get` to fetch Mathlib and dependencies.
