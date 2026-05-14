@@ -42,20 +42,3 @@ variable {l m : ℕ} [NeZero l] [NeZero m] (A₁ A₂ A₃ B₁ B₂ B₃ : Bool
 
 
 --def BB_HX := (BB_matrix l m A₁ A₂ A₃).hstack_fin (BB_matrix l m B₁ B₂ B₃)
-
-
-def BB_72_A :=
-  let l := 6
-  let m := 6
-  BB_matrix l m (true, 3) (false, 1) (false, 2)
-
-def BB_72_B :=
-  let l := 6
-  let m := 6
-  BB_matrix l m (false, 3) (true, 1) (true, 2)
-
-
-
-def H_X_72 := BB_72_A.hstack_fin BB_72_B
-
-def H_Z_72 := BB_72_B.transpose.hstack_fin (BB_72_A.transpose)

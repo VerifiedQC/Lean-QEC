@@ -31,6 +31,9 @@ def Matrix.toBitVecs {i j : ℕ} (M : Matrix (Fin i) (Fin j) (ZMod 2)) : (Fin i)
 def flatten_matrix {i j : ℕ} (M : Matrix (Fin i) (Fin j) (ZMod 2)) : BitVec (i * j) :=
   BitVec.appendList M.toBitVecs
 
+def BitVecMatrix {r n : Nat} (M : BitVec (r * n)) : Matrix (Fin r) (Fin n) (ZMod 2) :=
+  fun i j => if M[i.val * n + j.val]! then 1 else 0
+
 --function transforming error vector with limited support into index vector
 def index_vec {n k : ℕ} (x : Fin n → ZMod 2) (hx : hammingNorm x ≤ k) (hx' : hammingNorm x ≠ 0) : Fin k → Fin n :=
   let S := Finset.univ.filter (fun j : Fin n => x j ≠ 0);
@@ -339,6 +342,29 @@ lemma flatten_matrix_get {i j : ℕ} (M : Matrix (Fin i) (Fin j) (ZMod 2)) (r : 
   have h := congrArg (fun bv : BitVec j => bv.getLsbD c.val) (row_correct M r)
   simp [BitVec.row, vec_to_BitVec] at h
   simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using h
+
+lemma flatten_BitVecMatrix_id {r n : ℕ} (M : BitVec (r * n)) : flatten_matrix (BitVecMatrix M) = M := by
+  by_cases hn : n = 0
+  · subst hn
+    apply BitVec.eq_of_getElem_eq
+    intro i hi
+    omega
+  · apply BitVec.eq_of_getElem_eq
+    intro i hi
+    have hn_pos : 0 < n := Nat.pos_of_ne_zero hn
+    have hr : i / n < r := (Nat.div_lt_iff_lt_mul hn_pos).mpr hi
+    have hc : i % n < n := Nat.mod_lt i hn_pos
+    have hget := flatten_matrix_get (BitVecMatrix M) ⟨i / n, hr⟩ ⟨i % n, hc⟩
+    have heq : (⟨i / n, hr⟩ : Fin r).val * n + (⟨i % n, hc⟩ : Fin n).val = i := by
+      change i / n * n + i % n = i
+      rw [Nat.mul_comm (i / n) n]
+      exact Nat.div_add_mod i n
+    simp only [BitVecMatrix, heq] at hget
+    rw [BitVec.getElemBang_eq_getLsbD, BitVec.getLsbD_eq_getElem hi] at hget
+    generalize hbit : M[i]! = bit at hget
+    rw [BitVec.getElemBang_eq_getLsbD, BitVec.getLsbD_eq_getElem hi] at hbit
+    rw [hget, ←hbit]
+    cases M[i] <;> decide
 
 lemma zmod2_dot_bool_step (a b s : ZMod 2) :
     (((a.val == 1) && (b.val == 1)) ^^ (s == 1)) =
