@@ -152,7 +152,7 @@ def gen_BB_skeleton(filename, l, m, alist, blist, d):
         if len(blist) == 3:
             f.write(f"  BB3_matrix l m ({x_to_true(b1[0])}, {b1[1]}) ({x_to_true(b2[0])}, {b2[1]}) ({x_to_true(b3[0])}, {b3[1]})\n")
         else:
-            f.write(f"  BB3_matrix l m ({x_to_true(b1[0])}, {b1[1]}) ({x_to_true(b2[0])}, {b2[1]}) ({x_to_true(b3[0])}, {b3[1]}) ({x_to_true(b4[0])}, {b4[1]})\n")
+            f.write(f"  BB4_matrix l m ({x_to_true(b1[0])}, {b1[1]}) ({x_to_true(b2[0])}, {b2[1]}) ({x_to_true(b3[0])}, {b3[1]}) ({x_to_true(b4[0])}, {b4[1]})\n")
         f.write(f"def BB{s}_X_mat := BB{s}_A.hstack_fin BB{s}_B\n")
         f.write(f"def BB{s}_Z_mat := BB{s}_B.transpose.hstack_fin BB{s}_A.transpose\n")
         f.write(f"def BB{s}_X : BitVec ({X.shape[0]} * {s}) := {matrix_to_nat(X)[0]}\n")
@@ -290,5 +290,5 @@ def gen_BB_skeleton(filename, l, m, alist, blist, d):
 #gen_BB_skeleton("LeanQEC/Stabilizer/Examples/BB/BB72.lean", 6, 6, (x, 3), (y, 1), (y, 2), (x, 1), (x, 2), (y, 3), 6)
 #gen_BB_skeleton("LeanQEC/Stabilizer/Examples/BB/BB90.lean", 15, 3, (x, 9), (y, 1), (y, 2), (y, 0), (x, 2), (x, 7), 10)
 #gen_BB_skeleton("LeanQEC/Stabilizer/Examples/BB/BB108.lean", 9, 6, (x, 3), (y, 1), (y, 2), (y, 3), (x, 1), (x, 2), 10)
-#gen_BB_skeleton("LeanQEC/Stabilizer/Examples/BB/BB70.lean", 7, 5, ((y, 2), (x, 2), (x, 3), (x, 4)), ((y, 1), (x, 1), (x, 3)), 9)
-#gen_BB_skeleton("LeanQEC/Stabilizer/Examples/BB/GB54.lean", 27, 1, ((x, 8), (x, 13), (x, 15), (x, 16)), ((x, 7), (x, 8), (x, 10), (x, 15)), 10)
+gen_BB_skeleton("LeanQEC/Stabilizer/Examples/BB/BB70.lean", 7, 5, ((y, 2), (x, 2), (x, 3), (x, 4)), ((y, 1), (x, 1), (x, 3)), 9)
+gen_BB_skeleton("LeanQEC/Stabilizer/Examples/BB/GB54.lean", 27, 1, ((x, 8), (x, 13), (x, 15), (x, 16)), ((x, 7), (x, 8), (x, 10), (x, 15)), 10)
