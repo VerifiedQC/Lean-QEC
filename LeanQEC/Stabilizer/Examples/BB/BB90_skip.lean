@@ -5,6 +5,7 @@ import LeanQEC.ComputerAlgebra.BitVecCorrectness
 import LeanQEC.Stabilizer.BB
 import LeanQEC.Stabilizer.BitVecSATToDist
 set_option maxRecDepth 9999999
+set_option debug.skipKernelTC true
 def BB90_A :=
   let l := 15
   let m := 3

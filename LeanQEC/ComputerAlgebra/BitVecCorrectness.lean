@@ -256,6 +256,9 @@ lemma loc_constraints_of_index {n k : ℕ} (x : Fin n → (ZMod 2)) (hx : hammin
     rw [if_pos hjlt]
     simpa [S] using hj
 
+lemma symmetry_constraints_iff_index {n k : ℕ} (x : Fin k → Fin n) :
+  symmetry_constraints (vec_to_BitVec' x) ↔ ∀ i j, i ≤ j → x i ≤ x j := sorry
+
 lemma BitVec.shift_extract_eq {n k : ℕ} (M : BitVec (k * n)) (r : ℕ) :
    (M >>> (r * n)).extractLsb' 0 n = M.extractLsb' (r * n) n := by
    -- 1. Bitvectors are equal if all their bits are equal.

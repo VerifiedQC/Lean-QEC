@@ -48,6 +48,19 @@ def loc_constraints
   (errs : BitVec n) :=
   loc_constraints_aux locs errs (n-1)
 
+def symmetry_constraints_aux
+  {nlog k : ℕ}
+  (locs : BitVec (k * nlog))
+  (c : ℕ) (prev : BitVec nlog) : Bool :=
+  let val := locs.extractLsb' (c * nlog) nlog
+  match c with
+  | 0 => val ≤ prev
+  | c' + 1 => (val ≤ prev) && (symmetry_constraints_aux locs c' val)
+
+def symmetry_constraints
+  {nlog k : ℕ}
+  (locs : BitVec (k * nlog)) :=
+  symmetry_constraints_aux locs (k - 1) (2 ^ nlog)
 
 def dot_product_aux {n : ℕ} [NeZero n] (x y : BitVec n) (c : ℕ) (hc : c < n) : Bool :=
   let b := x[c] && y[c]
@@ -99,7 +112,7 @@ def lt_dist_sat
   (ker : BitVec (kerdim * n))
   (k nlog : ℕ) : Prop :=
   ∀ (locs : (BitVec (k * nlog))) (errs : BitVec n),
-  ¬ (loc_constraints locs errs ∧ parity_constraints stabs errs ∧ rowspace_constraints ker errs)
+  ¬ (loc_constraints locs errs ∧ symmetry_constraints locs ∧ parity_constraints stabs errs ∧ rowspace_constraints ker errs)
 
 
 def bitvec_mutually_orth

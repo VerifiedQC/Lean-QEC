@@ -5,7 +5,6 @@ import LeanQEC.ComputerAlgebra.BitVecCorrectness
 import LeanQEC.Stabilizer.BitVecSATToDist
 
 set_option maxRecDepth 9999999
-
 def steane_mat : BitVec (3 * 7) :=
   0x1d2d69
 
@@ -81,7 +80,7 @@ set_option maxHeartbeats 0 in
 lemma steane_dist : lt_dist_sat (flatten_matrix steane_mat') (flatten_matrix steane_ker') 2 3
   := by
   rw [←steane_mat_correct, ←steane_ker_correct, steane_mat, steane_ker]
-  simp only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
+  simp only [lt_dist_sat, symmetry_constraints, symmetry_constraints_aux, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
     Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
     loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
     Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,

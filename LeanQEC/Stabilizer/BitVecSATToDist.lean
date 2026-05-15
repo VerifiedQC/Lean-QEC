@@ -73,8 +73,9 @@ lemma lt_dist_sat_sound_contrapositive
     · apply lt_of_le_of_lt (Nat.zero_le _) hamming_x
     let I := index_vec x hamming_x (hammingNorm_ne_zero_iff.2 hx_ne_zero)
     apply (htest (vec_to_BitVec' I) (vec_to_BitVec x))
-    refine ⟨?_, ?_, ?_⟩
+    refine ⟨?_, ?_, ?_, ?_⟩
     · apply loc_constraints_of_index
+    · sorry
     · rw [parity_constraints_correct]
       exact ker_x
     apply (rowspace_constraints_correct H₂_ker_correct).2 rowspace_x

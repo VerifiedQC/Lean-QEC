@@ -109,7 +109,7 @@ set_option maxHeartbeats 0 in
 lemma BB70_dist_z : lt_dist_sat BB70_X BB70_Z_ker 8 7 := by
   rw [BB70_X, BB70_Z_ker]
   simp (maxSteps := 9999999) only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
-  Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
+  symmetry_constraints, symmetry_constraints_aux,  Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
   loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
   Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
@@ -120,7 +120,7 @@ set_option maxHeartbeats 0 in
 lemma BB70_dist_x : lt_dist_sat BB70_Z BB70_X_ker 8 7 := by
   rw [BB70_Z, BB70_X_ker]
   simp (maxSteps := 9999999) only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
-  Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
+  symmetry_constraints, symmetry_constraints_aux,  Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
   loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
   Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,

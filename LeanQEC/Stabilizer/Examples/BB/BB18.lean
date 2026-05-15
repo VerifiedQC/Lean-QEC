@@ -24,8 +24,10 @@ lemma StrictMono_indrowsx : StrictMono indrowsx := by decide
 def indrowsz : Fin 7 → Fin 9 := ![0, 1, 2, 3, 4, 5, 6]
 lemma StrictMono_indrowsz : StrictMono indrowsz := by decide
 def BB18_X_submat : BitVec (7 * 18) := 0x290c11a4a034b0149620c25418588a0b
+set_option exponentiation.threshold 10000 in
 lemma BB18_X_submat_correct : BB18_X_submat = flatten_matrix (BB18_X_mat.submatrix indrowsx id) := by decide
 def BB18_Z_submat : BitVec (7 * 18) := 0x290c11a4a034b0149620c25418588a0b
+set_option exponentiation.threshold 10000 in
 lemma BB18_Z_submat_correct : BB18_Z_submat = flatten_matrix (BB18_Z_mat.submatrix indrowsz id) := by decide
 def BB18_X_ker_mat := BitVecMatrix BB18_X_ker
 def BB18_Z_ker_mat := BitVecMatrix BB18_Z_ker
@@ -106,25 +108,25 @@ lemma BB18_Z_ker_orth : BB18_Z_mat.mutually_orth_rows BB18_Z_ker_mat := by
 set_option maxHeartbeats 0 in
 lemma BB18_dist_z : lt_dist_sat BB18_X BB18_Z_ker 3 5 := by
   rw [BB18_X, BB18_Z_ker]
-  simp only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
-  Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
+  simp (maxSteps := 9999999) only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
+  symmetry_constraints, symmetry_constraints_aux,  Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
   loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
   Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_decide (timeout := 999) (maxSteps := 9999999)
+  bv_decide (timeout := 9999) (maxSteps := 9999999)
 set_option maxHeartbeats 0 in
 lemma BB18_dist_x : lt_dist_sat BB18_Z BB18_X_ker 3 5 := by
   rw [BB18_Z, BB18_X_ker]
-  simp only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
-  Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
+  simp (maxSteps := 9999999) only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
+  symmetry_constraints, symmetry_constraints_aux,  Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
   loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
   Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_decide (timeout := 999) (maxSteps := 9999999)
+  bv_decide (timeout := 9999) (maxSteps := 9999999)
 lemma BB18_X_ker_is_ker : BB18_X_ker_mat.is_ker_for BB18_X_mat := by
   apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ BB18_X_rank BB18_X_ker_rank (by norm_num) BB18_X_ker_orth
 lemma BB18_Z_ker_is_ker : BB18_Z_ker_mat.is_ker_for BB18_Z_mat := by

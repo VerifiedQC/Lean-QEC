@@ -24,8 +24,10 @@ lemma StrictMono_indrowsx : StrictMono indrowsx := by decide
 def indrowsz : Fin 16 → Fin 18 := ![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 lemma StrictMono_indrowsz : StrictMono indrowsz := by decide
 def BB36_X_submat : BitVec (16 * 36) := 0x6000780009400070005800070002c0007000128000e000b0000e00058000e000250001c00160001c000b0001c0004a00038002c000380016000380009400070005800070002c0007
+set_option exponentiation.threshold 10000 in
 lemma BB36_X_submat_correct : BB36_X_submat = flatten_matrix (BB36_X_mat.submatrix indrowsx id) := by decide
 def BB36_Z_submat : BitVec (16 * 36) := 0xe000290001c00068001c00034001c0005200038000d00038000680038000a400070001a00070000d0007000148000e00034000e0001a000e000290001e00060001d00030001c8005
+set_option exponentiation.threshold 10000 in
 lemma BB36_Z_submat_correct : BB36_Z_submat = flatten_matrix (BB36_Z_mat.submatrix indrowsz id) := by decide
 def BB36_X_ker_mat := BitVecMatrix BB36_X_ker
 def BB36_Z_ker_mat := BitVecMatrix BB36_Z_ker
@@ -106,25 +108,25 @@ lemma BB36_Z_ker_orth : BB36_Z_mat.mutually_orth_rows BB36_Z_ker_mat := by
 set_option maxHeartbeats 0 in
 lemma BB36_dist_z : lt_dist_sat BB36_X BB36_Z_ker 3 6 := by
   rw [BB36_X, BB36_Z_ker]
-  simp only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
-  Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
+  simp (maxSteps := 9999999) only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
+  symmetry_constraints, symmetry_constraints_aux,  Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
   loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
   Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_decide (timeout := 999) (maxSteps := 9999999)
+  bv_decide (timeout := 9999) (maxSteps := 9999999)
 set_option maxHeartbeats 0 in
 lemma BB36_dist_x : lt_dist_sat BB36_Z BB36_X_ker 3 6 := by
   rw [BB36_Z, BB36_X_ker]
-  simp only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
-  Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
+  simp (maxSteps := 9999999) only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
+  symmetry_constraints, symmetry_constraints_aux,  Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
   loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
   Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_decide (timeout := 999) (maxSteps := 9999999)
+  bv_decide (timeout := 9999) (maxSteps := 9999999)
 lemma BB36_X_ker_is_ker : BB36_X_ker_mat.is_ker_for BB36_X_mat := by
   apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ BB36_X_rank BB36_X_ker_rank (by norm_num) BB36_X_ker_orth
 lemma BB36_Z_ker_is_ker : BB36_Z_ker_mat.is_ker_for BB36_Z_mat := by
