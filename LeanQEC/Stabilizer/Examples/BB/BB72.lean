@@ -24,8 +24,10 @@ lemma StrictMono_indrowsx : StrictMono indrowsx := by decide
 def indrowsz : Fin 30 → Fin 36 := ![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 30, 31]
 lemma StrictMono_indrowsz : StrictMono indrowsz := by decide
 def BB72_X_submat : BitVec (30 * 72) := 0x40000008230000200020000004118000100020100000803000020012000000401800010009000000200c0000800480000010060000408201000000000c0020410080000000840010208040000000c0000810480000000060000408240000000030000204120000000018000102080400080000300001040200040002100000820100020003000000412000010001800000209000008000c0000010480000400060000008201000200000c0000410080010000840000208040008000c0000010480000400060000008240000200030000004120000100018000002080400080000300001040200040002100000820100020003000000412000010001800000209000008000c000001048000040006
+set_option exponentiation.threshold 10000 in
 lemma BB72_X_submat_correct : BB72_X_submat = flatten_matrix (BB72_X_mat.submatrix indrowsx id) := by decide
 def BB72_Z_submat : BitVec (30 * 72) := 0x840002000402080000c000010002010400000060002000012080000030001000201040000210000800100820000300000400080410000006000200001208000003000100000904000001800080000482000000c0004000804100000840002000402080000c0000100020104080001800000000482040000c0000000024102000060000000012081000030000000201040800210000000100820400300000000080410200006008000001200100003004000000900080001802000000480040000c0100000804002000840080000402001000c0004000020100080001882000000400040000c410000002000200006208000001000100003104000020000080021082000010000040030041000008
+set_option exponentiation.threshold 10000 in
 lemma BB72_Z_submat_correct : BB72_Z_submat = flatten_matrix (BB72_Z_mat.submatrix indrowsz id) := by decide
 def BB72_X_ker_mat := BitVecMatrix BB72_X_ker
 def BB72_Z_ker_mat := BitVecMatrix BB72_Z_ker
@@ -106,25 +108,25 @@ lemma BB72_Z_ker_orth : BB72_Z_mat.mutually_orth_rows BB72_Z_ker_mat := by
 set_option maxHeartbeats 0 in
 lemma BB72_dist_z : lt_dist_sat BB72_X BB72_Z_ker 5 7 := by
   rw [BB72_X, BB72_Z_ker]
-  simp only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
+  simp (maxSteps := 9999999) only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
   Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
   loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
   Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_decide (timeout := 999) (maxSteps := 9999999)
+  bv_decide (timeout := 9999) (maxSteps := 9999999)
 set_option maxHeartbeats 0 in
 lemma BB72_dist_x : lt_dist_sat BB72_Z BB72_X_ker 5 7 := by
   rw [BB72_Z, BB72_X_ker]
-  simp only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
+  simp (maxSteps := 9999999) only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
   Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
   loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
   Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_decide (timeout := 999) (maxSteps := 9999999)
+  bv_decide (timeout := 9999) (maxSteps := 9999999)
 lemma BB72_X_ker_is_ker : BB72_X_ker_mat.is_ker_for BB72_X_mat := by
   apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ BB72_X_rank BB72_X_ker_rank (by norm_num) BB72_X_ker_orth
 lemma BB72_Z_ker_is_ker : BB72_Z_ker_mat.is_ker_for BB72_Z_mat := by
