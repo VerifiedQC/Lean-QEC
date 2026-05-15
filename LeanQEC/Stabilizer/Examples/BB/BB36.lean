@@ -19,16 +19,16 @@ def BB36_X : BitVec (18 * 36) := 0xa00138000c000b8000600078000940007000580007000
 def BB36_Z : BitVec (18 * 36) := 0xe00034000e0001a000e000290001c00068001c00034001c0005200038000d00038000680038000a400070001a00070000d0007000148000e00034000e0001a000e000290001e00060001d00030001c8005
 def BB36_X_ker : BitVec (20 * 36) := 0x88b44924145a2c12092d16890481c0000200038000040007000008000e000010001c8000000028000000018000000005000000003000000000a000000006000000001400000000c0000000028000000018000000005000000003
 def BB36_Z_ker : BitVec (20 * 36) := 0x800007000400007000200007000100000e00080000e00040000e000200001c00100001c00080001c000400003800200003800100003800080000700040000700020000700010bb9d00008bb9d00004bb9d00002e77300001dcee
-def indrowsx : Fin 16 → Fin 18 := ![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-lemma StrictMono_indrowsx : StrictMono indrowsx := by decide
-def indrowsz : Fin 16 → Fin 18 := ![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
-lemma StrictMono_indrowsz : StrictMono indrowsz := by decide
+def BB36indrowsx : Fin 16 → Fin 18 := ![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+lemma BB36StrictMono_indrowsx : StrictMono BB36indrowsx := by decide
+def BB36indrowsz : Fin 16 → Fin 18 := ![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+lemma BB36StrictMono_indrowsz : StrictMono BB36indrowsz := by decide
 def BB36_X_submat : BitVec (16 * 36) := 0x6000780009400070005800070002c0007000128000e000b0000e00058000e000250001c00160001c000b0001c0004a00038002c000380016000380009400070005800070002c0007
 set_option exponentiation.threshold 10000 in
-lemma BB36_X_submat_correct : BB36_X_submat = flatten_matrix (BB36_X_mat.submatrix indrowsx id) := by decide
+lemma BB36_X_submat_correct : BB36_X_submat = flatten_matrix (BB36_X_mat.submatrix BB36indrowsx id) := by decide
 def BB36_Z_submat : BitVec (16 * 36) := 0xe000290001c00068001c00034001c0005200038000d00038000680038000a400070001a00070000d0007000148000e00034000e0001a000e000290001e00060001d00030001c8005
 set_option exponentiation.threshold 10000 in
-lemma BB36_Z_submat_correct : BB36_Z_submat = flatten_matrix (BB36_Z_mat.submatrix indrowsz id) := by decide
+lemma BB36_Z_submat_correct : BB36_Z_submat = flatten_matrix (BB36_Z_mat.submatrix BB36indrowsz id) := by decide
 def BB36_X_ker_mat := BitVecMatrix BB36_X_ker
 def BB36_Z_ker_mat := BitVecMatrix BB36_Z_ker
 lemma BB36_X_ker_mat_correct : flatten_matrix BB36_X_ker_mat = BB36_X_ker := flatten_BitVecMatrix_id _
@@ -39,7 +39,7 @@ set_option exponentiation.threshold 10000 in
 lemma BB36_Z_correct : BB36_Z = flatten_matrix BB36_Z_mat := by decide
 set_option maxHeartbeats 0 in
 lemma BB36_X_rank : 16 ≤ BB36_X_mat.rank := by
-  apply Matrix.rank_le_of_submatrix_independent _ indrowsx StrictMono_indrowsx
+  apply Matrix.rank_le_of_submatrix_independent _ BB36indrowsx BB36StrictMono_indrowsx
   rw [linear_indep_SAT_correct,  ←BB36_X_submat_correct, BB36_X_submat]
   simp only [linear_indep_SAT, nonzero, nonzero_aux, Nat.add_one_sub_one, Nat.lt_add_one,
       getElem!_pos, Nat.one_lt_ofNat, Nat.ofNat_pos, Bool.decide_or, Bool.decide_eq_true,
@@ -51,7 +51,7 @@ lemma BB36_X_rank : 16 ≤ BB36_X_mat.rank := by
   bv_decide
 set_option maxHeartbeats 0 in
 lemma BB36_Z_rank : 16 ≤ BB36_Z_mat.rank := by
-  apply Matrix.rank_le_of_submatrix_independent _ indrowsz StrictMono_indrowsx
+  apply Matrix.rank_le_of_submatrix_independent _ BB36indrowsz BB36StrictMono_indrowsx
   rw [linear_indep_SAT_correct,  ←BB36_Z_submat_correct, BB36_Z_submat]
   simp only [linear_indep_SAT, nonzero, nonzero_aux, Nat.add_one_sub_one, Nat.lt_add_one,
       getElem!_pos, Nat.one_lt_ofNat, Nat.ofNat_pos, Bool.decide_or, Bool.decide_eq_true,

@@ -19,16 +19,16 @@ def BB54_X : BitVec (27 * 54) := 0x900804280000012010085000000240205080000800804
 def BB54_Z : BitVec (27 * 54) := 0x2a00000082010054000001040200a800000208040150000004100802a00000082010850000001040210a00004000804a100000800100942000010002010054001001040000a800200208000150004004100002a00080082000054001001040010a000200208002140004800100142000090002002840001200040000a840200200000150804004000002a10080080000054201001000000a8402002000021408040040000428100900000028402012000000508040240
 def BB54_X_ker : BitVec (31 * 54) := 0x20000019e8a47940000046f3d800800000968a00010000067f3d144200001000de140400002002d028080001948fe5401000047b001ec02000094000500040006523d1e40080011ecde000010002502d0000020019e8fe5100040046f00050000800968000a00010067f29150000201000f67b00004020028140000081948a45100001047b3d850000020940a00a00000467a3d1500000091bcde7b00000125a2d1400000039fcfe7900000016d0000000000036c0000000000000b6800000000001b600000000000005b400000000000db
 def BB54_Z_ker : BitVec (31 * 54) := 0x20001008cc288640004023d16d008001008e82a8710004021d049002001008a80e07040040215000000801008b84f03010040217082080201008bc5f4200404003b0e710008100008240200104003a0af14002100098650200044002802d140009000bc7542000140008009040003000fc71c000002023b1df8c000040808041200000823a1d7a80000108984d16000002228145a00000048bc5f57000000a08041200000018fc7fc7000000124004900000002480092000000049001240000000024924000000000492480000000009249
-def indrowsx : Fin 23 → Fin 27 := ![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20, 21, 22, 23, 24]
-lemma StrictMono_indrowsx : StrictMono indrowsx := by decide
-def indrowsz : Fin 23 → Fin 27 := ![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20, 21, 22, 23, 24]
-lemma StrictMono_indrowsz : StrictMono indrowsz := by decide
+def BB54indrowsx : Fin 23 → Fin 27 := ![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20, 21, 22, 23, 24]
+lemma BB54StrictMono_indrowsx : StrictMono BB54indrowsx := by decide
+def BB54indrowsz : Fin 23 → Fin 27 := ![0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 18, 19, 20, 21, 22, 23, 24]
+lemma BB54StrictMono_indrowsz : StrictMono BB54indrowsz := by decide
 def BB54_X_submat : BitVec (23 * 54) := 0x2402050800008008040a10000100100854000002002010a800000400402150000008008042a000001001008540000200048000a10004100100014200082002000a800010400400150000208008002a00004100100054000082002000a802010002000010a402000400002148040008000142100820000002842010400000150040208000002a00804100000054010082000000a80201040000015
 set_option exponentiation.threshold 10000 in
-lemma BB54_X_submat_correct : BB54_X_submat = flatten_matrix (BB54_X_mat.submatrix indrowsx id) := by decide
+lemma BB54_X_submat_correct : BB54_X_submat = flatten_matrix (BB54_X_mat.submatrix BB54indrowsx id) := by decide
 def BB54_Z_submat : BitVec (23 * 54) := 0xa800000208040150000004100802a00000082010850000001040210a00004000804a1000008001009420000100020100150004004100002a00080082000054001001040010a000200208002140004800100142000090002002840001200040000a840200200000150804004000002a10080080000054201001000000a8402002000021408040040000428100900000028402012000000508040240
 set_option exponentiation.threshold 10000 in
-lemma BB54_Z_submat_correct : BB54_Z_submat = flatten_matrix (BB54_Z_mat.submatrix indrowsz id) := by decide
+lemma BB54_Z_submat_correct : BB54_Z_submat = flatten_matrix (BB54_Z_mat.submatrix BB54indrowsz id) := by decide
 def BB54_X_ker_mat := BitVecMatrix BB54_X_ker
 def BB54_Z_ker_mat := BitVecMatrix BB54_Z_ker
 lemma BB54_X_ker_mat_correct : flatten_matrix BB54_X_ker_mat = BB54_X_ker := flatten_BitVecMatrix_id _
@@ -39,7 +39,7 @@ set_option exponentiation.threshold 10000 in
 lemma BB54_Z_correct : BB54_Z = flatten_matrix BB54_Z_mat := by decide
 set_option maxHeartbeats 0 in
 lemma BB54_X_rank : 23 ≤ BB54_X_mat.rank := by
-  apply Matrix.rank_le_of_submatrix_independent _ indrowsx StrictMono_indrowsx
+  apply Matrix.rank_le_of_submatrix_independent _ BB54indrowsx BB54StrictMono_indrowsx
   rw [linear_indep_SAT_correct,  ←BB54_X_submat_correct, BB54_X_submat]
   simp only [linear_indep_SAT, nonzero, nonzero_aux, Nat.add_one_sub_one, Nat.lt_add_one,
       getElem!_pos, Nat.one_lt_ofNat, Nat.ofNat_pos, Bool.decide_or, Bool.decide_eq_true,
@@ -51,7 +51,7 @@ lemma BB54_X_rank : 23 ≤ BB54_X_mat.rank := by
   bv_decide
 set_option maxHeartbeats 0 in
 lemma BB54_Z_rank : 23 ≤ BB54_Z_mat.rank := by
-  apply Matrix.rank_le_of_submatrix_independent _ indrowsz StrictMono_indrowsx
+  apply Matrix.rank_le_of_submatrix_independent _ BB54indrowsz BB54StrictMono_indrowsx
   rw [linear_indep_SAT_correct,  ←BB54_Z_submat_correct, BB54_Z_submat]
   simp only [linear_indep_SAT, nonzero, nonzero_aux, Nat.add_one_sub_one, Nat.lt_add_one,
       getElem!_pos, Nat.one_lt_ofNat, Nat.ofNat_pos, Bool.decide_or, Bool.decide_eq_true,

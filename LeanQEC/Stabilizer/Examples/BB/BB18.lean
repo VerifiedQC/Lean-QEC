@@ -19,16 +19,16 @@ def BB18_X : BitVec (9 * 18) := 0x341446860a90c11a4a034b0149620c25418588a0b
 def BB18_Z : BitVec (9 * 18) := 0x341446860a90c11a4a034b0149620c25418588a0b
 def BB18_X_ker : BitVec (11 * 18) := 0x2003d400f8803b100d0201a040a40875011b40245005cc00ee
 def BB18_Z_ker : BitVec (11 * 18) := 0x2003d400f8803b100d0201a040a40875011b40245005cc00ee
-def indrowsx : Fin 7 → Fin 9 := ![0, 1, 2, 3, 4, 5, 6]
-lemma StrictMono_indrowsx : StrictMono indrowsx := by decide
-def indrowsz : Fin 7 → Fin 9 := ![0, 1, 2, 3, 4, 5, 6]
-lemma StrictMono_indrowsz : StrictMono indrowsz := by decide
+def BB18indrowsx : Fin 7 → Fin 9 := ![0, 1, 2, 3, 4, 5, 6]
+lemma BB18StrictMono_indrowsx : StrictMono BB18indrowsx := by decide
+def BB18indrowsz : Fin 7 → Fin 9 := ![0, 1, 2, 3, 4, 5, 6]
+lemma BB18StrictMono_indrowsz : StrictMono BB18indrowsz := by decide
 def BB18_X_submat : BitVec (7 * 18) := 0x290c11a4a034b0149620c25418588a0b
 set_option exponentiation.threshold 10000 in
-lemma BB18_X_submat_correct : BB18_X_submat = flatten_matrix (BB18_X_mat.submatrix indrowsx id) := by decide
+lemma BB18_X_submat_correct : BB18_X_submat = flatten_matrix (BB18_X_mat.submatrix BB18indrowsx id) := by decide
 def BB18_Z_submat : BitVec (7 * 18) := 0x290c11a4a034b0149620c25418588a0b
 set_option exponentiation.threshold 10000 in
-lemma BB18_Z_submat_correct : BB18_Z_submat = flatten_matrix (BB18_Z_mat.submatrix indrowsz id) := by decide
+lemma BB18_Z_submat_correct : BB18_Z_submat = flatten_matrix (BB18_Z_mat.submatrix BB18indrowsz id) := by decide
 def BB18_X_ker_mat := BitVecMatrix BB18_X_ker
 def BB18_Z_ker_mat := BitVecMatrix BB18_Z_ker
 lemma BB18_X_ker_mat_correct : flatten_matrix BB18_X_ker_mat = BB18_X_ker := flatten_BitVecMatrix_id _
@@ -39,7 +39,7 @@ set_option exponentiation.threshold 10000 in
 lemma BB18_Z_correct : BB18_Z = flatten_matrix BB18_Z_mat := by decide
 set_option maxHeartbeats 0 in
 lemma BB18_X_rank : 7 ≤ BB18_X_mat.rank := by
-  apply Matrix.rank_le_of_submatrix_independent _ indrowsx StrictMono_indrowsx
+  apply Matrix.rank_le_of_submatrix_independent _ BB18indrowsx BB18StrictMono_indrowsx
   rw [linear_indep_SAT_correct,  ←BB18_X_submat_correct, BB18_X_submat]
   simp only [linear_indep_SAT, nonzero, nonzero_aux, Nat.add_one_sub_one, Nat.lt_add_one,
       getElem!_pos, Nat.one_lt_ofNat, Nat.ofNat_pos, Bool.decide_or, Bool.decide_eq_true,
@@ -51,7 +51,7 @@ lemma BB18_X_rank : 7 ≤ BB18_X_mat.rank := by
   bv_decide
 set_option maxHeartbeats 0 in
 lemma BB18_Z_rank : 7 ≤ BB18_Z_mat.rank := by
-  apply Matrix.rank_le_of_submatrix_independent _ indrowsz StrictMono_indrowsx
+  apply Matrix.rank_le_of_submatrix_independent _ BB18indrowsz BB18StrictMono_indrowsx
   rw [linear_indep_SAT_correct,  ←BB18_Z_submat_correct, BB18_Z_submat]
   simp only [linear_indep_SAT, nonzero, nonzero_aux, Nat.add_one_sub_one, Nat.lt_add_one,
       getElem!_pos, Nat.one_lt_ofNat, Nat.ofNat_pos, Bool.decide_or, Bool.decide_eq_true,
