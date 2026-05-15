@@ -8,11 +8,11 @@ set_option maxRecDepth 9999999
 def BB36_A :=
   let l := 6
   let m := 3
-  BB_matrix l m (true, 0) (false, 1) (false, 2)
+  BB3_matrix l m (true, 0) (false, 1) (false, 2)
 def BB36_B :=
   let l := 6
   let m := 3
-  BB_matrix l m (true, 0) (true, 1) (false, 1)
+  BB3_matrix l m (true, 0) (true, 1) (false, 1)
 def BB36_X_mat := BB36_A.hstack_fin BB36_B
 def BB36_Z_mat := BB36_B.transpose.hstack_fin BB36_A.transpose
 def BB36_X : BitVec (18 * 36) := 0xa00138000c000b80006000780009400070005800070002c0007000128000e000b0000e00058000e000250001c00160001c000b0001c0004a00038002c000380016000380009400070005800070002c0007

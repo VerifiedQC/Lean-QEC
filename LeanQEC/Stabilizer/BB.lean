@@ -21,12 +21,22 @@ def y (l m k : ℕ) [NeZero m] : Matrix (Fin (l * m)) (Fin (l * m)) (ZMod 2) :=
 variable (l m : ℕ) [NeZero l] [NeZero m] (M₁ M₂ M₃ : Bool × ℕ)
 
 @[simp]
-def BB_matrix (l m : ℕ) [NeZero l] [NeZero m] (M₁ M₂ M₃ : Bool × ℕ)
+def BB3_matrix (l m : ℕ) [NeZero l] [NeZero m] (M₁ M₂ M₃ : Bool × ℕ)
  : Matrix (Fin (l * m)) (Fin (l * m)) (ZMod 2) :=
   let N₁ := if M₁.1 then (x l m M₁.2) else (y l m M₁.2)
   let N₂ := if M₂.1 then (x l m M₂.2) else (y l m M₂.2)
   let N₃ := if M₃.1 then (x l m M₃.2) else (y l m M₃.2)
   N₁ + N₂ + N₃
+
+@[simp]
+def BB4_matrix (l m : ℕ) [NeZero l] [NeZero m] (M₁ M₂ M₃ M₄ : Bool × ℕ)
+ : Matrix (Fin (l * m)) (Fin (l * m)) (ZMod 2) :=
+  let N₁ := if M₁.1 then (x l m M₁.2) else (y l m M₁.2)
+  let N₂ := if M₂.1 then (x l m M₂.2) else (y l m M₂.2)
+  let N₃ := if M₃.1 then (x l m M₃.2) else (y l m M₃.2)
+  let N₄ := if M₄.1 then (x l m M₄.2) else (y l m M₄.2)
+  N₁ + N₂ + N₃ + N₄
+
 
 variable {l m : ℕ} [NeZero l] [NeZero m] {M₁ M₂ M₃ : Bool × ℕ}
 
@@ -41,4 +51,4 @@ def Matrix.hstack_fin {α γ : Type*} {c₁ c₂ : ℕ}
 variable {l m : ℕ} [NeZero l] [NeZero m] (A₁ A₂ A₃ B₁ B₂ B₃ : Bool × ℕ)
 
 
---def BB_HX := (BB_matrix l m A₁ A₂ A₃).hstack_fin (BB_matrix l m B₁ B₂ B₃)
+--def BB_HX := (BB3_matrix l m A₁ A₂ A₃).hstack_fin (BB3_matrix l m B₁ B₂ B₃)
