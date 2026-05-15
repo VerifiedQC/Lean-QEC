@@ -75,10 +75,10 @@ lemma lt_dist_sat_sound_contrapositive
     apply (htest (vec_to_BitVec' I) (vec_to_BitVec x))
     refine ⟨?_, ?_, ?_, ?_⟩
     · apply loc_constraints_of_index
-    · sorry
-    · rw [parity_constraints_correct]
-      exact ker_x
-    apply (rowspace_constraints_correct H₂_ker_correct).2 rowspace_x
+    · rw [symmetry_constraints_iff_index]
+      exact index_vec_mono x hamming_x (hammingNorm_ne_zero_iff.2 hx_ne_zero)
+    · exact (parity_constraints_correct (M := H₁) (x := x)).2 ker_x
+    exact (rowspace_constraints_correct (M₁ := H₂) (M₂ := H₂_ker) H₂_ker_correct (x := x)).2 rowspace_x
 
 
 

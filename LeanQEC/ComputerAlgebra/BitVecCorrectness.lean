@@ -222,6 +222,20 @@ lemma BitVec.ofNat_clog_eq_iff {n : ℕ} {x y : Fin n} :
   · intro h
     rw [h]
 
+lemma fin_to_bitvec_clog_le_iff {n : ℕ} {x y : Fin n} :
+    (x : BitVec (Nat.clog 2 n)) ≤ (y : BitVec (Nat.clog 2 n)) ↔ x ≤ y := by
+  rw [BitVec.le_def]
+  simp only [BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat]
+  rw [
+    Nat.mod_eq_of_lt (lt_of_lt_of_le x.2 (Nat.le_pow_clog one_lt_two n)),
+    Nat.mod_eq_of_lt (lt_of_lt_of_le y.2 (Nat.le_pow_clog one_lt_two n))]
+  exact Fin.le_iff_val_le_val.symm
+
+lemma fin_to_bitvec_clog_toNat {n : ℕ} (x : Fin n) :
+    (x : BitVec (Nat.clog 2 n)).toNat = x.val := by
+  simp only [BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat]
+  rw [Nat.mod_eq_of_lt (lt_of_lt_of_le x.2 (Nat.le_pow_clog one_lt_two n))]
+
 lemma loc_constraints_of_index {n k : ℕ} (x : Fin n → (ZMod 2)) (hx : hammingNorm x ≤ k) (hx' : hammingNorm x ≠ 0) :
   loc_constraints (vec_to_BitVec' (index_vec x hx hx')) (vec_to_BitVec x) := by
   have hk : 0 < k := lt_of_lt_of_le (Nat.pos_of_ne_zero hx') hx
@@ -256,8 +270,107 @@ lemma loc_constraints_of_index {n k : ℕ} (x : Fin n → (ZMod 2)) (hx : hammin
     rw [if_pos hjlt]
     simpa [S] using hj
 
+lemma symmetry_constraints_aux_iff_adjacent {n k : ℕ} (x : Fin k → Fin n) :
+    ∀ idx, (hidx : idx < k) → (prev : ℕ) →
+      symmetry_constraints_aux (vec_to_BitVec' x) idx prev = true ↔
+        (x ⟨idx, hidx⟩).val ≤ prev ∧
+          ∀ t, (ht : t < idx) →
+            x ⟨t, Nat.lt_trans ht hidx⟩ ≤
+              x ⟨t + 1, lt_of_le_of_lt (Nat.succ_le_of_lt ht) hidx⟩ := by
+  intro idx
+  induction' idx with idx ih
+  · intro hidx prev
+    simp only [symmetry_constraints_aux]
+    rw [vec_to_BitVec'_correct (j := ⟨0, hidx⟩)]
+    rw [fin_to_bitvec_clog_toNat]
+    constructor
+    · intro h
+      exact ⟨by simpa using h, by intro t ht; omega⟩
+    · intro h
+      simpa using h.1
+  · intro hidx prev
+    have hidx' : idx < k := Nat.lt_of_succ_lt hidx
+    simp only [symmetry_constraints_aux, Bool.and_eq_true]
+    rw [vec_to_BitVec'_correct (j := ⟨idx + 1, hidx⟩)]
+    rw [fin_to_bitvec_clog_toNat]
+    rw [ih hidx' (x ⟨idx + 1, hidx⟩).val]
+    constructor
+    · rintro ⟨hhead, htail_head, htail_adj⟩
+      constructor
+      · simpa using hhead
+      · intro t ht
+        by_cases htidx : t = idx
+        · subst htidx
+          exact htail_head
+        · have ht' : t < idx := lt_of_le_of_ne (Nat.le_of_lt_succ ht) htidx
+          simpa using htail_adj t ht'
+    · rintro ⟨hhead, hadj⟩
+      refine ⟨?_, ?_, ?_⟩
+      · simpa using hhead
+      · exact hadj idx (Nat.lt_succ_self idx)
+      · intro t ht
+        exact hadj t (Nat.lt_trans ht (Nat.lt_succ_self idx))
+
+lemma fin_le_of_adjacent {n k : ℕ} (x : Fin k → Fin n)
+    (hadj : ∀ t, (ht : t + 1 < k) →
+      x ⟨t, Nat.lt_trans (Nat.lt_succ_self t) ht⟩ ≤ x ⟨t + 1, ht⟩) :
+    ∀ i j, i ≤ j → x i ≤ x j := by
+  intro i j hij
+  have haux : ∀ b, (hb : b < k) → ∀ a, a ≤ b → (ha : a < k) →
+      x ⟨a, ha⟩ ≤ x ⟨b, hb⟩ := by
+    intro b hb
+    induction' b with b ih
+    · intro a hab ha
+      have ha0 : a = 0 := Nat.eq_zero_of_le_zero hab
+      subst ha0
+      rfl
+    · intro a hab ha
+      by_cases hlast : a = b + 1
+      · subst hlast
+        rfl
+      · have hb' : b < k := Nat.lt_of_succ_lt hb
+        have hab' : a ≤ b := Nat.le_of_lt_succ (lt_of_le_of_ne hab hlast)
+        exact le_trans (ih hb' a hab' ha) (hadj b hb)
+  exact haux j.val j.2 i.val hij i.2
+
+lemma index_vec_mono {n k : ℕ} (x : Fin n → ZMod 2)
+    (hx : hammingNorm x ≤ k) (hx' : hammingNorm x ≠ 0) :
+    ∀ i j, i ≤ j → index_vec x hx hx' i ≤ index_vec x hx hx' j := by
+  intro i j hij
+  unfold index_vec
+  let S := Finset.univ.filter (fun j : Fin n => x j ≠ 0)
+  by_cases hi : (i : ℕ) < hammingNorm x
+  · by_cases hj : (j : ℕ) < hammingNorm x
+    · simp only [hi, hj, ↓reduceDIte]
+      exact (S.orderEmbOfFin rfl).monotone hij
+    · simp only [hi, hj, ↓reduceDIte]
+      apply (S.orderEmbOfFin rfl).monotone
+      exact Nat.le_sub_one_of_lt hi
+  · have hj : ¬(j : ℕ) < hammingNorm x := by
+      intro hj
+      exact hi (lt_of_le_of_lt hij hj)
+    simp only [hi, hj, ↓reduceDIte]
+    rfl
+
 lemma symmetry_constraints_iff_index {n k : ℕ} (x : Fin k → Fin n) :
-  symmetry_constraints (vec_to_BitVec' x) ↔ ∀ i j, i ≤ j → x i ≤ x j := sorry
+  symmetry_constraints (vec_to_BitVec' x) ↔ ∀ i j, i ≤ j → x i ≤ x j := by
+  by_cases hk : k = 0
+  · subst k
+    simp [symmetry_constraints, symmetry_constraints_aux, vec_to_BitVec']
+  · have hlast : k - 1 < k := Nat.sub_lt (Nat.pos_of_ne_zero hk) zero_lt_one
+    rw [symmetry_constraints, symmetry_constraints_aux_iff_adjacent x (k - 1) hlast]
+    constructor
+    · rintro ⟨_, hadj⟩
+      apply fin_le_of_adjacent
+      intro t ht
+      have ht' : t < k - 1 := by omega
+      simpa using hadj t ht'
+    · intro h
+      constructor
+      · exact le_trans (Nat.le_of_lt (x ⟨k - 1, hlast⟩).2) (Nat.le_pow_clog one_lt_two n)
+      · intro t ht
+        apply h
+        simp
 
 lemma BitVec.shift_extract_eq {n k : ℕ} (M : BitVec (k * n)) (r : ℕ) :
    (M >>> (r * n)).extractLsb' 0 n = M.extractLsb' (r * n) n := by

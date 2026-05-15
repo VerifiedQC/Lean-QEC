@@ -51,11 +51,11 @@ def loc_constraints
 def symmetry_constraints_aux
   {nlog k : ℕ}
   (locs : BitVec (k * nlog))
-  (c : ℕ) (prev : BitVec nlog) : Bool :=
+  (c : ℕ) (prev : ℕ) : Bool :=
   let val := locs.extractLsb' (c * nlog) nlog
   match c with
-  | 0 => val ≤ prev
-  | c' + 1 => (val ≤ prev) && (symmetry_constraints_aux locs c' val)
+  | 0 => val.toNat ≤ prev
+  | c' + 1 => (val.toNat ≤ prev) && (symmetry_constraints_aux locs c' val.toNat)
 
 def symmetry_constraints
   {nlog k : ℕ}
