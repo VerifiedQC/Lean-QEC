@@ -48,7 +48,7 @@ lemma BB90_X_rank : 41 ≤ BB90_X_mat.rank := by
       Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
       bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
       Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_check "BB90.lean-BB90_X_rank-51-2.lrat"
+  bv_decide (timeout := 9999) (maxSteps := 9999999)
 set_option maxHeartbeats 0 in
 lemma BB90_Z_rank : 41 ≤ BB90_Z_mat.rank := by
   apply Matrix.rank_le_of_submatrix_independent _ BB90indrowsz BB90StrictMono_indrowsx
@@ -60,7 +60,7 @@ lemma BB90_Z_rank : 41 ≤ BB90_Z_mat.rank := by
       Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
       bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
       Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_check "BB90.lean-BB90_Z_rank-63-2.lrat"
+  bv_decide (timeout := 9999) (maxSteps := 9999999)
 set_option maxHeartbeats 0 in
 lemma BB90_X_ker_rank : 49 ≤ BB90_X_ker_mat.rank := by
   apply Matrix.rank_le_of_submatrix_independent _ id (strictMono_id)
@@ -73,7 +73,7 @@ lemma BB90_X_ker_rank : 49 ≤ BB90_X_ker_mat.rank := by
       Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
       bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
       Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_normalize
+  bv_decide (timeout := 9999) (maxSteps := 9999999)
 set_option maxHeartbeats 0 in
 lemma BB90_Z_ker_rank : 49 ≤ BB90_Z_ker_mat.rank := by
   apply Matrix.rank_le_of_submatrix_independent _ id (strictMono_id)
@@ -86,7 +86,7 @@ lemma BB90_Z_ker_rank : 49 ≤ BB90_Z_ker_mat.rank := by
       Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
       bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
       Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_normalize
+  bv_decide (timeout := 9999) (maxSteps := 9999999)
 set_option exponentiation.threshold 10000
 set_option maxHeartbeats 0
 lemma BB90_XZ_orth : BB90_X_mat.mutually_orth_rows BB90_Z_mat := by
@@ -115,7 +115,7 @@ lemma BB90_dist_z : lt_dist_sat BB90_X BB90_Z_ker 9 7 := by
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_check (timeout := 9999) (maxSteps := 9999999)"BB90.lean-BB90_dist_z-118-2.lrat"
+  bv_decide (timeout := 9999) (maxSteps := 9999999)
 set_option maxHeartbeats 0 in
 lemma BB90_dist_x : lt_dist_sat BB90_Z BB90_X_ker 9 7 := by
   rw [BB90_Z, BB90_X_ker]
@@ -126,7 +126,7 @@ lemma BB90_dist_x : lt_dist_sat BB90_Z BB90_X_ker 9 7 := by
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_check (timeout := 9999) (maxSteps := 9999999)"BB90.lean-BB90_dist_x-129-2.lrat"
+  bv_decide (timeout := 9999) (maxSteps := 9999999)
 lemma BB90_X_ker_is_ker : BB90_X_ker_mat.is_ker_for BB90_X_mat := by
   apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ BB90_X_rank BB90_X_ker_rank (by norm_num) BB90_X_ker_orth
 lemma BB90_Z_ker_is_ker : BB90_Z_ker_mat.is_ker_for BB90_Z_mat := by
