@@ -56,7 +56,7 @@ def vert_on_face {L : ℕ} [NeZero L] (i1 j1 i2 j2 : Fin L) : Prop :=
   (i1 = i2 ∧ j1-1 = j2) ∨
   (i1-1 = i2 ∧ j1-1 = j2)
 
-lemma help1 {L : ℕ} [NeZero L] (i1 j1 i2 j2 : Fin L) :
+lemma toricH₁_mul_toricH₂_eq_zero {L : ℕ} [NeZero L] (i1 j1 i2 j2 : Fin L) :
     ∀ d,
     ¬vert_on_face i1 j1 i2 j2 →
     toricH₁ L (i1, j1) d * toricH₂ L (i2, j2) d = 0 := by
@@ -79,7 +79,7 @@ lemma help1 {L : ℕ} [NeZero L] (i1 j1 i2 j2 : Fin L) :
   case isFalse =>
     simp
 
-lemma help2 {L : ℕ} [NeZero L] {i1 j1 i2 j2 : Fin L} {d} :
+lemma toricH₁_mul_toricH₂_eq_one {L : ℕ} [NeZero L] {i1 j1 i2 j2 : Fin L} {d} :
     vert_on_face i1 j1 i2 j2 →
     ∑ s, toricH₁ L (i1, j1) (d, s) * toricH₂ L (i2, j2) (d, s) = 1 := by
   intro H
@@ -125,8 +125,7 @@ lemma help2 {L : ℕ} [NeZero L] {i1 j1 i2 j2 : Fin L} {d} :
         intro H1
         rcases H1 with ⟨_, _, _, _⟩ | ⟨_, _, _, _⟩ | ⟨_, _, _, _⟩ | ⟨_, _, _, _⟩ <;> subst_vars <;> simp_all
       dsimp; apply if_pos
-      simp only [toricH₁_conn, toricH₂_conn]
-      simp
+      simp only [toricH₁_conn, toricH₂_conn]; simp
   -- Top right vertex
   case inr.inr.inl =>
     fin_cases d; simp
@@ -153,8 +152,7 @@ lemma help2 {L : ℕ} [NeZero L] {i1 j1 i2 j2 : Fin L} {d} :
         intro H1
         rcases H1 with ⟨_, _, _, _⟩ | ⟨_, _, _, _⟩ | ⟨_, _, _, _⟩ | ⟨_, _, _, _⟩ <;> subst_vars <;> simp_all
       dsimp; apply if_pos
-      simp only [toricH₁_conn, toricH₂_conn]
-      simp
+      simp only [toricH₁_conn, toricH₂_conn]; simp
   -- Bottom right vertex
   case inr.inr.inr =>
     fin_cases d; dsimp
@@ -181,8 +179,7 @@ lemma help2 {L : ℕ} [NeZero L] {i1 j1 i2 j2 : Fin L} {d} :
         intro H1
         rcases H1 with ⟨_, _, _, _⟩ | ⟨_, _, _, _⟩ | ⟨_, _, _, _⟩ | ⟨_, _, _, _⟩ <;> subst_vars <;> simp_all
       dsimp; apply if_pos
-      simp only [toricH₁_conn, toricH₂_conn]
-      simp
+      simp only [toricH₁_conn, toricH₂_conn]; simp
 
 
 lemma toric_orth (L : ℕ) [NeZero L] :
@@ -195,12 +192,12 @@ lemma toric_orth (L : ℕ) [NeZero L] :
   cases (Classical.em (vert_on_face i1 j1 i2 j2))
   case inl H =>
     rw [← Finset.univ_product_univ, Finset.sum_product, Fin.sum_univ_two]
-    simp_rw [help2 H]
+    simp_rw [toricH₁_mul_toricH₂_eq_one H]
     decide
   case inr H =>
     apply Finset.sum_eq_zero
     intro x H
-    apply help1
+    apply toricH₁_mul_toricH₂_eq_zero
     assumption
 
 
@@ -220,6 +217,21 @@ def toricCode (L : ℕ) [NeZero L] :
     (toricH₂' L)
     (toric_orth' L)
 
+lemma toricCode_dist_lb_X {L : ℕ} [NeZero L] :
+    L ≤ (toricCode L).dX
+  := by
+  simp only [toricCode, CSS_pair.dX, min_weight_ker_not_mem_rowspace]
+  sorry
+
+
+lemma toricCode_dist_lb_Z {L : ℕ} [NeZero L] :
+    L ≤ (toricCode L).dZ
+  := by
+  sorry
+
 theorem toricCode_dist_lb (L : ℕ) [NeZero L] :
     L ≤ (toricCode L).toBSM.distance (Nat.add_pos_left (toricCode L).nt₁ _) := by
-  sorry
+  rw [CSS.toBSM_dist_eq]
+  apply le_min
+  · apply toricCode_dist_lb_X
+  · apply toricCode_dist_lb_Z
