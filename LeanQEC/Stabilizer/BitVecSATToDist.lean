@@ -35,6 +35,27 @@ lemma dist_index_some
     exact False.elim <| non_empty.choose_spec.2 <| h _ non_empty.choose_spec.1
   · have := Finset.mem_of_min h; aesop
 
+lemma index_vec_monotone {n k : ℕ} {x : Fin n → ZMod 2}
+    {hx : hammingNorm x ≤ k} {hx' : hammingNorm x ≠ 0} :
+    ∀ i j : Fin k, i ≤ j → index_vec x hx hx' i ≤ index_vec x hx hx' j := by
+  intro i j hij
+  let S := Finset.univ.filter (fun j : Fin n => x j ≠ 0)
+  let I : Fin (hammingNorm x) → Fin n := fun j => S.orderEmbOfFin rfl j
+  change (if hi : (i : ℕ) < hammingNorm x then I ⟨i, hi⟩
+      else I ⟨hammingNorm x - 1, Nat.sub_one_lt hx'⟩) ≤
+    (if hj : (j : ℕ) < hammingNorm x then I ⟨j, hj⟩
+      else I ⟨hammingNorm x - 1, Nat.sub_one_lt hx'⟩)
+  by_cases hj : (j : ℕ) < hammingNorm x
+  · have hi : (i : ℕ) < hammingNorm x := lt_of_le_of_lt (Fin.le_def.mp hij) hj
+    simp [hi, hj]
+    apply (S.orderEmbOfFin rfl).monotone
+    exact Fin.mk_le_mk.mpr (Fin.le_def.mp hij)
+  · by_cases hi : (i : ℕ) < hammingNorm x
+    · simp [hi, hj]
+      apply (S.orderEmbOfFin rfl).monotone
+      exact Fin.mk_le_mk.mpr (Nat.le_sub_one_of_lt hi)
+    · simp [hi, hj]
+
 lemma lt_dist_sat_sound_contrapositive
   {n k₁ k₂ kersize : ℕ} [NeZero n] [NeZero k₁] [NeZero kersize] [NeZero (n - k₂)]
   (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
@@ -75,7 +96,8 @@ lemma lt_dist_sat_sound_contrapositive
     apply (htest (vec_to_BitVec' I) (vec_to_BitVec x))
     refine ⟨?_, ?_, ?_, ?_⟩
     · apply loc_constraints_of_index
-    · sorry
+    · rw [symmetry_constraints_iff_index]
+      exact index_vec_monotone
     · rw [parity_constraints_correct]
       exact ker_x
     apply (rowspace_constraints_correct H₂_ker_correct).2 rowspace_x
