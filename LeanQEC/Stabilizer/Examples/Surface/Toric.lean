@@ -35,13 +35,11 @@ def toricH₂ (L : ℕ) [NeZero L] : Matrix (Fin L × Fin L) (Fin 2 × Fin L × 
     else
       0
 
-def coe1 (L : ℕ) : Fin L × Fin L ≃ Fin (L^2) := by
-  rw [pow_two]
-  apply finProdFinEquiv
+def coe1 (L : ℕ) : Fin L × Fin L ≃ Fin (L^2) :=
+  pow_two L ▸ finProdFinEquiv
 
-def coe2 (L : ℕ) : Fin 2 × Fin L × Fin L ≃ Fin (2 * L ^ 2) := by
-  rw [pow_two]
-  exact ((Equiv.refl _).prodCongr finProdFinEquiv).trans finProdFinEquiv
+def coe2 (L : ℕ) : Fin 2 × Fin L × Fin L ≃ Fin (2 * L ^ 2) :=
+  pow_two L ▸ ((Equiv.refl _).prodCongr finProdFinEquiv).trans finProdFinEquiv
 
 def toricH₁' (L : ℕ) [NeZero L] : Matrix (Fin (L^2)) (Fin (2 * L^2)) (ZMod 2) :=
   Matrix.reindex (coe1 L) (coe2 L) (toricH₁ L)
@@ -79,10 +77,11 @@ lemma toricH₁_mul_toricH₂_eq_zero {L : ℕ} [NeZero L] (i1 j1 i2 j2 : Fin L)
   case isFalse =>
     simp
 
-lemma toricH₁_mul_toricH₂_eq_one {L : ℕ} [NeZero L] {i1 j1 i2 j2 : Fin L} {d} :
+lemma toricH₁_mul_toricH₂_eq_one {L : ℕ} [NeZero L] {i1 j1 i2 j2 : Fin L} :
+    ∀ d,
     vert_on_face i1 j1 i2 j2 →
     ∑ s, toricH₁ L (i1, j1) (d, s) * toricH₂ L (i2, j2) (d, s) = 1 := by
-  intro H
+  intro d H
   simp_rw [toricH₁, toricH₂, ite_mul, mul_ite, one_mul, mul_one, zero_mul, ite_self, ← ite_and]
   rcases H with ⟨_, _, _, _⟩ | ⟨_, _, _, _⟩ | ⟨_, _, _, _⟩ | ⟨_, _, _, _⟩ <;> subst_vars
   -- Top left vertex
@@ -192,7 +191,7 @@ lemma toric_orth (L : ℕ) [NeZero L] :
   cases (Classical.em (vert_on_face i1 j1 i2 j2))
   case inl H =>
     rw [← Finset.univ_product_univ, Finset.sum_product, Fin.sum_univ_two]
-    simp_rw [toricH₁_mul_toricH₂_eq_one H]
+    simp_rw [toricH₁_mul_toricH₂_eq_one _ H]
     decide
   case inr H =>
     apply Finset.sum_eq_zero
@@ -218,15 +217,12 @@ def toricCode (L : ℕ) [NeZero L] :
     (toric_orth' L)
 
 lemma toricCode_dist_lb_X {L : ℕ} [NeZero L] :
-    L ≤ (toricCode L).dX
-  := by
+    L ≤ (toricCode L).dX := by
   simp only [toricCode, CSS_pair.dX, min_weight_ker_not_mem_rowspace]
   sorry
 
-
 lemma toricCode_dist_lb_Z {L : ℕ} [NeZero L] :
-    L ≤ (toricCode L).dZ
-  := by
+    L ≤ (toricCode L).dZ := by
   sorry
 
 theorem toricCode_dist_lb (L : ℕ) [NeZero L] :
