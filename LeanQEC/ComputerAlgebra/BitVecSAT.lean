@@ -60,7 +60,7 @@ def symmetry_constraints_aux
 def symmetry_constraints
   {nlog k : ℕ}
   (locs : BitVec (k * nlog)) :=
-  symmetry_constraints_aux locs (k - 1) (2 ^ nlog)
+  symmetry_constraints_aux locs (k - 1) (BitVec.allOnes nlog)
 
 def dot_product_aux {n : ℕ} [NeZero n] (x y : BitVec n) (c : ℕ) (hc : c < n) : Bool :=
   let b := x[c] && y[c]
