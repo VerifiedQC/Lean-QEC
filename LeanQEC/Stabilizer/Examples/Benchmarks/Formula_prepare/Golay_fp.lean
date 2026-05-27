@@ -3,8 +3,7 @@ import Lean.Elab.Tactic.BVDecide
 import Std.Tactic.BVDecide
 import LeanQEC.ComputerAlgebra.BitVecCorrectness
 import LeanQEC.Stabilizer.BitVecSATToDist
---for SAT query logging:
---set_option sat.solver "./logger.bat"
+
 set_option maxRecDepth 9999999
 
 def golay_mat : BitVec (11 * 23) :=
@@ -55,7 +54,7 @@ lemma golay_ind : LinearIndependent (ZMod 2) golay_mat' := by
     Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
     bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
     Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_normalize
+  sorry
 
 lemma golay_ker_ind : LinearIndependent (ZMod 2) golay_ker' := by
   rw [linear_indep_SAT_correct, ←golay_ker_correct, golay_ker]
@@ -66,7 +65,7 @@ lemma golay_ker_ind : LinearIndependent (ZMod 2) golay_ker' := by
     Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
     bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
     Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_normalize
+  sorry
 
 lemma golay_mat_rank : 11 ≤ golay_mat'.rank := by
   apply Matrix.rank_le_of_submatrix_independent _ id (strictMono_id)
@@ -105,7 +104,7 @@ lemma golay_dist : lt_dist_sat (flatten_matrix golay_mat') (flatten_matrix golay
     Bool.not_eq_eq_eq_not, Bool.not_true,
     bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
     rowspace_constraints_aux, not_and, and_imp]
-  bv_check "Golay.lean-golay_dist-108-2.lrat"
+  sorry
 
 lemma golay_ker_mat_correct : golay_ker'.is_ker_for golay_mat' := by
   apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ golay_mat_rank golay_ker_rank (by norm_num) golay_mat_ker_orth

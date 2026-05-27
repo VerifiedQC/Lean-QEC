@@ -5,9 +5,6 @@ import LeanQEC.ComputerAlgebra.BitVecCorrectness
 import LeanQEC.Stabilizer.BB
 import LeanQEC.Stabilizer.BitVecSATToDist
 set_option maxRecDepth 9999999
---for SAT query logging:
---set_option sat.solver "./logger.bat"
-set_option debug.skipKernelTC true
 def BB18_A :=
   let l := 3
   let m := 3
@@ -51,7 +48,7 @@ lemma BB18_X_rank : 7 ≤ BB18_X_mat.rank := by
       Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
       bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
       Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_decide
+  sorry
 set_option maxHeartbeats 0 in
 lemma BB18_Z_rank : 7 ≤ BB18_Z_mat.rank := by
   apply Matrix.rank_le_of_submatrix_independent _ BB18indrowsz BB18StrictMono_indrowsx
@@ -63,7 +60,7 @@ lemma BB18_Z_rank : 7 ≤ BB18_Z_mat.rank := by
       Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
       bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
       Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_decide
+  sorry
 set_option maxHeartbeats 0 in
 lemma BB18_X_ker_rank : 11 ≤ BB18_X_ker_mat.rank := by
   apply Matrix.rank_le_of_submatrix_independent _ id (strictMono_id)
@@ -118,8 +115,7 @@ lemma BB18_dist_z : lt_dist_sat BB18_X BB18_Z_ker 3 5 := by
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_decide
-  --bv_decide (timeout := 9999) (maxSteps := 9999999)
+  sorry
 set_option maxHeartbeats 0 in
 lemma BB18_dist_x : lt_dist_sat BB18_Z BB18_X_ker 3 5 := by
   rw [BB18_Z, BB18_X_ker]
@@ -130,8 +126,7 @@ lemma BB18_dist_x : lt_dist_sat BB18_Z BB18_X_ker 3 5 := by
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_decide
-  --bv_decide (timeout := 9999) (maxSteps := 9999999)
+  sorry
 lemma BB18_X_ker_is_ker : BB18_X_ker_mat.is_ker_for BB18_X_mat := by
   apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ BB18_X_rank BB18_X_ker_rank (by norm_num) BB18_X_ker_orth
 lemma BB18_Z_ker_is_ker : BB18_Z_ker_mat.is_ker_for BB18_Z_mat := by

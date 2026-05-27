@@ -6,7 +6,7 @@ import LeanQEC.Stabilizer.BB
 import LeanQEC.Stabilizer.BitVecSATToDist
 set_option maxRecDepth 9999999
 --for SAT query logging:
-set_option sat.solver "./logger.bat"
+--set_option sat.solver "./logger.bat"
 def BB144_A :=
   let l := 12
   let m := 6

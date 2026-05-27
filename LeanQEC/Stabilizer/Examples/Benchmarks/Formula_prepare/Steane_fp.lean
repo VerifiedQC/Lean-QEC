@@ -3,8 +3,7 @@ import Lean.Elab.Tactic.BVDecide
 import Std.Tactic.BVDecide
 import LeanQEC.ComputerAlgebra.BitVecCorrectness
 import LeanQEC.Stabilizer.BitVecSATToDist
---for SAT query logging:
---set_option sat.solver "./logger.bat"
+
 
 set_option maxRecDepth 9999999
 def steane_mat : BitVec (3 * 7) :=
@@ -37,7 +36,7 @@ lemma steane_ind : LinearIndependent (ZMod 2) steane_mat' := by
     Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
     bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
     Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_normalize
+  sorry
 
 lemma steane_ker_ind : LinearIndependent (ZMod 2) steane_ker' := by
   rw [linear_indep_SAT_correct, ←steane_ker_correct, steane_ker]
@@ -48,7 +47,7 @@ lemma steane_ker_ind : LinearIndependent (ZMod 2) steane_ker' := by
     Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
     bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
     Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_normalize
+  sorry
 
 lemma steane_mat_rank : 3 ≤ steane_mat'.rank := by
   apply Matrix.rank_le_of_submatrix_independent _ id (strictMono_id)
@@ -91,9 +90,7 @@ lemma steane_dist : lt_dist_sat (flatten_matrix steane_mat') (flatten_matrix ste
     bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
     rowspace_constraints_aux, not_and, and_imp, BitVec.reduceExtractLsb', BitVec.reduceGetElem, Bool.and_true, Bool.and_false,
     bne_self_eq_false, Bool.bne_false, Bool.false_bne, bne_iff_ne, ne_eq, not_or, Decidable.not_not]
-  bv_check "Steane.lean-steane_dist-94-2.lrat"
-  --bv_check (timeout := 999)"Steane.lean-steane_dist-93-2.lrat"
-
+  sorry
 lemma steane_ker_mat_correct : steane_ker'.is_ker_for steane_mat' := by
   apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ steane_mat_rank steane_ker_rank (by norm_num) steane_mat_ker_orth
 

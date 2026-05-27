@@ -5,8 +5,6 @@ import LeanQEC.ComputerAlgebra.BitVecCorrectness
 import LeanQEC.Stabilizer.BB
 import LeanQEC.Stabilizer.BitVecSATToDist
 set_option maxRecDepth 9999999
---for SAT query logging:
---set_option sat.solver "./logger.bat"
 def BB70_A :=
   let l := 7
   let m := 5
@@ -50,7 +48,7 @@ lemma BB70_X_rank : 32 ≤ BB70_X_mat.rank := by
       Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
       bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
       Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_check "BB70.lean-BB70_X_rank-53-2.lrat"
+  sorry
 set_option maxHeartbeats 0 in
 lemma BB70_Z_rank : 32 ≤ BB70_Z_mat.rank := by
   apply Matrix.rank_le_of_submatrix_independent _ BB70indrowsz BB70StrictMono_indrowsx
@@ -62,7 +60,7 @@ lemma BB70_Z_rank : 32 ≤ BB70_Z_mat.rank := by
       Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
       bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
       Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_check "BB70.lean-BB70_Z_rank-65-2.lrat"
+  sorry
 set_option maxHeartbeats 0 in
 lemma BB70_X_ker_rank : 38 ≤ BB70_X_ker_mat.rank := by
   apply Matrix.rank_le_of_submatrix_independent _ id (strictMono_id)
@@ -75,7 +73,7 @@ lemma BB70_X_ker_rank : 38 ≤ BB70_X_ker_mat.rank := by
       Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
       bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
       Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_normalize
+  sorry
 set_option maxHeartbeats 0 in
 lemma BB70_Z_ker_rank : 38 ≤ BB70_Z_ker_mat.rank := by
   apply Matrix.rank_le_of_submatrix_independent _ id (strictMono_id)
@@ -88,7 +86,7 @@ lemma BB70_Z_ker_rank : 38 ≤ BB70_Z_ker_mat.rank := by
       Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
       bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
       Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_normalize
+  sorry
 set_option exponentiation.threshold 10000
 set_option maxHeartbeats 0
 lemma BB70_XZ_orth : BB70_X_mat.mutually_orth_rows BB70_Z_mat := by
@@ -117,7 +115,7 @@ lemma BB70_dist_z : lt_dist_sat BB70_X BB70_Z_ker 8 7 := by
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_check (timeout := 9999) (maxSteps := 9999999)"BB70.lean-BB70_dist_z-120-2.lrat"
+  sorry
 set_option maxHeartbeats 0 in
 lemma BB70_dist_x : lt_dist_sat BB70_Z BB70_X_ker 8 7 := by
   rw [BB70_Z, BB70_X_ker]
@@ -128,7 +126,7 @@ lemma BB70_dist_x : lt_dist_sat BB70_Z BB70_X_ker 8 7 := by
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_check (timeout := 9999) (maxSteps := 9999999)"BB70.lean-BB70_dist_x-131-2.lrat"
+  sorry
 lemma BB70_X_ker_is_ker : BB70_X_ker_mat.is_ker_for BB70_X_mat := by
   apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ BB70_X_rank BB70_X_ker_rank (by norm_num) BB70_X_ker_orth
 lemma BB70_Z_ker_is_ker : BB70_Z_ker_mat.is_ker_for BB70_Z_mat := by
