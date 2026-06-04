@@ -294,3 +294,7 @@ def gen_BB_skeleton(filename, l, m, alist, blist, d):
 #gen_BB_skeleton("LeanQEC/Stabilizer/Examples/BB/BB70.lean", 7, 5, ((y, 2), (x, 2), (x, 3), (x, 4)), ((y, 1), (x, 1), (x, 3)), 9)
 #gen_BB_skeleton("LeanQEC/Stabilizer/Examples/BB/GB54.lean", 27, 1, ((x, 8), (x, 13), (x, 15), (x, 16)), ((x, 7), (x, 8), (x, 10), (x, 15)), 10)
 #gen_BB_skeleton("LeanQEC/Stabilizer/Examples/BB/BB144.lean", 12, 6, ((x, 3), (y, 1), (y, 2)), ((y, 3), (x, 1), (x, 2)), 12)
+gen_BB_skeleton("LeanQEC/Stabilizer/Examples/BB/BB162.lean", 3, 27, ((x, 0), (y, 10), (y, 14)), ((y, 12), (x, 1), (x, 2)), 14)
+gen_BB_skeleton("LeanQEC/Stabilizer/Examples/BB/BB180.lean", 6, 15, ((x, 3), (y, 1), (y, 2)), ((y, 6), (x, 4), (x, 5)), 16)
+gen_BB_skeleton("LeanQEC/Stabilizer/Examples/BB/BB288.lean", 12, 12, ((x, 3), (y, 2), (y, 7)), ((y, 3), (x, 1), (x, 2)), 18)
+

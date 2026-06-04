@@ -4,6 +4,8 @@ import Std.Tactic.BVDecide
 import LeanQEC.ComputerAlgebra.BitVecCorrectness
 import LeanQEC.Stabilizer.BB
 import LeanQEC.Stabilizer.BitVecSATToDist
+import LeanQEC.timedbv
+
 set_option maxRecDepth 9999999
 def BB18_A :=
   let l := 3
