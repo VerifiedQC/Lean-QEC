@@ -216,272 +216,184 @@ def toricCode (L : ℕ) [NeZero L] :
     (toricH₂' L)
     (toric_orth' L)
 
--- Distance lower bound proof
--- TODO: Tons of duplication, see if that can be cleaned up?
--- TODO: See if `helpZ` can be derived from `helpX` instead of proving it separately?
--- TODO: See if it's worth it to define the torus in terms of `ShortComplex` instead. I think it would only be worth it if mathlib has some results about them that would simplify/beautify these proofs, otherwise I'm not sure. As in, CSS codes are in such tight correspondance with `ShortComplex`es already that the "new" proofs might just end up looking like these current proofs, modulo whatever cleanup I do before then
--- TODO: Finish the proofs by proving the contra cases, have to construct a boundary for `helpX` and a coboundary for `helpZ`
+lemma tr_help {m n : ℕ} {R : Type*} [CommSemiring R]
+    (M : Matrix (Fin m) (Fin n) R) :
+    M.rowSpace = LinearMap.range M.transpose.mulVecLin := by
+  apply le_antisymm
+  · apply Submodule.span_le.mpr
+    rintro _ ⟨i, rfl⟩
+    exact ⟨Pi.single i 1, by
+      ext j
+      simp⟩
+  · rintro _ ⟨v, rfl⟩
+    have key : M.transpose.mulVec v = ∑ i, v i • M i := by
+      ext j
+      simp [Matrix.mulVec, dotProduct, Matrix.transpose_apply, mul_comm]
+    rw [Matrix.mulVecLin_apply, key]
+    exact Submodule.sum_mem _ fun i _ =>
+      Submodule.smul_mem _ _ (Submodule.subset_span ⟨i, rfl⟩)
+
+def face1 {L : ℕ} [NeZero L] : Fin 2 × Fin L × Fin L → Fin L × Fin L :=
+  fun (d, a, b) =>
+    if d = 0 then
+      (a-1, b)
+    else
+      (a, b-1)
+
+def face2 {L : ℕ} [NeZero L] : Fin 2 × Fin L × Fin L → Fin L × Fin L :=
+  fun (_, a, b) => (a, b)
+
+def face1' {L : ℕ} [NeZero L] : Fin (2*L^2) → Fin (L^2) :=
+  coe1 L ∘ face1 ∘ (coe2 L).symm
+
+def face2' {L : ℕ} [NeZero L] : Fin (2*L^2) → Fin (L^2) :=
+  coe1 L ∘ face2 ∘ (coe2 L).symm
+
+lemma help_face1_one_raw {L : ℕ} [NeZero L] :
+    ∀ (e : Fin 2 × Fin L × Fin L), toricH₂ L (face1 e) e = 1 := by
+  intro ⟨d, a, b⟩
+  simp only [toricH₂, face1]
+  apply if_pos
+  fin_cases d <;> simp [toricH₂_conn]
+
+lemma help_face2_one_raw {L : ℕ} [NeZero L] :
+    ∀ (e : Fin 2 × Fin L × Fin L), toricH₂ L (face2 e) e = 1 := by
+  intro ⟨d, a, b⟩
+  simp only [toricH₂, face2]
+  apply if_pos
+  fin_cases d <;> simp [toricH₂_conn]
+
+lemma help_face1_one {L : ℕ} [NeZero L] :
+    ∀ x, toricH₂' L (face1' x) x = 1 := by
+  intro x
+  simp only [toricH₂', face1', Matrix.reindex_apply, Matrix.submatrix_apply, Function.comp_apply, Equiv.symm_apply_apply]
+  exact help_face1_one_raw ((coe2 L).symm x)
+
+lemma help_face2_one {L : ℕ} [NeZero L] :
+    ∀ x, toricH₂' L (face2' x) x = 1 := by
+  intro x
+  simp only [toricH₂', face2', Matrix.reindex_apply, Matrix.submatrix_apply, Function.comp_apply, Equiv.symm_apply_apply]
+  exact help_face2_one_raw ((coe2 L).symm x)
+
+lemma help_face_zero_raw {L : ℕ} [NeZero L] :
+    ∀ (e : Fin 2 × Fin L × Fin L) (f : Fin L × Fin L),
+      f ≠ face1 e → f ≠ face2 e → toricH₂ L f e = 0 := by
+  intro ⟨d, a, b⟩ ⟨i, j⟩ H1 H2
+  simp only [toricH₂, face1, face2] at *
+  apply if_neg
+  simp only [toricH₂_conn]
+  fin_cases d <;> simp_all [Prod.ext_iff, eq_comm]
+
+lemma help_face_zero {L : ℕ} [NeZero L] :
+    ∀ x y, y ≠ face1' x → y ≠ face2' x → toricH₂' L y x = 0 := by
+  intro x y H1 H2
+  have H1' : (coe1 L).symm y ≠ face1 ((coe2 L).symm x) := fun h =>
+    H1 (by simp only [face1', Function.comp_apply]; rw [← h, Equiv.apply_symm_apply])
+  have H2' : (coe1 L).symm y ≠ face2 ((coe2 L).symm x) := fun h =>
+    H2 (by simp only [face2', Function.comp_apply]; rw [← h, Equiv.apply_symm_apply])
+  simp only [toricH₂', Matrix.reindex_apply, Matrix.submatrix_apply]
+  exact help_face_zero_raw _ _ H1' H2'
+
+lemma help1 {L : ℕ} [NeZero L] (Hne_one : L ≠ 1) :
+  ∀ (v : Fin (2 * L ^ 2) → ZMod 2) (w : Fin (L^2) → ZMod 2),
+    v = (fun e => w (face1' e) + w (face2' e)) →
+    (Matrix.transpose (toricH₂' L)).mulVec w = v
+  := by
+    intro v w H
+    subst_vars
+    ext x
+    simp only [Matrix.transpose, Matrix.mulVec, dotProduct]
+    simp
+    rw [← Finset.sum_subset (s₁:= {face1' x, face2' x})]
+    · rw [Finset.sum_pair]
+      · rw [help_face1_one, help_face2_one]
+        simp
+      · simp only [face1', face2']
+        simp
+        rcases ((coe2 L).symm x) with ⟨d, a, b⟩
+        simp only [face1, face2]
+        split
+        · intro Heq
+          have H : a - 1 = a := (Prod.mk.inj Heq).1
+          apply Hne_one
+          have Hneg : (-1 : Fin L) = 0 :=
+            add_left_cancel (a := a)
+              (by rw [← sub_eq_add_neg, add_zero]; exact H)
+          have Hval := congr_arg Fin.val Hneg
+          simp only [Fin.val_neg, Fin.val_zero] at Hval
+          have Hpos : 0 < L := Nat.pos_of_ne_zero (NeZero.ne L)
+          rw [if_neg] at Hval
+          · exact absurd (Nat.le_of_sub_eq_zero Hval) (Nat.not_le.mpr (1 : Fin L).is_lt)
+          · haveI : Nontrivial (Fin L) := Fin.nontrivial_iff_two_le.mpr (by omega)
+            apply Fin.ne_of_val_ne
+            simp only [Fin.val_zero]
+            norm_num
+            assumption
+        · intro Heq
+          have H : b - 1 = b := (Prod.mk.inj Heq).2
+          apply Hne_one
+          have Hneg : (-1 : Fin L) = 0 :=
+            add_left_cancel (a := b)
+              (by rw [← sub_eq_add_neg, add_zero]; exact H)
+          have Hval := congr_arg Fin.val Hneg
+          simp only [Fin.val_neg, Fin.val_zero] at Hval
+          have Hpos : 0 < L := Nat.pos_of_ne_zero (NeZero.ne L)
+          rw [if_neg] at Hval
+          · exact absurd (Nat.le_of_sub_eq_zero Hval) (Nat.not_le.mpr (1 : Fin L).is_lt)
+          · haveI : Nontrivial (Fin L) := Fin.nontrivial_iff_two_le.mpr (by omega)
+            apply Fin.ne_of_val_ne
+            simp only [Fin.val_zero]
+            norm_num
+            assumption
+    · simp
+    · simp
+      intro y H1 H2
+      left
+      rw [help_face_zero]
+      <;> assumption
+
 
 lemma helpX {L : ℕ} [NeZero L] (Hne_one : L ≠ 1) :
-    ∀ v ∈ (Matrix.toLin' (toricH₁' L)).ker, v ∉ (toricH₂' L).rowSpace →
-    L ≤ hammingNorm v := by
-  intro v Hker Hrow
-  simp only [Matrix.rowSpace, Submodule.span, sInf, Set.range] at Hrow
-  simp_all
-  obtain ⟨s, Hsub, Hnin⟩ := Hrow
-  have Hvert : ∀ i j, v (coe2 L (0, i, j-1)) + v (coe2 L (0, i, j)) + v (coe2 L (1, i - 1, j)) + v (coe2 L (1, i, j)) = 0 := by
-    intro i j
-    have H := congr_fun Hker (coe1 L (i, j))
-    simp only [toricH₁', Matrix.mulVec, Matrix.reindex_apply, dotProduct, Matrix.submatrix, coe1, coe2] at H
-    simp at H
-    rw [← Equiv.sum_comp (coe2 L)] at H
-    simp only [Equiv.symm_apply_apply, coe2] at H
-    have Hcoe : ∀ x : Fin 2 × Fin L × Fin L,
-    (pow_two L ▸ ((Equiv.refl (Fin 2)).prodCongr finProdFinEquiv).trans finProdFinEquiv) x = coe2 L x :=
-      fun x => rfl
-    simp_rw [Hcoe] at H; clear Hcoe
-    rw [← Finset.univ_product_univ, Finset.sum_product, Fin.sum_univ_two] at H
-    have H0 : ∑ y : Fin L × Fin L, toricH₁ L (i, j) (0, y) * v (coe2 L (0, y)) =
-    v (coe2 L (0, i, j - 1)) + v (coe2 L (0, i, j)) := by
-      clear * - Hne_one
-      have H :
-          ∑ y ∈ ({(i, j - 1), (i, j)} : Finset (Fin L × Fin L)), toricH₁ L (i, j) (0, y) * v (coe2 L (0, y)) =
-          ∑ y, toricH₁ L (i, j) (0, y) * v (coe2 L (0, y)) := by
-        apply Finset.sum_subset (Finset.subset_univ _)
-        intro (i', j') H' H; clear H'
-        simp at H; obtain ⟨H1, H2⟩ := H
-        simp only [toricH₁, toricH₁_conn]
-        split <;> simp_all; rename_i h H3
-        rcases H3 with ⟨_, _⟩ | ⟨_, _⟩ <;>
-        subst_vars <;> simp_all
-      rw [← H]; clear H
-      rcases L with _ | _ | L
-      · rename_i inst
-        simp at inst
-      ·  simp at Hne_one
-      · rw [Finset.sum_pair (by simp [Prod.mk.injEq])]
-        simp only [toricH₁, toricH₁_conn]
-        split <;> simp_all
-    have H1 : ∑ y : Fin L × Fin L, toricH₁ L (i, j) (1, y) * v (coe2 L (1, y)) =
-    v (coe2 L (1, i - 1, j)) + v (coe2 L (1, i, j)) := by
-      clear * - Hne_one
-      have H :
-          ∑ y ∈ ({(i - 1, j), (i, j)} : Finset (Fin L × Fin L)), toricH₁ L (i, j) (1, y) * v (coe2 L (1, y)) =
-          ∑ y, toricH₁ L (i, j) (1, y) * v (coe2 L (1, y)) := by
-        apply Finset.sum_subset (Finset.subset_univ _)
-        intro (i', j') H' H; clear H'
-        simp at H; obtain ⟨H1, H2⟩ := H
-        simp only [toricH₁, toricH₁_conn]
-        split <;> simp_all; rename_i h H3
-        rcases H3 with ⟨_, _⟩ | ⟨_, _⟩ <;>
-        subst_vars <;> simp_all
-      rw [← H]; clear H
-      rcases L with _ | _ | L
-      · rename_i inst
-        simp at inst
-      ·  simp at Hne_one
-      · rw [Finset.sum_pair (by simp [Prod.mk.injEq])]
-        simp only [toricH₁, toricH₁_conn]
-        split <;> simp_all
-    rw [H0, H1, ← add_assoc] at H
-    assumption
-  let col_wind j := ∑ i, v (coe2 L (0, i, j))
-  have Hcol_const : ∃ c, ∀ j, col_wind j = c := by
-    suffices Hsuf : ∀ j, col_wind j = col_wind (j - 1)
-    · exists (col_wind 0)
-      intro j
-      obtain ⟨j, Hj⟩ := j
-      induction j
-      case zero => simp
-      case succ n Hn =>
-        rw [← Hn (by omega)]
-        specialize Hsuf ⟨n+1, by omega⟩
-        rw [Hsuf]
-        congr 1; ext
-        simp [Fin.val_sub]
-        have H : n < L := by omega
-        rcases L with _ | _ | L
-        · omega
-        · have : n = 0 := by omega
-          subst this; omega
-        · have Hmod : 1 % (L + 2) = 1 := Nat.mod_eq_of_lt (by omega)
-          have Hsum : L + 2 - 1 % (L + 2) + (n + 1) = n + (L + 2) := by rw [Hmod]; omega
-          rw [Hsum, Nat.add_mod, Nat.mod_self, Nat.mod_eq_of_lt H, add_zero, Nat.mod_eq_of_lt H]
-    intro j; clear Hnin Hsub
-    replace Hvert := fun i => Hvert i j
-    replace Hvert :=
-      Finset.sum_eq_zero (s := Finset.univ)
-        (f := fun i =>
-          v (coe2 L (0, i, j - 1)) + v (coe2 L (0, i, j)) +
-          v (coe2 L (1, i - 1, j)) + v (coe2 L (1, i, j)))
-        (fun i _ => Hvert i)
-    simp_rw [Finset.sum_add_distrib] at Hvert
-    rw [show ∑ i, v (coe2 L (0, i, j)) = col_wind j from rfl] at Hvert
-    rw [show ∑ i, v (coe2 L (0, i, j-1)) = col_wind (j-1) from rfl] at Hvert
-    have Heq : ∑ x, v ((coe2 L) (1, x - 1, j)) = ∑ x, v ((coe2 L) (1, x, j)) := by
-      rw [Fintype.sum_equiv (finRotate L).symm]
-      simp
-    rw [Heq] at Hvert; clear Heq
-    rw [add_assoc, CharTwo.add_self_eq_zero, add_zero] at Hvert
-    set x := col_wind (j-1); set y := col_wind j;
-    clear_value x y
-    fin_cases x <;> fin_cases y
-    · simp_all
-    · exact absurd Hvert (by decide)
-    · exact absurd Hvert (by decide)
-    · simp_all
-  let row_wind i := ∑ j, v (coe2 L (1, i, j))
-  have Hrow_const : ∃ c, ∀ i, row_wind i = c := by
-    suffices Hsuf : ∀ i, row_wind i = row_wind (i - 1)
-    · exists (row_wind 0)
-      intro j
-      obtain ⟨j, Hj⟩ := j
-      induction j
-      case zero => simp
-      case succ n Hn =>
-        rw [← Hn (by omega)]
-        specialize Hsuf ⟨n+1, by omega⟩
-        rw [Hsuf]
-        congr 1; ext
-        simp [Fin.val_sub]
-        have H : n < L := by omega
-        rcases L with _ | _ | L
-        · omega
-        · have : n = 0 := by omega
-          subst this; omega
-        · have Hmod : 1 % (L + 2) = 1 := Nat.mod_eq_of_lt (by omega)
-          have Hsum : L + 2 - 1 % (L + 2) + (n + 1) = n + (L + 2) := by rw [Hmod]; omega
-          rw [Hsum, Nat.add_mod, Nat.mod_self, Nat.mod_eq_of_lt H, add_zero, Nat.mod_eq_of_lt H]
-    intro i; clear Hnin Hsub
-    replace Hvert := fun j => Hvert i j
-    replace Hvert :=
-      Finset.sum_eq_zero (s := Finset.univ)
-        (f := fun j =>
-          v (coe2 L (0, i, j - 1)) + v (coe2 L (0, i, j)) +
-          v (coe2 L (1, i - 1, j)) + v (coe2 L (1, i, j)))
-        (fun i _ => Hvert i)
-    simp_rw [Finset.sum_add_distrib] at Hvert
-    rw [show ∑ j, v (coe2 L (1, i, j)) = row_wind i from rfl] at Hvert
-    rw [show ∑ j, v (coe2 L (1, i-1, j)) = row_wind (i-1) from rfl] at Hvert
-    have Heq : ∑ x, v ((coe2 L) (0, i, x - 1)) = ∑ x, v ((coe2 L) (0, i, x)) := by
-      rw [Fintype.sum_equiv (finRotate L).symm]
-      simp
-    rw [Heq] at Hvert; clear Heq
-    rw [add_assoc, CharTwo.add_self_eq_zero, add_comm, add_assoc, add_zero] at Hvert
-    set x := row_wind (i-1); set y := row_wind i;
-    clear_value x y
-    fin_cases x <;> fin_cases y
-    · simp_all
-    · exact absurd Hvert (by decide)
-    · exact absurd Hvert (by decide)
-    · simp_all
-  obtain ⟨cc, Hcol_const⟩ := Hcol_const
-  obtain ⟨cr, Hrow_const⟩ := Hrow_const
-  fin_cases cc <;> simp at Hcol_const
-  · fin_cases cr <;> simp at Hrow_const
-    · suffices Hin : ∃ w, toricH₂' L w = v
-      · exfalso
-        apply Hnin
-        apply Hsub
-        assumption
-      -- TODO: Exhibit a cycle that is a boundary
+    ∀ v,
+      v ∈ (Matrix.toLin' (toricH₁' L)).ker →
+      v ∉ (toricH₂' L).rowSpace →
+      L ≤ hammingNorm v := by
+  suffices H :
+      ∀ v,
+        v ∈ (Matrix.toLin' (toricH₁' L)).ker →
+        hammingNorm v < L →
+        v ∈ (toricH₂' L).rowSpace
+  · intro v H1 H2
+    by_contra H3
+    apply H2
+    simp at H3
+    apply H <;> assumption
+  intro v Hker Hlen
+  suffices H : ∃ w, (Matrix.transpose (toricH₂' L)).mulVec w = v
+  · rw [tr_help]
+    simp
+    obtain ⟨w, H⟩ := H
+    exists w
+    rw [← H]
+    exact (Matrix.mulVec_transpose (toricH₂' L) w).symm
+  suffices H : ∃ (w : Fin (L^2) → ZMod 2), v = (fun e => w (face1' e) + w (face2' e))
+  · obtain ⟨w, H⟩ := H
+    exists w
+    apply help1
+    <;> assumption
 
-      sorry
-    · have Hex : ∀ i : Fin L, ∃ j : Fin L, v (coe2 L (1, i, j)) ≠ 0 := by
-        intro i
-        by_contra H
-        push Not at H
-        have : row_wind i = 0 := by
-          simp [row_wind, Finset.sum_eq_zero (fun j _ => H j)]
-        rw [Hrow_const] at this
-        exact one_ne_zero this
-      choose wit Hwit using Hex
-      have Hinj : Function.Injective (fun i => (⟨coe2 L (1, i, wit i), Hwit i⟩ : {e // v e ≠ 0})) := by
-        intro i1 i2 H
-        simp only [Subtype.mk.injEq] at H
-        have := (coe2 L).injective H
-        simp only [Prod.mk.injEq] at this
-        exact this.2.1
-      calc L = Fintype.card (Fin L) := by simp
-          _ ≤ Fintype.card {e // v e ≠ 0} := Fintype.card_le_of_injective _ Hinj
-          _ = hammingNorm v := by simp [hammingNorm, Fintype.card_subtype]
-  · have Hex : ∀ j : Fin L, ∃ i : Fin L, v (coe2 L (0, i, j)) ≠ 0 := by
-      intro j
-      by_contra H
-      push Not at H
-      have : col_wind j = 0 := by
-        simp [col_wind, Finset.sum_eq_zero (fun i _ => H i)]
-      rw [Hcol_const] at this
-      exact one_ne_zero this
-    choose wit Hwit using Hex
-    have Hinj : Function.Injective (fun j => (⟨coe2 L (0, wit j, j), Hwit j⟩ : {e // v e ≠ 0})) := by
-      intro j1 j2 H
-      simp only [Subtype.mk.injEq] at H
-      have := (coe2 L).injective H
-      simp only [Prod.mk.injEq] at this
-      exact this.2.2
-    calc L = Fintype.card (Fin L) := by simp
-        _ ≤ Fintype.card {e // v e ≠ 0} := Fintype.card_le_of_injective _ Hinj
-        _ = hammingNorm v := by simp [hammingNorm, Fintype.card_subtype]
 
-def edgeBij {L : ℕ} [NeZero L] : Fin 2 × Fin L × Fin L ≃ Fin 2 × Fin L × Fin L where
-  toFun := fun (d, a, b) =>
-    if d = 0 then
-      (1, a, b+1)
-    else
-      (0, a+1, b)
-  invFun := fun (d, a, b) =>
-    if d = 1 then
-      (0, a, b-1)
-    else
-      (1, a-1, b)
-  left_inv := by
-    intro (d, a, b)
-    fin_cases d <;> simp
-  right_inv := by
-    intro (d, a, b)
-    fin_cases d <;> simp
-
-def edgeBij' (L : ℕ) [NeZero L] : Fin (2 * L ^ 2) ≃ Fin (2 * L ^ 2) :=
-  ((coe2 L).symm.trans edgeBij).trans (coe2 L)
-
-lemma toricH₁'_eq_toricH₂'_edgeBij' {L : ℕ} [NeZero L] :
-    ∀ (x : Fin (L ^ 2)) (e : Fin (2 * L ^ 2)),
-    toricH₁' L x e = toricH₂' L x (edgeBij' L e) := by
-  sorry
-
-lemma not_rowSpace_H₂'_of_not_rowSpace_H₁' {L : ℕ} [NeZero L] :
-    ∀ v : Fin (2 * L ^ 2) → ZMod 2,
-    v ∉ (toricH₁' L).rowSpace →
-    (v ∘ edgeBij' L) ∉ (toricH₂' L).rowSpace := by
-  sorry
 
 lemma helpZ {L : ℕ} [NeZero L] (Hne_one : L ≠ 1) :
-    ∀ v ∈ (Matrix.toLin' (toricH₂' L)).ker, v ∉ (toricH₁' L).rowSpace →
+    ∀ v,
+    v ∈ (Matrix.toLin' (toricH₂' L)).ker →
+    v ∉ (toricH₁' L).rowSpace →
     L ≤ hammingNorm v := by
   intro v Hker Hrow
-  calc L
-    ≤ hammingNorm (v ∘ edgeBij' L) := by
-        apply helpX Hne_one
-        · simp only [LinearMap.mem_ker, Matrix.toLin'_apply] at Hker ⊢
-          ext i
-          simp only [Matrix.mulVec, dotProduct, Pi.zero_apply, Function.comp]
-          simp_rw [toricH₁'_eq_toricH₂'_edgeBij']
-          rw [Equiv.sum_comp (edgeBij' L) (fun e => toricH₂' L i e * v e)]
-          simpa [Matrix.mulVec, dotProduct] using congr_fun Hker i
-        · exact not_rowSpace_H₂'_of_not_rowSpace_H₁' v Hrow
-    _ = hammingNorm v := by
-        simp only [hammingNorm]
-        refine Finset.card_bij (fun i _ => edgeBij' L i) ?_ ?_ ?_
-        · intro i Hi
-          simp only [Finset.mem_filter, Finset.mem_univ, true_and] at *
-          simp_all
-        · intro i j _ _ H
-          exact (edgeBij' L).injective H
-        · intro j Hj
-          refine ⟨(edgeBij' L).symm j, ?_, (edgeBij' L).apply_symm_apply j⟩
-          simp only [Finset.mem_filter, Finset.mem_univ, true_and] at *
-          simpa using Hj
+  apply helpX Hne_one
+  ·
+  ·
+    sorry
 
 theorem toricCode_dist_lb (L : ℕ) [NeZero L] :
     L ≤ (toricCode L).toBSM.distance (Nat.add_pos_left (toricCode L).nt₁ _) := by
