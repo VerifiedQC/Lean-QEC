@@ -50,7 +50,7 @@ lemma BB180_X_ker_rank : 94 ≤ BB180_X_ker_mat.rank := by
 set_option maxHeartbeats 0 in
 lemma BB180_Z_ker_rank : 94 ≤ BB180_Z_ker_mat.rank := by
   sorry
-set_option exponentiation.threshold 10000
+set_option exponentiation.threshold 100000
 set_option maxHeartbeats 0
 lemma BB180_XZ_orth : BB180_X_mat.mutually_orth_rows BB180_Z_mat := by
   rw [←mutually_orth_nat_correct, ←BB180_X_correct, ←BB180_Z_correct]

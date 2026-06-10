@@ -62,7 +62,7 @@ lemma BB288_X_ker_orth : BB288_X_mat.mutually_orth_rows BB288_X_ker_mat := by
   rw [←mutually_orth_nat_correct, ←BB288_X_correct, BB288_X_ker_mat_correct]
   unfold bitvec_mutually_orth_nat
   native_decide
-set_option exponentiation.threshold 10000
+set_option exponentiation.threshold 100000
 set_option maxHeartbeats 0
 lemma BB288_Z_ker_orth : BB288_Z_mat.mutually_orth_rows BB288_Z_ker_mat := by
   rw [←mutually_orth_nat_correct, ←BB288_Z_correct, BB288_Z_ker_mat_correct]
