@@ -499,16 +499,9 @@ lemma helpX {L : ℕ} [NeZero L] (Hne_one : L ≠ 1) :
     specialize (H ((coe2 L).symm e))
     rw [Equiv.apply_symm_apply] at H
     assumption
-  exists (fill_torus v ∘ (coe1 L).symm)
-  intro (d, i, j)
-  simp only [face1', face2', Function.comp]
-  simp [Equiv.symm_apply_apply, face1, face2]
-  fin_cases d <;> simp
-  -- Horizontal edges
-  · simp only [fill_torus]
-    sorry
-  -- Vertical edges
-  · simp only [fill_torus]
+  have Hvedges : ∀ i j, v ((coe2 L) (1, i, j)) = fill_torus v (i, j - 1) + fill_torus v (i, j) := by
+    intro i j
+    simp only [fill_torus]
     rw [add_comm (v ((coe2 L) (0, i, 0))), add_assoc, ← add_assoc (v ((coe2 L) (0, i, 0))), ZModModule.add_self]
     simp
     cases (Classical.em (j = 0)) <;>
@@ -574,6 +567,26 @@ lemma helpX {L : ℕ} [NeZero L] (Hne_one : L ≠ 1) :
       simp
       rw [← add_assoc, ZModModule.add_self]
       simp
+  exists (fill_torus v ∘ (coe1 L).symm)
+  intro (d, i, j)
+  simp only [face1', face2', Function.comp]
+  simp [Equiv.symm_apply_apply, face1, face2]
+  fin_cases d <;> simp
+  -- Horizontal edges
+  · clear Hrow_const row_wind Hlen Hker
+    have this : ∃ L', L = L' + 1:= by
+      exists (L - 1)
+      have h := NeZero.pos L
+      omega
+    obtain ⟨L', this⟩ := this
+    subst_vars
+    induction j using Fin.induction
+    case zero =>
+      sorry
+    case succ j Hj =>
+      sorry
+  -- Vertical edges
+  · apply Hvedges
 
 
 
