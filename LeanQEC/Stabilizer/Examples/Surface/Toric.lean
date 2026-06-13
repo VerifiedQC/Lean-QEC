@@ -294,7 +294,7 @@ lemma help_face_zero {L : ℕ} [NeZero L] :
   simp only [toricH₂', Matrix.reindex_apply, Matrix.submatrix_apply]
   exact help_face_zero_raw _ _ H1' H2'
 
-lemma help1 {L : ℕ} [NeZero L] (Hne_one : L ≠ 1) :
+lemma toricH₂_is_xor_constraints {L : ℕ} [NeZero L] (Hne_one : L ≠ 1) :
   ∀ (v : Fin (2 * L ^ 2) → ZMod 2) (w : Fin (L^2) → ZMod 2),
     v = (fun e => w (face1' e) + w (face2' e)) →
     (Matrix.transpose (toricH₂' L)).mulVec w = v
@@ -728,7 +728,6 @@ lemma col_face_selects_vert {L : ℕ} [NeZero L] :
       rw [← add_assoc, add_comm (v (coe2 L (0, i, j))), ZModModule.add_self]
     · apply finset_upper_nin_col
 
-
 lemma row_face_selects_vert {L : ℕ} [NeZero L] (Hne_one : L ≠ 1) :
     ∀ j (v : Fin (2*L^2) → ZMod 2),
       v ∈ (Matrix.toLin' (toricH₁' L)).ker →
@@ -785,7 +784,6 @@ lemma finInduction {L : ℕ} [NeZero L] :
         rw [Heq]
         assumption
 
-
 lemma helpX {L : ℕ} [NeZero L] (Hne_one : L ≠ 1) :
     ∀ v,
       v ∈ (Matrix.toLin' (toricH₁' L)).ker →
@@ -812,7 +810,7 @@ lemma helpX {L : ℕ} [NeZero L] (Hne_one : L ≠ 1) :
   suffices H : ∃ (w : Fin (L^2) → ZMod 2), v = (fun e => w (face1' e) + w (face2' e)) by
     obtain ⟨w, H⟩ := H
     exists w
-    apply help1
+    apply toricH₂_is_xor_constraints
     <;> assumption
   suffices H : ∃ (w : Fin (L^2) → ZMod 2), ∀ e, v (coe2 L e) = w (face1' (coe2 L e)) + w (face2' (coe2 L e)) by
     obtain ⟨w, H⟩ := H
