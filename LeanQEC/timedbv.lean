@@ -13,6 +13,14 @@ import Lean.Elab.Tactic.BVDecide.Frontend.BVDecide
 namespace Lean.Parser
 namespace Tactic
 
+--timed bv_decide tactic: Logs 5 items to a passed csv file:
+--start, normalize, aig, cnf, solve, end
+--start gives time at beginning of tactic
+--normalize gives time after bv_normalize procedure is run: normalizes subexpressions up to associativity and commutativity
+--aig converts the formula into an and-inverter-graph
+--cnf converts the AIG into cnf form
+--solve passes the cnf to the external solver and obtains a .lrat file certifying Sat/UNSAT
+--end is the time between obtaining the .lrat and translating its proof into lean form.
 @[tactic_alt Lean.Parser.Tactic.bvDecideMacro]
 syntax (name := bvDecidet) "bv_decidet" (str)? Lean.Parser.Tactic.optConfig : tactic
 

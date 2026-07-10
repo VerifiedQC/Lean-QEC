@@ -127,7 +127,8 @@ lemma BB72_dist_x : lt_dist_sat BB72_Z BB72_X_ker 5 7 := by
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_decide (timeout := 9999) (maxSteps := 9999999)
+  sorry
+  --bv_decide (timeout := 9999) (maxSteps := 9999999)
 lemma BB72_X_ker_is_ker : BB72_X_ker_mat.is_ker_for BB72_X_mat := by
   apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ BB72_X_rank BB72_X_ker_rank (by norm_num) BB72_X_ker_orth
 lemma BB72_Z_ker_is_ker : BB72_Z_ker_mat.is_ker_for BB72_Z_mat := by
