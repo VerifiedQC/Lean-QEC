@@ -2,8 +2,13 @@ import Mathlib
 import LeanQEC.States.Basic
 import LeanQEC.LinearAlgebra.RowspaceKernel
 import LeanQEC.Unitary.Paulis.Basic
+import LeanQEC.Unitary.Paulis.Pauli
+import LeanQEC.Unitary.Paulis.PauliTrace
+import LeanQEC.Unitary.Paulis.PauliFolding
 
 variable {n : ℕ}
+
+set_option synthInstance.maxHeartbeats 1000000
 
 def stabilizes (U : 𝐔ₙ[n]) (ψ : PState n) := ψ.apply U = ψ
 
@@ -11,9 +16,8 @@ def stabilizes (U : 𝐔ₙ[n]) (ψ : PState n) := ψ.apply U = ψ
 lemma stabilizes_apply (U : 𝐔ₙ[n]) (ψ : PState n) (hstab : stabilizes U ψ) : ψ.apply U = ψ := hstab
 
 @[simp]
-lemma stabilizes_apply' {U : 𝐔ₙ[n]} {ψ : PState n} (hstab : stabilizes U ψ) : Matrix.mulVec U ψ.vec = ψ.vec := by
-  simp only [stabilizes, PState.apply, Matrix.toLin'_apply] at hstab
-  rwa [Ket.mk.injEq] at hstab
+lemma stabilizes_apply' {U : 𝐔ₙ[n]} {ψ : PState n} (hstab : stabilizes U ψ) : Matrix.mulVec U ψ = ψ := by
+  simpa only [stabilizes, PState.apply, Matrix.toLin'_apply] using hstab
 
 variable {n₁ n₂ : ℕ}
 
@@ -22,13 +26,8 @@ theorem stab_prod {U₁ : 𝐔ₙ[n₁]} {U₂ : 𝐔ₙ[n₂]} {ψ₁ : PState 
   stabilizes (U₁ ⊗ₙ U₂) (ψ₁ ⊗ₚ ψ₂) := by
   unfold stabilizes
   rw [kron_mul_kron, hs₁, hs₂]
-/-
-theorem stab_of_stab_equiv {U : 𝐔[k₁]} {ψ : Ket k₁} (e : k₁ ≃ k₂) (hstab: stabilizes U ψ) :
-  stabilizes (unitary_fin_equiv e U) (ket_fin_equiv e ψ) := by admit
--/
 
 theorem one_stab_all {n : ℕ} (ψ : PState n) : stabilizes 1 ψ := by simp [stabilizes]
-
 
 theorem stab_n_prod {n : ℕ} {um : Fin n → 𝐔ₙ[1]} {km : Fin n → PState 1}
   (hstab : ∀ x, stabilizes (um x) (km x)) :
@@ -40,26 +39,22 @@ theorem stab_n_prod {n : ℕ} {um : Fin n → 𝐔ₙ[1]} {km : Fin n → PState
       apply stab_prod (ih (fun x => (hstab _))) (hstab 0)
 
 theorem inv_stab {n : ℕ} {U : 𝐔ₙ[n]} {ψ : PState n} (hstab : stabilizes U ψ) : stabilizes U⁻¹ ψ := by
-  simp [stabilizes]
-  rw [Ket.mk.injEq]
-  nth_rw 2 [←(Matrix.one_mulVec ψ.vec)]
+  simp only [stabilizes, PState.apply, Matrix.toLin'_apply]
+  nth_rw 2 [←(Matrix.one_mulVec ψ)]
   rw [←U.2.1, ←Matrix.mulVec_mulVec, stabilizes_apply' hstab]
+  rfl
 
 theorem mul_stab {n : ℕ} {U₁ U₂ : 𝐔ₙ[n]} {ψ : PState n} (hstab₁ : stabilizes U₁ ψ) (hstab₂ : stabilizes U₂ ψ) :
   stabilizes (U₁ * U₂) ψ := by
-  simp [stabilizes]
-  rw [Ket.mk.injEq, ←Matrix.mulVec_mulVec,
-  stabilizes_apply' hstab₂, stabilizes_apply' hstab₁]
+  simp only [stabilizes, PState.apply, Matrix.toLin'_apply]
+  rw [show ((U₁ * U₂ : 𝐔ₙ[n]) : Matrix _ _ ℂ) = U₁.val * U₂.val from rfl,
+    ←Matrix.mulVec_mulVec, stabilizes_apply' hstab₂, stabilizes_apply' hstab₁]
 
-
---theorem for stabilizing sums?
-
-
-theorem sum_stab {n : ℕ} {ψ₁ ψ₂ : PState n} {a b : ℂ} {U : 𝐔ₙ[n]} (hab: ‖a‖^2+‖b‖^2 = 1) (h_orth : ψ₁.orth ψ₂)
+theorem sum_stab {n : ℕ} {ψ₁ ψ₂ : PState n} {a b : ℂ} {U : 𝐔ₙ[n]}
   (hstab1 : stabilizes U ψ₁) (hstab2 : stabilizes U ψ₂) :
-  stabilizes U (ψ₁.sum ψ₂ a b hab h_orth) := by
-  simp [stabilizes, PState.sum, Matrix.mulVec_add, Matrix.mulVec_smul]
-  simp [DFunLike.coe, stabilizes_apply' hstab1, stabilizes_apply' hstab2]
+  stabilizes U (a • ψ₁ + b • ψ₂) := by
+  simp only [stabilizes, PState.apply, Matrix.toLin'_apply, Matrix.mulVec_add, Matrix.mulVec_smul,
+    stabilizes_apply' hstab1, stabilizes_apply' hstab2]
 
 --think harder about how i want to define this: subtype for pauli tensors?
 def stabilizer_set {n : ℕ} (ψ : PState n) :=
@@ -131,6 +126,28 @@ lemma Matrix.unitaryGroup.neg_ne {k : Type*} [Fintype k] [DecidableEq k] [Inhabi
   simp only [OneMemClass.coe_one, one_apply_eq, neg_unitary_val, neg_apply] at this
   norm_num at this
 
+noncomputable def scalarPauli {n : ℕ} (z : pgroup_phases) : PauliGroup_group n :=
+  foldPauli (z, fun _ => Pauli_I)
+
+noncomputable def negIdPauli (n : ℕ) : PauliGroup n :=
+  scalarPauli pgphase_n1
+
+lemma foldPauli_scalar_sq {n : ℕ} (z : pgroup_phases) :
+    (scalarPauli z : PauliGroup_group n) * scalarPauli z = scalarPauli (z * z) := by
+  convert mul_factored_Paulis_correct ( z, fun _ => Pauli_I ) ( z, fun _ => Pauli_I ) using 1;
+  swap;
+  exact n;
+  unfold scalarPauli mul_factored_Paulis; simp +decide [ foldPauli ] ;
+  rw [ show mul_Pauli1_tuples ( fun _ => Pauli_I ) ( fun _ => Pauli_I ) = ( 1, fun _ => Pauli_I ) from ?_ ] ; simp +decide [ scale_factored_Pauli ];
+  · rw [ eq_comm ];
+    exact beq_eq_beq.mp rfl;
+  · unfold mul_Pauli1_tuples; simp +decide [ pointwise_mul_Paulis, collect_phases ] ;
+    unfold mul_Pauli1; simp +decide [ mul_comm_pgroup_phases, mul_one ] ;
+    unfold fold_pgroup_phases; simp +decide [ mul_comm_pgroup_phases, mul_one ] ;
+    cases n <;> simp +decide [ mul_comm_pgroup_phases, mul_one ];
+    induction' ‹ℕ› with n ih <;> simp_all +decide [ Fin.tail, fold_pgroup_phases ];
+    · grind +suggestions;
+    · convert ih using 1
 
 --theorem that says pauli X, Z errors on stabilized vectors result
 --in either U stabilizing or U_neg stabilizing?
@@ -161,16 +178,31 @@ lemma commute_iff_commute {n : ℕ} (P₁ P₂ : PauliGroup_group n) : commute P
         _ = (((P₂ : 𝐔ₙ[n]) * P₁ : 𝐔ₙ[n])) := hsame
     exact Matrix.unitaryGroup.neg_ne this
 
---If i define the codespace as a submodule ℂ (BitVec n → ℂ), it fails the additivity due
---to the normalization condition... so just a set then?
-abbrev QCodeSpace (n : ℕ) := Set (PState n)
-
+/- A stabilizer code is an abelian subgroup of the n-Pauli group that does not include -I -/
 structure StabCode (n : ℕ) where
-  space : QCodeSpace n
   stabs : Subgroup (@PauliGroup_group n)
   h_comm : IsMulCommutative stabs
-  hstab : ∀ ψ ∈ space, ∀ S ∈ stabs, stabilizes S ψ
+  h_minus : negIdPauli n ∉ stabs
 
+/- The codespace of a stabilizer code is the joint +1 eigenspace of all the elements of the stabilizer group -/
+def StabCode.space {n : ℕ} (C : StabCode n) : Submodule ℂ (BitVec n → ℂ) where
+  carrier := {ψ : PState n | ∀ s ∈ C.stabs, stabilizes (s : 𝐔ₙ[n]) ψ}
+  zero_mem' := by
+    intro s _
+    simp only [stabilizes, PState.apply, Matrix.toLin'_apply]
+    exact Matrix.mulVec_zero _
+  add_mem' := by
+    intro a b ha hb s hs
+    simp only [stabilizes, PState.apply, Matrix.toLin'_apply, Matrix.mulVec_add,
+      stabilizes_apply' (ha s hs), stabilizes_apply' (hb s hs)]
+  smul_mem' := by
+    intro c a ha s hs
+    simp only [stabilizes, PState.apply, Matrix.toLin'_apply, Matrix.mulVec_smul,
+      stabilizes_apply' (ha s hs)]
+
+@[simp]
+lemma StabCode.mem_space {n : ℕ} (C : StabCode n) (ψ : PState n) :
+    ψ ∈ C.space ↔ ∀ s ∈ C.stabs, stabilizes (s : 𝐔ₙ[n]) ψ := Iff.rfl
 
 theorem PauliGroup.inv_one {n : ℕ} (P : PauliGroup_group n) (h_norm : PauliGroup.normalized P)
   : PauliGroup.normalized (P⁻¹ : PauliGroup_group n)  := by
@@ -247,28 +279,33 @@ instance {n : ℕ} {S : StabSet n} : IsMulCommutative (Subgroup.closure (SetLike
 
 
 def StabCode_of_StabSet {n : ℕ} (S : StabSet n)
+    (h_minus : negIdPauli n ∉ Subgroup.closure (SetLike.coe S.stabs))
  : StabCode n where
-   space := {ψ | ∀ s ∈ S.stabs, stabilizes s ψ}
    stabs := Subgroup.closure (SetLike.coe S.stabs)
    h_comm := by infer_instance
-   hstab := by
-    intros ψ hs stab stab_mem
-    revert stab_mem stab
+   h_minus := h_minus
+
+/-- Membership in the code space only has to be checked on any generating set of the
+stabilizer group. -/
+lemma StabCode.mem_space_of_closure {n : ℕ} (C : StabCode n)
+    {T : Set (PauliGroup_group n)} (hT : Subgroup.closure T = C.stabs) (ψ : PState n) :
+    ψ ∈ C.space ↔ ∀ s ∈ T, stabilizes (s : 𝐔ₙ[n]) ψ := by
+  constructor
+  · intro h s hs
+    exact h s (hT ▸ Subgroup.subset_closure hs)
+  · intro hs stab stab_mem
+    revert stab_mem
+    show stab ∈ C.stabs → _
+    rw [← hT]
+    revert stab
     apply Subgroup.closure_induction --glad this works
     · intros x x_mem
-      apply hs
-      exact x_mem
+      exact hs x x_mem
     · apply one_stab_all
     · intros x y _ _ xstab ystab
       apply mul_stab xstab ystab
     intros x _ xstab
     apply inv_stab xstab
-
-
---unused
-def isStabSet {n : ℕ} (C : StabCode n) (S : StabSet n) : Prop := (Subgroup.closure (SetLike.coe S.stabs)) = C.stabs
-
-def StabSet_isCommuting {n : ℕ} (S : Finset (PauliGroup n)) : Prop := ∀ s₁ ∈ S, ∀ s₂ ∈ S, commute s₁ s₂
 
 lemma inv_eq_self_of_mul_self_eq_one {G : Type*} [Group G] {g : G} (hg : g * g = 1) : g⁻¹ = g := by
   have h := congrArg (fun x => g⁻¹ * x) hg
@@ -577,12 +614,13 @@ def BinSympMatrix.toStabSet {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.
     unfold PauliGroup.normalized PauliGroup.phase
     simp only [BinSympPauli_toPauli, Equiv.symm_apply_apply]
 
-def StabCode_of_BinSympMatrix {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) : StabCode n :=
-  StabCode_of_StabSet (bsm.toStabSet h_comm)
-
 abbrev BinSympMatrix.stabClosure {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) :
     Subgroup ↥(PauliGroup_group n) :=
   Subgroup.closure (SetLike.coe (bsm.toStabSet h_comm).stabs)
+
+def StabCode_of_BinSympMatrix {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
+    (h_minus : negIdPauli n ∉ bsm.stabClosure h_comm) : StabCode n :=
+  StabCode_of_StabSet (bsm.toStabSet h_comm) h_minus
 
 instance {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting) :
     IsMulCommutative (bsm.stabClosure h_comm) := by
@@ -814,8 +852,8 @@ lemma BinSympMatrix.selectedRows_sum_eq_mulVec {n k : ℕ} (bsm : BinSympMatrix 
             rfl
 
 theorem BinSympCode_stab_eq_rowProduct {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
-    (s : ↥(PauliGroup_group n)) :
-    s ∈ (StabCode_of_BinSympMatrix bsm h_comm).stabs ↔ ∃ ind, bsm.rowProduct h_comm ind = s := by
+    (h_minus : negIdPauli n ∉ bsm.stabClosure h_comm) (s : ↥(PauliGroup_group n)) :
+    s ∈ (StabCode_of_BinSympMatrix bsm h_comm h_minus).stabs ↔ ∃ ind, bsm.rowProduct h_comm ind = s := by
   constructor
   · revert s
     unfold StabCode_of_BinSympMatrix StabCode_of_StabSet BinSympMatrix.toStabSet
@@ -838,8 +876,8 @@ theorem BinSympCode_stab_eq_rowProduct {n k : ℕ} (bsm : BinSympMatrix k n) (h_
       StabCode_of_StabSet]
 
 theorem BinSympCode_stab_eq_rowSpace {n k : ℕ} (bsm : BinSympMatrix k n) (h_comm : bsm.isCommuting)
-    (s : ↥(PauliGroup_group n)) :
-    s ∈ (StabCode_of_BinSympMatrix bsm h_comm).stabs ↔
+    (h_minus : negIdPauli n ∉ bsm.stabClosure h_comm) (s : ↥(PauliGroup_group n)) :
+    s ∈ (StabCode_of_BinSympMatrix bsm h_comm h_minus).stabs ↔
       ∃ ind, bsm.rowProduct h_comm ind = s ∧
         Pauli_toBinSympPauli s = (bsm.X.transpose.mulVec ind, bsm.Z.transpose.mulVec ind) := by
   rw [BinSympCode_stab_eq_rowProduct]
@@ -849,22 +887,98 @@ theorem BinSympCode_stab_eq_rowSpace {n k : ℕ} (bsm : BinSympMatrix k n) (h_co
   · rintro ⟨ind, hs, _⟩
     exact ⟨ind, hs⟩
 
-noncomputable instance {n : ℕ} (SC : StabCode n) : DecidablePred fun N => ∀ s ∈ SC.stabs, commute N s
- := Classical.decPred _
+/-- Since we just want to talk about commutation, we can quotient out phases -/
+def PauliGroup.phi (n : ℕ) : PauliGroup_group n →* Multiplicative (BinSympPauli n) where
+  toFun P := Multiplicative.ofAdd (Pauli_toBinSympPauli P)
+  map_one' := congrArg Multiplicative.ofAdd Pauli_toBinSympPauli_one
+  map_mul' P Q := congrArg Multiplicative.ofAdd (Pauli_to_BinSymp_correct P Q)
 
-def StabCode.normalizer {n : ℕ} (SC : StabCode n) : Finset (PauliGroup n) := {N | ∀ s ∈ SC.stabs, commute N s}
+@[simp] lemma PauliGroup.phi_apply {n : ℕ} (P : PauliGroup_group n) :
+    PauliGroup.phi n P = Multiplicative.ofAdd (Pauli_toBinSympPauli P) := rfl
 
+lemma PauliGroup.phi_surjective (n : ℕ) : Function.Surjective (PauliGroup.phi n) :=
+  fun x => ⟨BinSympPauli_toPauli (Multiplicative.toAdd x), by simp⟩
+
+/- The Paulis which are just the identity operator after you quotient out phases -/
+def PauliGroup.phaseSubgroup (n : ℕ) : Subgroup (PauliGroup_group n) := (PauliGroup.phi n).ker
+
+lemma PauliGroup.mem_phaseSubgroup_iff {n : ℕ} (P : PauliGroup_group n) :
+    P ∈ PauliGroup.phaseSubgroup n ↔ Pauli_toBinSympPauli P = 0 := by
+  simp [PauliGroup.phaseSubgroup, MonoidHom.mem_ker]
+
+/- The normalizer and centralizer are equal for a stabilizer code -/
+def StabCode.normalizerGroup {n : ℕ} (C : StabCode n) : Subgroup (PauliGroup_group n) :=
+  Subgroup.centralizer (C.stabs : Set (PauliGroup_group n))
+
+lemma StabCode.mem_normalizerGroup_iff {n : ℕ} (C : StabCode n) (E : PauliGroup_group n) :
+    E ∈ C.normalizerGroup ↔ ∀ s ∈ C.stabs, commute E s := by
+  simp only [StabCode.normalizerGroup, Subgroup.mem_centralizer_iff, SetLike.mem_coe]
+  exact ⟨fun h s hs => (commute_iff_commute E s).2 (h s hs).symm,
+    fun h s hs => ((commute_iff_commute E s).1 (h s hs)).symm⟩
+
+/-- Membership in the normalizer only has to be checked on any generating set of the
+stabilizer group. -/
+lemma StabCode.mem_normalizerGroup_of_closure {n : ℕ} (C : StabCode n)
+    {T : Set (PauliGroup_group n)} (hT : Subgroup.closure T = C.stabs)
+    (E : PauliGroup_group n) :
+    E ∈ C.normalizerGroup ↔ ∀ s ∈ T, commute E s := by
+  rw [StabCode.normalizerGroup, ← hT, Subgroup.centralizer_closure]
+  simp only [Subgroup.mem_centralizer_iff]
+  exact ⟨fun h s hs => (commute_iff_commute E s).2 (h s hs).symm,
+    fun h s hs => ((commute_iff_commute E s).1 (h s hs)).symm⟩
+
+lemma StabCode.mem_normalizerGroup_of_StabSet {n : ℕ} (S : StabSet n)
+    (h_minus : negIdPauli n ∉ Subgroup.closure (SetLike.coe S.stabs)) (E : PauliGroup_group n) :
+    E ∈ (StabCode_of_StabSet S h_minus).normalizerGroup ↔ ∀ s ∈ S.stabs, commute E s :=
+  (StabCode_of_StabSet S h_minus).mem_normalizerGroup_of_closure rfl E
+
+/-- The operators which are (up to phase) the identity on the codespace -/
+def StabCode.trivialLogicals {n : ℕ} (C : StabCode n) : Subgroup (PauliGroup_group n) :=
+  C.stabs ⊔ PauliGroup.phaseSubgroup n
+
+lemma StabCode.trivialLogicals_eq_comap {n : ℕ} (C : StabCode n) :
+    C.trivialLogicals
+      = Subgroup.comap (PauliGroup.phi n) (C.stabs.map (PauliGroup.phi n)) :=
+  (Subgroup.comap_map_eq _ _).symm
+
+lemma StabCode.mem_trivialLogicals_iff {n : ℕ} (C : StabCode n) (E : PauliGroup_group n) :
+    E ∈ C.trivialLogicals ↔ ∃ s ∈ C.stabs, Pauli_toBinSympPauli s = Pauli_toBinSympPauli E := by
+  rw [StabCode.trivialLogicals_eq_comap, Subgroup.mem_comap, Subgroup.mem_map]
+  refine ⟨fun ⟨s, hs, hEq⟩ => ⟨s, hs, ?_⟩, fun ⟨s, hs, hEq⟩ => ⟨s, hs, ?_⟩⟩
+  · simpa using congrArg Multiplicative.toAdd hEq
+  · simpa using congrArg Multiplicative.ofAdd hEq
+
+instance StabCode.trivialLogicals_normal {n : ℕ} (C : StabCode n) : C.trivialLogicals.Normal := by
+  rw [StabCode.trivialLogicals_eq_comap]
+  exact Subgroup.Normal.comap inferInstance _
+
+/- The group of logical operators `N(S) / S` -/
+abbrev StabCode.logicalGroup {n : ℕ} (C : StabCode n) : Type :=
+  C.normalizerGroup ⧸ C.trivialLogicals.subgroupOf C.normalizerGroup
+
+/-- An error is undetectable when it commutes with every stabilizer yet is not a stabilizer up
+to phase, i.e. when it represents a nontrivial class in the logical group. -/
 def StabCode.undetectable {n : ℕ} (SC : StabCode n) (E : PauliGroup n) : Prop :=
-  E ∈ SC.normalizer ∧ (∀ s ∈ SC.stabs, Pauli_toBinSympPauli s ≠ Pauli_toBinSympPauli E) ∧
-    PauliGroup.normalized E
+  E ∈ SC.normalizerGroup ∧ E ∉ SC.trivialLogicals ∧ PauliGroup.normalized E
+
+/-- Being undetectable is exactly having a nontrivial class in the logical group (plus the
+phase convention `+1`). -/
+lemma StabCode.undetectable_iff_class_ne_one {n : ℕ} (C : StabCode n)
+    {E : PauliGroup_group n} (hE : E ∈ C.normalizerGroup) :
+    C.undetectable E ↔
+      (QuotientGroup.mk ⟨E, hE⟩ : C.logicalGroup) ≠ 1 ∧ PauliGroup.normalized E := by
+  rw [StabCode.undetectable, Ne, QuotientGroup.eq_one_iff, Subgroup.mem_subgroupOf]
+  simp [hE]
 
 noncomputable instance {n : ℕ} (SC : StabCode n) : DecidablePred fun E => SC.undetectable E
  := Classical.decPred _
 
 def StabCode.undetectable_set {n : ℕ} (SC : StabCode n) : Finset (PauliGroup n) := {E | SC.undetectable E}
 
-def StabCode.nontrivial {n : ℕ} (SC : StabCode n) : Prop := ∃ ψ₁ ∈ SC.space, ∃ ψ₂ ∈ SC.space, ψ₁ ≠ ψ₂
+/-- A code is nontrivial when its code space is not the zero space. -/
+def StabCode.nontrivial {n : ℕ} (SC : StabCode n) : Prop := SC.space ≠ ⊥
 
+/- TODO(?): Make this talk directly about logicalGroup instead? Would be somewhat cleaner -/
 def StabCode.distance {n : ℕ} (SC : StabCode n) : ℕ :=
   match Finset.min (SC.undetectable_set.image pauli_weight) with
   | ⊤ => n + 1
@@ -891,9 +1005,13 @@ lemma commute_iff_symplecticProd_zero {n : ℕ} (P₁ P₂ : PauliGroup n) :
     (BinSympPauli_toPauli_commute_iff_symplecticProd_zero
       (Pauli_toBinSympPauli P₁) (Pauli_toBinSympPauli P₂))
 
-lemma mem_normalizer_iff_norm_mem {n : ℕ} (SC : StabCode n) (E : PauliGroup n) : E ∈ SC.normalizer ↔ normalize_pauli E ∈ SC.normalizer := by
-  unfold StabCode.normalizer
-  simp_rw [Finset.mem_filter_univ, ←commute_iff_norm_commute]
+lemma StabCode.mem_normalizerGroup_iff_symplecticProd {n : ℕ} (C : StabCode n)
+    (E : PauliGroup_group n) :
+    E ∈ C.normalizerGroup ↔
+      ∀ s ∈ C.stabs, symplecticProd (Pauli_toBinSympPauli s) (Pauli_toBinSympPauli E) = 0 := by
+  rw [C.mem_normalizerGroup_iff]
+  exact forall₂_congr fun s _ =>
+    (commute_iff_symplecticProd_zero E s).trans (by rw [symplecticProd_comm])
 
 /- --restricted undetectable to phase 1, not necessary anymore
 theorem StabCode.undetectable_iff_normalized_undetectable {n : ℕ} (SC : StabCode n) (E : PauliGroup n) :
@@ -942,102 +1060,68 @@ theorem BinSympMatrix.undetectable_set_nonempty {k n : ℕ} (B : BinSympMatrix k
   rw [h_empty] at h_dist
   simp at h_dist
 
-lemma BinSympMatrix.binaryImage_mem_rowSpace_of_stab {k n : ℕ} (B : BinSympMatrix k n)
-    (h_comm : B.isCommuting) {s : PauliGroup n}
-    (hs : s ∈ (StabCode_of_BinSympMatrix B h_comm).stabs) :
-    Pauli_toBinSympPauli s ∈ B.rowSpace := by
-  rcases (BinSympCode_stab_eq_rowSpace B h_comm s).1 hs with ⟨ind, _, hsimg⟩
-  exact (B.mem_rowSpace_iff_exists_indicator _).2 ⟨ind, hsimg.symm⟩
+lemma BinSympMatrix.mem_rowSpace_iff_exists_stab {k n : ℕ} (B : BinSympMatrix k n)
+    (h_comm : B.isCommuting) (h_minus : negIdPauli n ∉ B.stabClosure h_comm)
+    (bsp : BinSympPauli n) :
+    bsp ∈ B.rowSpace ↔
+      ∃ s ∈ (StabCode_of_BinSympMatrix B h_comm h_minus).stabs, Pauli_toBinSympPauli s = bsp := by
+  constructor
+  · intro hbsp
+    rcases (B.mem_rowSpace_iff_exists_indicator bsp).1 hbsp with ⟨ind, rfl⟩
+    exact ⟨B.rowProduct h_comm ind,
+      (BinSympCode_stab_eq_rowProduct B h_comm h_minus _).2 ⟨ind, rfl⟩,
+      B.rowProduct_binaryImage h_comm ind⟩
+  · rintro ⟨s, hs, rfl⟩
+    rcases (BinSympCode_stab_eq_rowSpace B h_comm h_minus s).1 hs with ⟨ind, _, hsimg⟩
+    exact (B.mem_rowSpace_iff_exists_indicator _).2 ⟨ind, hsimg.symm⟩
 
-lemma BinSympMatrix.exists_stab_of_binaryImage_mem_rowSpace {k n : ℕ} (B : BinSympMatrix k n)
-    (h_comm : B.isCommuting) {bsp : BinSympPauli n} (hbsp : bsp ∈ B.rowSpace) :
-    ∃ s ∈ (StabCode_of_BinSympMatrix B h_comm).stabs, Pauli_toBinSympPauli s = bsp := by
-  rcases (B.mem_rowSpace_iff_exists_indicator bsp).1 hbsp with ⟨ind, rfl⟩
-  refine ⟨B.rowProduct h_comm ind, ?_, B.rowProduct_binaryImage h_comm ind⟩
-  exact (BinSympCode_stab_eq_rowProduct B h_comm _).2 ⟨ind, rfl⟩
-
-lemma BinSympMatrix.mem_normalizer_iff {k n : ℕ} (B : BinSympMatrix k n)
-    (h_comm : B.isCommuting) (E : PauliGroup n) :
-    E ∈ (StabCode_of_BinSympMatrix B h_comm).normalizer ↔
+lemma BinSympMatrix.mem_normalizerGroup_iff {k n : ℕ} (B : BinSympMatrix k n)
+    (h_comm : B.isCommuting) (h_minus : negIdPauli n ∉ B.stabClosure h_comm) (E : PauliGroup n) :
+    E ∈ (StabCode_of_BinSympMatrix B h_comm h_minus).normalizerGroup ↔
       ∀ i, symplecticProd (B.row i) (Pauli_toBinSympPauli E) = 0 := by
+  rw [StabCode_of_BinSympMatrix, StabCode.mem_normalizerGroup_of_StabSet]
   constructor
   · intro hE i
-    have hcomm :
-        commute E (BinSympPauli_toPauli (B.row i)) := by
-      have hmem : BinSympPauli_toPauli (B.row i) ∈ (StabCode_of_BinSympMatrix B h_comm).stabs := by
-        exact (BinSympCode_stab_eq_rowProduct B h_comm _).2
-          ⟨Pi.single i (1 : ZMod 2), B.rowProduct_single h_comm i⟩
-      unfold StabCode.normalizer at hE
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hE
-      exact hE _ hmem
-    have hs :
-        symplecticProd (Pauli_toBinSympPauli E)
-          (Pauli_toBinSympPauli (BinSympPauli_toPauli (B.row i))) = 0 :=
-      (commute_iff_symplecticProd_zero E (BinSympPauli_toPauli (B.row i))).1 hcomm
-    simpa [symplecticProd_comm] using hs
-  · intro hE
-    unfold StabCode.normalizer
-    simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-    intro s hs
-    have hs' : s ∈ Subgroup.closure (SetLike.coe (B.toStabSet h_comm).stabs) := by
-      simpa [StabCode_of_BinSympMatrix, StabCode_of_StabSet] using hs
-    have hall : commute E s := by
-      refine Subgroup.closure_induction ?_ ?_ ?_ ?_ hs'
-      · intro x hx
-        simp only [BinSympMatrix.toStabSet, Finset.mem_coe, Finset.mem_image] at hx
-        rcases hx with ⟨i, _, rfl⟩
-        exact (commute_iff_symplecticProd_zero E (BinSympPauli_toPauli (B.row i))).2 <|
-          by simpa [symplecticProd_comm] using hE i
-      · simpa [commute, anticommute_sym] using commute_1x E
-      · intro x y _ _ hx hy
-        exact (commute_iff_commute _ _).2 <|
-          (Commute.mul_right
-            ((commute_iff_eq _ _).2 ((commute_iff_commute _ _).1 hx))
-            ((commute_iff_eq _ _).2 ((commute_iff_commute _ _).1 hy))).eq
-      · intro x _ hx
-        exact (commute_iff_commute _ _).2 <|
-          (Commute.inv_right
-            ((commute_iff_eq _ _).2 ((commute_iff_commute _ _).1 hx))).eq
-    exact hall
+    have hmem : BinSympPauli_toPauli (B.row i) ∈ (B.toStabSet h_comm).stabs :=
+      Finset.mem_image.2 ⟨i, Finset.mem_univ i, rfl⟩
+    have := (commute_iff_symplecticProd_zero E _).1 (hE _ hmem)
+    simpa [symplecticProd_comm] using this
+  · intro hE s hs
+    simp only [BinSympMatrix.toStabSet, Finset.mem_image, Finset.mem_univ, true_and] at hs
+    obtain ⟨i, rfl⟩ := hs
+    exact (commute_iff_symplecticProd_zero E _).2 (by simpa [symplecticProd_comm] using hE i)
 
 lemma BinSympMatrix.stabCode_undetectable_iff {k n : ℕ} (B : BinSympMatrix k n)
-    (h_comm : B.isCommuting) (E : PauliGroup n) :
-    (StabCode_of_BinSympMatrix B h_comm).undetectable E ↔
+    (h_comm : B.isCommuting) (h_minus : negIdPauli n ∉ B.stabClosure h_comm) (E : PauliGroup n) :
+    (StabCode_of_BinSympMatrix B h_comm h_minus).undetectable E ↔
       B.undetectable (Pauli_toBinSympPauli E) ∧ PauliGroup.normalized E := by
-  constructor
-  · rintro ⟨h_norm, h_not_stab, hE_norm⟩
-    refine ⟨?_, hE_norm⟩
-    constructor
-    · exact (B.mem_normalizer_iff h_comm E).1 h_norm
-    · intro hbsp
-      rcases B.exists_stab_of_binaryImage_mem_rowSpace h_comm hbsp with ⟨s, hs, hsimg⟩
-      exact h_not_stab s hs hsimg
-  · rintro ⟨hbsp, hE_norm⟩
-    refine ⟨(B.mem_normalizer_iff h_comm E).2 hbsp.1, ?_, hE_norm⟩
-    intro s hs hsimg
-    exact hbsp.2 <| hsimg ▸ B.binaryImage_mem_rowSpace_of_stab h_comm hs
+  rw [StabCode.undetectable, BinSympMatrix.undetectable, B.mem_normalizerGroup_iff h_comm h_minus,
+    StabCode.mem_trivialLogicals_iff, B.mem_rowSpace_iff_exists_stab h_comm h_minus]
+  tauto
 
 lemma BinSympMatrix.stabCode_undetectable_toPauli_iff {k n : ℕ} (B : BinSympMatrix k n)
-    (h_comm : B.isCommuting) (bsp : BinSympPauli n) :
-    (StabCode_of_BinSympMatrix B h_comm).undetectable (BinSympPauli_toPauli bsp) ↔
+    (h_comm : B.isCommuting) (h_minus : negIdPauli n ∉ B.stabClosure h_comm)
+    (bsp : BinSympPauli n) :
+    (StabCode_of_BinSympMatrix B h_comm h_minus).undetectable (BinSympPauli_toPauli bsp) ↔
       B.undetectable bsp := by
   simpa [BinSympPauli_toPauli_normalized] using
-    (B.stabCode_undetectable_iff h_comm (BinSympPauli_toPauli bsp))
+    (B.stabCode_undetectable_iff h_comm h_minus (BinSympPauli_toPauli bsp))
 
 --ultimate theorem linking binSymp representation distance
-theorem BinSympMatrix.distance_eq_distance {k n : ℕ} (B : BinSympMatrix k n) (h_comm : B.isCommuting) (hk : 0 < k) :
-  (StabCode_of_BinSympMatrix B h_comm).distance = B.distance hk := by
+theorem BinSympMatrix.distance_eq_distance {k n : ℕ} (B : BinSympMatrix k n) (h_comm : B.isCommuting)
+    (h_minus : negIdPauli n ∉ B.stabClosure h_comm) (hk : 0 < k) :
+  (StabCode_of_BinSympMatrix B h_comm h_minus).distance = B.distance hk := by
   have hweights :
-      (StabCode_of_BinSympMatrix B h_comm).undetectable_set.image pauli_weight =
+      (StabCode_of_BinSympMatrix B h_comm h_minus).undetectable_set.image pauli_weight =
         B.undetectable_set.image BinSympPauli.weight := by
     ext d
     constructor
     · intro hd
       rcases Finset.mem_image.1 hd with ⟨E, hE, rfl⟩
-      have hE' : (StabCode_of_BinSympMatrix B h_comm).undetectable E := by
+      have hE' : (StabCode_of_BinSympMatrix B h_comm h_minus).undetectable E := by
         simpa [StabCode.undetectable_set] using hE
       refine Finset.mem_image.2 ⟨Pauli_toBinSympPauli E, ?_, ?_⟩
-      · have hbsp := (B.stabCode_undetectable_iff h_comm E).1 hE'
+      · have hbsp := (B.stabCode_undetectable_iff h_comm h_minus E).1 hE'
         simpa [BinSympMatrix.undetectable_set] using hbsp.1
       · exact (pauli_weight_eq_BinSympPauli_weight E).symm
     · intro hd
@@ -1045,11 +1129,441 @@ theorem BinSympMatrix.distance_eq_distance {k n : ℕ} (B : BinSympMatrix k n) (
       have hbsp' : B.undetectable bsp := by
         simpa [BinSympMatrix.undetectable_set] using hbsp
       refine Finset.mem_image.2 ⟨BinSympPauli_toPauli bsp, ?_, ?_⟩
-      · have hE : (StabCode_of_BinSympMatrix B h_comm).undetectable (BinSympPauli_toPauli bsp) := by
-          simpa [B.stabCode_undetectable_toPauli_iff h_comm bsp]
+      · have hE : (StabCode_of_BinSympMatrix B h_comm h_minus).undetectable (BinSympPauli_toPauli bsp) := by
+          simpa [B.stabCode_undetectable_toPauli_iff h_comm h_minus bsp]
             using hbsp'
         simpa [StabCode.undetectable_set] using hE
       · exact pauli_weight_BinSympPauli_toPauli bsp
   unfold StabCode.distance BinSympMatrix.distance
   rw [hweights]
 end
+
+noncomputable def StabCode.stabSymplecticSpace {n : ℕ} (C : StabCode n) :
+    Submodule (ZMod 2) (BinSympPauli n) :=
+  Submodule.span (ZMod 2)
+    (Set.image Pauli_toBinSympPauli (C.stabs : Set (PauliGroup n)))
+
+noncomputable def StabCode.numGenerators {n : ℕ} (C : StabCode n) : ℕ :=
+  Module.finrank (ZMod 2) C.stabSymplecticSpace
+
+lemma zmod2_eq_zero_or_one (c : ZMod 2) : c = 0 ∨ c = 1 := by revert c; decide
+
+def StabCode.phiImage {n : ℕ} (C : StabCode n) : Submodule (ZMod 2) (BinSympPauli n) where
+  carrier := Pauli_toBinSympPauli '' ((C.stabs : Set (PauliGroup n)))
+  add_mem' := by
+    rintro a b ⟨x, hx, rfl⟩ ⟨y, hy, rfl⟩
+    exact ⟨x * y, mul_mem hx hy, Pauli_to_BinSymp_correct x y⟩
+  zero_mem' := ⟨1, one_mem _, Pauli_toBinSympPauli_one⟩
+  smul_mem' := by
+    intro c a ha
+    obtain ⟨x, hx, rfl⟩ := ha
+    rcases zmod2_eq_zero_or_one c with h | h <;> subst h
+    · exact ⟨1, one_mem _, by rw [zero_smul, Pauli_toBinSympPauli_one]⟩
+    · exact ⟨x, hx, by rw [one_smul]⟩
+
+lemma StabCode.stabSymplecticSpace_eq_phiImage {n : ℕ} (C : StabCode n) :
+    C.stabSymplecticSpace = C.phiImage :=
+  Submodule.span_eq C.phiImage
+
+lemma StabCode.mem_stabilizerSpace_iff {n : ℕ} (C : StabCode n) (x : BinSympPauli n) :
+    x ∈ C.stabSymplecticSpace ↔ ∃ s ∈ C.stabs, Pauli_toBinSympPauli s = x := by
+  rw [C.stabSymplecticSpace_eq_phiImage]
+  exact ⟨fun ⟨s, hs, hEq⟩ => ⟨s, hs, hEq⟩, fun ⟨s, hs, hEq⟩ => ⟨s, hs, hEq⟩⟩
+
+/-- The stabilizer group of a code we define using the check matrix is just the rowspace of the check matrix -/
+lemma BinSympMatrix.stabSymplecticSpace_eq_rowSpace {k n : ℕ} (B : BinSympMatrix k n)
+    (h_comm : B.isCommuting) (h_minus : negIdPauli n ∉ B.stabClosure h_comm) :
+    (StabCode_of_BinSympMatrix B h_comm h_minus).stabSymplecticSpace = B.rowSpace := by
+  ext x
+  rw [StabCode.mem_stabilizerSpace_iff, B.mem_rowSpace_iff_exists_stab h_comm h_minus]
+
+lemma BinSympMatrix.numGenerators_eq_finrank_rowSpace {k n : ℕ} (B : BinSympMatrix k n)
+    (h_comm : B.isCommuting) (h_minus : negIdPauli n ∉ B.stabClosure h_comm) :
+    (StabCode_of_BinSympMatrix B h_comm h_minus).numGenerators = Module.finrank (ZMod 2) B.rowSpace := by
+  rw [StabCode.numGenerators, B.stabSymplecticSpace_eq_rowSpace h_comm h_minus]
+
+def BinSympPauli.toSubgroup {n : ℕ} (V : Submodule (ZMod 2) (BinSympPauli n)) :
+    Subgroup (Multiplicative (BinSympPauli n)) :=
+  AddSubgroup.toSubgroup V.toAddSubgroup
+
+@[simp] lemma BinSympPauli.mem_toSubgroup {n : ℕ} (V : Submodule (ZMod 2) (BinSympPauli n))
+    (x : Multiplicative (BinSympPauli n)) :
+    x ∈ BinSympPauli.toSubgroup V ↔ Multiplicative.toAdd x ∈ V := Iff.rfl
+
+lemma BinSympPauli.card_toSubgroup {n : ℕ} (V : Submodule (ZMod 2) (BinSympPauli n)) :
+    Nat.card (BinSympPauli.toSubgroup V) = 2 ^ Module.finrank (ZMod 2) V := by
+  have hequiv : ↥(BinSympPauli.toSubgroup V) ≃ ↥V :=
+    ⟨fun x => ⟨Multiplicative.toAdd x.1, x.2⟩, fun x => ⟨Multiplicative.ofAdd x.1, x.2⟩,
+      fun _ => rfl, fun _ => rfl⟩
+  rw [Nat.card_congr hequiv, Module.natCard_eq_pow_finrank (K := ZMod 2) (V := ↥V)]
+  simp [Nat.card_eq_fintype_card, ZMod.card]
+
+lemma StabCode.trivialLogicals_eq_comap_stabilizerSpace {n : ℕ} (C : StabCode n) :
+    C.trivialLogicals
+      = Subgroup.comap (PauliGroup.phi n) (BinSympPauli.toSubgroup C.stabSymplecticSpace) := by
+  ext E
+  rw [C.mem_trivialLogicals_iff, Subgroup.mem_comap, BinSympPauli.mem_toSubgroup]
+  exact (C.mem_stabilizerSpace_iff (Pauli_toBinSympPauli E)).symm
+
+noncomputable def StabCode.logical_dim {n : ℕ} (C : StabCode n) : ℕ :=
+  Module.finrank ℂ C.space
+
+noncomputable def BinSympPauli.form (n : ℕ) :
+    LinearMap.BilinForm (ZMod 2) (BinSympPauli n) :=
+  LinearMap.mk₂ (ZMod 2) symplecticProd
+    (by intros; simp [symplecticProd, add_dotProduct]; abel)
+    (by intros; simp [symplecticProd, smul_dotProduct, smul_add, mul_add])
+    (by intros; simp [symplecticProd, dotProduct_add]; abel)
+    (by intros; simp [symplecticProd, dotProduct_smul, smul_add, mul_add])
+
+lemma BinSympPauli.form_apply {n : ℕ} (x y : BinSympPauli n) :
+    BinSympPauli.form n x y = symplecticProd x y := by
+  rfl
+
+lemma BinSympPauli.form_nondegenerate (n : ℕ) :
+    (BinSympPauli.form n).Nondegenerate := by
+  unfold LinearMap.BilinForm.Nondegenerate;
+  simp +decide [ LinearMap.Nondegenerate ];
+  constructor <;> intro x hx <;> ext i <;> simp_all +decide [ funext_iff, Fin.forall_fin_succ, symplecticProd ];
+  · specialize hx 0 ( Pi.single i 1 ) ; simp_all +decide [ form ] ;
+    unfold symplecticProd at hx; simp_all +decide [ dotProduct, Pi.single_apply ] ;
+  · unfold form at hx; specialize hx ( Pi.single i 1 ) 0; simp_all +decide [ dotProduct ] ;
+    simp_all +decide [ symplecticProd, dotProduct ];
+    simp_all +decide [ Pi.single_apply ];
+  · specialize hx 0 ( Pi.single i 1 ) ; simp_all +decide [ form, symplecticProd ] ;
+  · convert hx 0 ( Pi.single i 1 ) using 1 ; simp +decide [ form ];
+    unfold symplecticProd; simp +decide [ Finset.sum_apply, Pi.single_apply ] ;
+    have := hx ( Pi.single i 1 ) 0; have := hx 0 ( Pi.single i 1 ) ; simp_all +decide [ form ] ;
+    have := hx ( Pi.single i 1 ) 0; have := hx 0 ( Pi.single i 1 ) ; simp_all +decide [ symplecticProd ] ;
+
+lemma BinSympPauli.form_isRefl (n : ℕ) :
+    (BinSympPauli.form n).IsRefl := by
+  unfold LinearMap.BilinForm.IsRefl; simp +decide [ form ] ;
+  intro x; unfold symplecticProd; simp_all +decide [ dotProduct ] ;
+  simp +decide [ mul_comm, add_comm ]
+
+lemma BinSympPauli.finrank (n : ℕ) :
+    Module.finrank (ZMod 2) (BinSympPauli n) = 2 * n := by
+  unfold BinSympPauli; norm_num [ two_mul ] ;
+
+noncomputable def StabCode.normalizerSpace {n : ℕ} (C : StabCode n) :
+    Submodule (ZMod 2) (BinSympPauli n) :=
+  (BinSympPauli.form n).orthogonal C.stabSymplecticSpace
+
+lemma StabCode.stabSymplecticSpace_le_normalizerSpace {n : ℕ} (C : StabCode n) :
+    C.stabSymplecticSpace ≤ C.normalizerSpace := by
+  refine' Submodule.span_le.mpr _;
+  intro x hx
+  obtain ⟨s, hs, rfl⟩ := hx
+  have h_comm : ∀ t ∈ C.stabs, symplecticProd (Pauli_toBinSympPauli s) (Pauli_toBinSympPauli t) = 0 := by
+    intro t ht
+    have h_comm : commute s t := by
+      have h_comm : s * t = t * s := by
+        have h_comm : IsMulCommutative C.stabs := by
+          exact C.h_comm;
+        have h_comm : ∀ (s t : ↥C.stabs), s * t = t * s := by
+          exact fun s t => mul_comm' s t;
+        convert congr_arg Subtype.val ( h_comm ⟨ s, hs ⟩ ⟨ t, ht ⟩ ) using 1
+      exact (commute_iff_commute s t).2 h_comm
+    exact (commute_iff_symplecticProd_zero s t).1 h_comm
+  exact (by
+  intro t ht;
+  refine' Submodule.span_induction _ _ _ _ ht;
+  · simp_all +decide [ BinSympPauli.form, LinearMap.IsOrtho ];
+    intro a b x hx hx' hx'' hx'''; specialize h_comm x hx hx' hx''; simp_all +decide [ LinearMap.BilinForm.IsOrtho, symplecticProd_comm ] ;
+  · simp +decide [ LinearMap.BilinForm.IsOrtho ];
+  · simp +contextual [ LinearMap.BilinForm.IsOrtho ];
+  · simp +contextual [ LinearMap.BilinForm.IsOrtho, symplecticProd ])
+
+lemma StabCode.finrank_normalizerSpace {n : ℕ} (C : StabCode n) :
+    Module.finrank (ZMod 2) C.normalizerSpace = 2 * n - C.numGenerators := by
+  convert LinearMap.BilinForm.finrank_orthogonal ( BinSympPauli.form_nondegenerate n ) C.stabSymplecticSpace using 1;
+  rw [ BinSympPauli.finrank ];
+  rfl
+
+lemma StabCode.numGenerators_le {n : ℕ} (C : StabCode n) : C.numGenerators ≤ n := by
+  have h1 : C.numGenerators ≤ Module.finrank (ZMod 2) C.normalizerSpace :=
+    Submodule.finrank_mono C.stabSymplecticSpace_le_normalizerSpace
+  have h2 : C.numGenerators ≤ 2 * n := by
+    have := Submodule.finrank_le C.stabSymplecticSpace
+    rwa [BinSympPauli.finrank] at this
+  rw [C.finrank_normalizerSpace] at h1
+  omega
+
+lemma StabCode.normalizerGroup_eq_comap {n : ℕ} (C : StabCode n) :
+    C.normalizerGroup
+      = Subgroup.comap (PauliGroup.phi n) (BinSympPauli.toSubgroup C.normalizerSpace) := by
+  ext E
+  rw [C.mem_normalizerGroup_iff_symplecticProd, Subgroup.mem_comap,
+    BinSympPauli.mem_toSubgroup]
+  show (∀ s ∈ C.stabs, symplecticProd (Pauli_toBinSympPauli s) (Pauli_toBinSympPauli E) = 0)
+    ↔ Pauli_toBinSympPauli E ∈ C.normalizerSpace
+  constructor
+  · intro hE y hy
+    obtain ⟨s, hs, rfl⟩ := (C.mem_stabilizerSpace_iff y).1 hy
+    simpa [BinSympPauli.form_apply, LinearMap.BilinForm.IsOrtho] using hE s hs
+  · intro hE s hs
+    have := hE (Pauli_toBinSympPauli s) ((C.mem_stabilizerSpace_iff _).2 ⟨s, hs, rfl⟩)
+    simpa [BinSympPauli.form_apply, LinearMap.BilinForm.IsOrtho] using this
+
+/-- There are 4^(n-generators) logical operators -/
+theorem StabCode.card_logicalGroup {n : ℕ} (C : StabCode n) :
+    Nat.card C.logicalGroup = 4 ^ (n - C.numGenerators) := by
+  have hle : C.numGenerators ≤ n := C.numGenerators_le
+  have hcard : Nat.card C.logicalGroup = C.trivialLogicals.relIndex C.normalizerGroup := rfl
+  rw [hcard, C.trivialLogicals_eq_comap_stabilizerSpace, C.normalizerGroup_eq_comap,
+    Subgroup.relIndex_comap,
+    Subgroup.map_comap_eq_self_of_surjective (PauliGroup.phi_surjective n)]
+  set Sg := BinSympPauli.toSubgroup C.stabSymplecticSpace with hSg
+  set Ng := BinSympPauli.toSubgroup C.normalizerSpace with hNg
+  have hSN : Sg ≤ Ng := fun x hx => C.stabSymplecticSpace_le_normalizerSpace hx
+  have hmul : Nat.card ↥(Sg.subgroupOf Ng) * (Sg.subgroupOf Ng).index = Nat.card ↥Ng :=
+    Subgroup.card_mul_index _
+  have hsub : Nat.card ↥(Sg.subgroupOf Ng) = Nat.card ↥Sg :=
+    Nat.card_congr (Subgroup.subgroupOfEquivOfLe hSN).toEquiv
+  have hScard : Nat.card ↥Sg = 2 ^ C.numGenerators := BinSympPauli.card_toSubgroup _
+  have hNcard : Nat.card ↥Ng = 2 ^ (2 * n - C.numGenerators) := by
+    rw [BinSympPauli.card_toSubgroup, C.finrank_normalizerSpace]
+  rw [hsub, hScard, hNcard] at hmul
+  have hpow : (2 : ℕ) ^ C.numGenerators * 4 ^ (n - C.numGenerators) = 2 ^ (2 * n - C.numGenerators) := by
+    rw [show (4 : ℕ) = 2 ^ 2 by norm_num, ← pow_mul, ← pow_add]
+    congr 1
+    omega
+  have := hmul.trans hpow.symm
+  exact Nat.eq_of_mul_eq_mul_left (by positivity) this
+
+lemma StabCode.undetectable_of_notMem_trivialLogicals {n : ℕ} (C : StabCode n)
+    {E : PauliGroup_group n} (hE : E ∈ C.normalizerGroup) (hE' : E ∉ C.trivialLogicals) :
+    C.undetectable (BinSympPauli_toPauli (Pauli_toBinSympPauli E)) := by
+  refine ⟨?_, ?_, BinSympPauli_toPauli_normalized _⟩
+  · rw [C.mem_normalizerGroup_iff_symplecticProd] at hE ⊢
+    simpa using hE
+  · rw [C.mem_trivialLogicals_iff] at hE' ⊢
+    simpa using hE'
+
+/- Definition of saying that `C` is a `[[n, k]]` code -/
+structure param_triple {n : ℕ} (C : StabCode n) (k d : ℕ) where
+  achieves_k : C.logical_dim = 2^k
+  achieves_d : d ≤ C.distance
+
+lemma Pauli_toBinSympPauli_eq_zero_iff {n : ℕ} (P : PauliGroup_group n) :
+    Pauli_toBinSympPauli P = 0 ↔ PauliGroup.map P = fun _ => Pauli_I := by
+  simp +decide [ funext_iff, Prod.ext_iff, Pauli_toBinSympPauli ];
+  constructor <;> intro h;
+  · intro x;
+    convert ( Z2Z2_Pauli_equiv.symm_apply_eq.mp _ );
+    rotate_left;
+    exact ( 0, 0 );
+    · exact Prod.ext ( h.1 x ) ( h.2 x );
+    · rfl;
+  · have h_symm : Z2Z2_Pauli_equiv.symm Pauli_I = (0, 0) := by
+      exact (Equiv.symm_apply_eq Z2Z2_Pauli_equiv).mpr rfl
+    aesop
+
+lemma PauliGroup.mem_phaseSubgroup_iff_scalar {n : ℕ} (P : PauliGroup_group n) :
+    P ∈ PauliGroup.phaseSubgroup n ↔ ∃ z : pgroup_phases, P = scalarPauli z := by
+  rw [PauliGroup.mem_phaseSubgroup_iff, Pauli_toBinSympPauli_eq_zero_iff]
+  constructor
+  · intro h
+    refine ⟨PauliGroup.phase P, ?_⟩
+    conv_lhs => rw [← foldPauli_phase_map P]
+    rw [h]
+    rfl
+  · rintro ⟨z, rfl⟩
+    simp [scalarPauli, PauliGroup.map]
+
+lemma one_eq_scalarPauli_one {n : ℕ} :
+    (1 : PauliGroup_group n) = scalarPauli pgphase_1 := by
+  convert Pauli1_unfold
+
+/-
+Any phase other than `+1` and `-1` squares to `-1`.
+-/
+lemma pgphase_sq_eq (z : pgroup_phases) (hz1 : z ≠ pgphase_1) (hzn1 : z ≠ pgphase_n1) :
+    z * z = pgphase_n1 := by
+  rcases pgphase_cases z with h | h | h | h <;> simp_all +decide [ phase, pgroup_phases ];
+  · exact False.elim <| hz1 <| Subtype.ext h;
+  · exact False.elim <| hzn1 <| Subtype.ext h;
+  · ext ; simp +decide [ h, Phase.phase_mul_eq ];
+    erw [ Subtype.coe_mk ] at * ; simp_all +decide [ Complex.ext_iff ];
+  · ext; simp [h, mul_comm_pgroup_phases];
+    erw [ Subtype.coe_mk ] at * ; aesop
+
+lemma ker_phi_trivial {n : ℕ} (C : StabCode n)
+    (g : PauliGroup_group n) (hg : g ∈ C.stabs)
+    (hphi : Pauli_toBinSympPauli g = 0) : g = 1 := by
+  have hmap : PauliGroup.map g = fun _ => Pauli_I :=
+    (Pauli_toBinSympPauli_eq_zero_iff g).mp hphi
+  have hg' : g = scalarPauli (PauliGroup.phase g) := by
+    unfold scalarPauli
+    rw [← hmap]
+    exact (foldPauli_phase_map g).symm
+  set z := PauliGroup.phase g with hz
+  by_cases hz1 : z = pgphase_1
+  · rw [hg', hz1]
+    exact one_eq_scalarPauli_one.symm
+  · by_cases hzn1 : z = pgphase_n1
+    · exfalso
+      apply C.h_minus
+      have hgn : g = negIdPauli n := by rw [hg', hzn1]; rfl
+      rw [← hgn]; exact hg
+    · exfalso
+      apply C.h_minus
+      have hsq : z * z = pgphase_n1 := pgphase_sq_eq z hz1 hzn1
+      have hgg : g * g = negIdPauli n := by
+        rw [hg', foldPauli_scalar_sq, hsq]; rfl
+      rw [← hgg]
+      exact mul_mem hg hg
+
+lemma phi_injOn {n : ℕ} (C : StabCode n) :
+    Set.InjOn Pauli_toBinSympPauli (C.stabs : Set (PauliGroup n)) := by
+  intro a ha b hb hab
+  have := ker_phi_trivial C (a * b⁻¹) (Subgroup.mul_mem _ ha (Subgroup.inv_mem _ hb)) ?_
+  · simpa using eq_inv_of_mul_eq_one_left this
+  · rw [Pauli_to_BinSymp_correct, hab]
+    rw [← Pauli_to_BinSymp_correct]
+    simp +decide [Pauli_toBinSympPauli_one]
+
+lemma StabCode.card_stabs {n : ℕ} (C : StabCode n) :
+    Nat.card C.stabs = 2 ^ C.numGenerators := by
+  have hinj := phi_injOn C
+  have hgen : C.numGenerators = Module.finrank (ZMod 2) C.phiImage := by
+    rw [StabCode.numGenerators, C.stabSymplecticSpace_eq_phiImage]
+  have hcardV : Nat.card C.phiImage = 2 ^ Module.finrank (ZMod 2) C.phiImage := by
+    rw [Module.natCard_eq_pow_finrank (K := ZMod 2) (V := C.phiImage)]
+    simp [Nat.card_eq_fintype_card, ZMod.card]
+  have hcardG : Nat.card C.phiImage = Nat.card C.stabs := Nat.card_image_of_injOn hinj
+  rw [← hcardG, hcardV, hgen]
+
+instance PauliGroup_group.instFinite (n : ℕ) : Finite ↥(PauliGroup_group n) := by
+  have : Fintype ↥(PauliGroup_group n) := FinsetCoe.fintype (PauliGroup n)
+  exact Finite.of_fintype _
+
+noncomputable instance StabCode.instFintypeStabs {n : ℕ} (C : StabCode n) :
+    Fintype ↥C.stabs := Fintype.ofFinite _
+
+lemma stabilizes_iff_mulVec {n : ℕ} (U : 𝐔ₙ[n]) (ψ : PState n) :
+    stabilizes U ψ ↔ U.val.mulVec ψ = ψ := Iff.rfl
+
+lemma StabCode.mem_space_iff_mulVec {n : ℕ} (C : StabCode n) (v : BitVec n → ℂ) :
+    v ∈ C.space ↔ ∀ s ∈ C.stabs, (s.val.val).mulVec v = v := by
+  rw [StabCode.mem_space]
+  simp only [stabilizes_iff_mulVec]
+
+/- The projector onto the codespace -/
+noncomputable def StabCode.projector {n : ℕ} (C : StabCode n) :
+    (BitVec n → ℂ) →ₗ[ℂ] (BitVec n → ℂ) :=
+  (Nat.card C.stabs : ℂ)⁻¹ • ∑ g : ↥C.stabs, Matrix.toLin' (g.val.val.val)
+
+lemma StabCode.projector_apply {n : ℕ} (C : StabCode n) (v : BitVec n → ℂ) :
+    C.projector v
+      = (Nat.card C.stabs : ℂ)⁻¹ • ∑ g : ↥C.stabs, (g.val.val.val).mulVec v := by
+  simp [StabCode.projector, LinearMap.sum_apply, Matrix.toLin'_apply]
+
+/- The projector is the identity in the codespace -/
+lemma StabCode.projector_apply_id {n : ℕ} (C : StabCode n) (v : BitVec n → ℂ)
+    (hv' : v ∈ C.space) : C.projector v = v := by
+  have hv : ∀ s ∈ C.stabs, (s.val.val).mulVec v = v := (C.mem_space_iff_mulVec v).mp hv'
+  have h_sum : ∑ g : ↥C.stabs, (g.val.val.val).mulVec v = (Nat.card C.stabs : ℂ) • v := by
+    convert Finset.sum_const v
+    · rename_i x hx
+      exact hv _ x.2
+    · ext; simp [Nat.card]
+  unfold StabCode.projector; simp +decide [h_sum]
+
+/- The projector indeed is the projector -/
+lemma StabCode.projector_apply_mem {n : ℕ} (C : StabCode n) (v : BitVec n → ℂ) :
+    C.projector v ∈ C.space := by
+  rw [StabCode.mem_space_iff_mulVec]
+  intro s hs
+  unfold StabCode.projector
+  simp
+  rw [Matrix.mulVec_smul, Matrix.mulVec_sum]
+  conv_rhs => rw [← Equiv.sum_comp (Equiv.mulLeft (⟨s, hs⟩ : ↥C.stabs))]
+  simp +decide [Matrix.mulVec_mulVec]
+
+lemma StabCode.projector_isProj {n : ℕ} (C : StabCode n) :
+    LinearMap.IsProj C.space C.projector :=
+  ⟨fun v => C.projector_apply_mem v, fun v hv => C.projector_apply_id v hv⟩
+
+lemma trace_stab_elem {n : ℕ} (C : StabCode n)
+    (g : PauliGroup_group n) (hg : g ∈ C.stabs) :
+    Matrix.trace (g.val.val) = if g = 1 then (2 : ℂ) ^ n else 0 := by
+  split_ifs with h
+  · have h_card : Fintype.card (BitVec n) = 2 ^ n := by
+      convert Fintype.card_fin ( 2 ^ n ) using 1;
+      fapply Fintype.card_congr;
+      exact ⟨ fun x => x.toFin, fun x => BitVec.ofFin x, fun x => by simp +decide, fun x => by simp +decide ⟩;
+    aesop
+  · have h_trace_zero : Matrix.trace (fold (PauliGroup.phase g, PauliGroup.map g)).val = 0 := by
+      rw [ trace_fold_eq ];
+      contrapose! h;
+      exact ker_phi_trivial C g hg ( Pauli_toBinSympPauli_eq_zero_iff g |>.2 <| by aesop );
+    convert h_trace_zero using 2;
+    exact congr_arg ( fun x : PauliGroup_group n => x.val.val ) ( foldPauli_phase_map g |> Eq.symm )
+
+lemma sum_trace_stabs {n : ℕ} (C : StabCode n) :
+    ∑ g : ↥C.stabs, Matrix.trace (g.val.val.val) = (2 : ℂ) ^ n := by
+  rw [ Finset.sum_congr rfl fun x hx => ?_ ];
+  rotate_left;
+  exact fun g => if g.val = 1 then ( 2 : ℂ ) ^ n else 0;
+  · convert trace_stab_elem C x.val x.2 using 1;
+  · rw [ Finset.sum_eq_single 1 ] <;> aesop
+
+lemma StabCode.trace_projector {n : ℕ} (C : StabCode n) :
+    LinearMap.trace ℂ _ C.projector = (Nat.card C.stabs : ℂ)⁻¹ * (2 : ℂ) ^ n := by
+  unfold StabCode.projector; norm_num [ Matrix.trace_toLin'_eq ] ;
+  convert sum_trace_stabs C using 1
+
+lemma StabCode.logical_dim_mul_card {n : ℕ} (C : StabCode n) :
+    C.logical_dim * Nat.card C.stabs = 2 ^ n := by
+  have hproj := C.projector_isProj
+  have htr := C.trace_projector
+  have hfr : LinearMap.trace ℂ _ C.projector = (Module.finrank ℂ C.space : ℂ) := hproj.trace
+  rw [hfr] at htr
+  set N := Nat.card C.stabs with hN
+  have hNpos : 0 < N := Nat.card_pos
+  have hNne : (N : ℂ) ≠ 0 := by exact_mod_cast hNpos.ne'
+  have hnat : Module.finrank ℂ C.space * N = 2 ^ n := by
+    have hcast : (Module.finrank ℂ C.space : ℂ) * (N : ℂ) = (2 : ℂ) ^ n := by
+      rw [htr]; field_simp
+    exact_mod_cast hcast
+  exact hnat
+
+theorem StabCode.dim_iff_generators {n : ℕ} (C : StabCode n) (k : ℕ) :
+    C.logical_dim = 2 ^ k ↔ k = n - C.numGenerators := by
+  have hcard := C.card_stabs
+  have hmul := C.logical_dim_mul_card
+  set d := C.logical_dim with hd
+  set g := C.numGenerators with hg
+  rw [hcard] at hmul
+  -- `generators ≤ n` follows from `d * 2^g = 2^n` and `d ≥ 1`.
+  have hdpos : 0 < d := by
+    rcases Nat.eq_zero_or_pos d with h | h
+    · rw [h, zero_mul] at hmul; exact absurd hmul.symm (by positivity)
+    · exact h
+  have hle : g ≤ n := by
+    have hpow : (2 : ℕ) ^ g ≤ 2 ^ n := by
+      calc (2 : ℕ) ^ g ≤ d * 2 ^ g := Nat.le_mul_of_pos_left _ hdpos
+        _ = 2 ^ n := hmul
+    exact (Nat.pow_le_pow_iff_right (by norm_num)).1 hpow
+  have hdg : d = 2 ^ (n - g) := by
+    have h2 : (2 : ℕ) ^ (n - g) * 2 ^ g = 2 ^ n := by
+      rw [← pow_add, Nat.sub_add_cancel hle]
+    have hh : d * 2 ^ g = 2 ^ (n - g) * 2 ^ g := by rw [hmul, h2]
+    exact Nat.eq_of_mul_eq_mul_right (by positivity) hh
+  rw [hdg]
+  constructor
+  · intro h
+    have := Nat.pow_right_injective (le_refl 2) h
+    omega
+  · intro h; rw [h]
+
+theorem StabCode.dim_iff_card_logicalGroup {n : ℕ} (C : StabCode n) (k : ℕ) :
+    C.logical_dim = 2 ^ k ↔ Nat.card C.logicalGroup = 4 ^ k := by
+  rw [C.dim_iff_generators k, StabCode.card_logicalGroup]
+  exact ⟨fun h => by rw [h], fun h => (Nat.pow_right_injective (by norm_num) h).symm⟩
+
+theorem StabCode.param_triple_of {n : ℕ} (C : StabCode n) (k d : ℕ)
+    (hk : k = n - C.numGenerators) (hd : d ≤ C.distance) : param_triple C k d :=
+  ⟨(C.dim_iff_generators k).2 hk, hd⟩
