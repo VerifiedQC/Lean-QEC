@@ -129,7 +129,7 @@ lemma Matrix.unitaryGroup.neg_ne {k : Type*} [Fintype k] [DecidableEq k] [Inhabi
 noncomputable def scalarPauli {n : ℕ} (z : pgroup_phases) : PauliGroup_group n :=
   foldPauli (z, fun _ => Pauli_I)
 
-noncomputable def negIdPauli (n : ℕ) : PauliGroup n :=
+noncomputable def negIdPauli (n : ℕ) : PauliGroup_group n :=
   scalarPauli pgphase_n1
 
 lemma foldPauli_scalar_sq {n : ℕ} (z : pgroup_phases) :
