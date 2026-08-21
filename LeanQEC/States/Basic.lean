@@ -2,82 +2,37 @@ import LeanQEC.States.PState
 
 noncomputable section
 
-def qub_zero : PState 1 := {
-  vec := (Equiv.arrowCongr beq (Equiv.refl _)) ![(1 : ℂ), 0]
-  normalized' := by
-    have h: ∑ x, ‖![(1 : ℂ), 0] x‖ ^ 2 = 1 := by simp
-    rw [Fintype.sum_equiv beq.symm]
-    exact h
-    simp
-}
+def qub_zero : PState 1 := (Equiv.arrowCongr beq (Equiv.refl _)) ![(1 : ℂ), 0]
 
-def qub_one : PState 1 := {
-  vec := (Equiv.arrowCongr beq (Equiv.refl _)) ![(0 : ℂ), 1]
-  normalized' := by
-    have h: ∑ x, ‖![(0 : ℂ), 1] x‖ ^ 2 = 1 := by simp
-    rw [Fintype.sum_equiv beq.symm]
-    exact h
-    simp
-}
+def qub_one : PState 1 := (Equiv.arrowCongr beq (Equiv.refl _)) ![(0 : ℂ), 1]
 
 @[simp] lemma qub_zero_zero : qub_zero 0#1 = 1 := by
-  simp [qub_zero, beq, BitVec.equivFin, Ket.apply, Equiv.arrowCongr_apply]
+  simp [qub_zero, beq, BitVec.equivFin, Equiv.arrowCongr_apply]
   rfl
-
-lemma qub_zero_vec_zero : qub_zero.vec 0#1 = 1 := by
-  rw [<- Ket.apply, qub_zero_zero]
 
 @[simp] lemma qub_zero_one : qub_zero 1#1 = 0 := by
-  simp [qub_zero, Ket.apply, beq]
+  simp [qub_zero, beq]
   simp [BitVec.equivFin]
-
-lemma qub_zero_vec_one : qub_zero.vec 1#1 = 0 := by
-  rw [<- Ket.apply, qub_zero_one]
 
 @[simp] lemma qub_one_zero : qub_one 0#1 = 0 := by
-  simp [qub_one, beq, BitVec.equivFin, Ket.apply, Equiv.arrowCongr_apply]
+  simp [qub_one, beq, BitVec.equivFin, Equiv.arrowCongr_apply]
   rfl
 
-lemma qub_one_vec_zero : qub_one.vec 0#1 = 0 := by
-  rw [<- Ket.apply, qub_one_zero]
-
 @[simp] lemma qub_one_one : qub_one 1#1 = 1 := by
-  simp [qub_one, Ket.apply, beq]
+  simp [qub_one, beq]
   simp [BitVec.equivFin]
-
-lemma qub_one_vec_one : qub_one.vec 1#1 = 1 := by
-  rw [<- Ket.apply, qub_one_one]
-
-
-def Ket.star {k : Type*} [Fintype k] (ψ : Ket k) : Ket k where
-  vec := starRingEnd (k → ℂ) ψ
-  normalized' := by
-    simp only [Pi.conj_apply, RCLike.norm_conj]
-    simp [DFunLike.coe, ψ.normalized']
 
 variable (ψ : PState 1)
 
-lemma single_qub_normalized : ‖(ψ 0)‖^2+‖(ψ 1)‖^2 = 1 := by
-  convert ψ.normalized''
-  simp
-
-
-
 lemma zero_one_orth : qub_zero.orth qub_one := by
-  unfold Ket.orth Ket.dot
+  unfold PState.orth PState.dot
   simp [dotProduct, BitVec.sum_univ_one]
 
-lemma one_qub_decomp : ψ = qub_zero.sum qub_one (ψ.vec 0) (ψ.vec 1) (single_qub_normalized ψ) (zero_one_orth) := by
-  rw [PState.sum]
-  rw [Ket.mk.injEq]; simp
+lemma one_qub_decomp : ψ = (ψ 0) • qub_zero + (ψ 1) • qub_one := by
   ext i
   rcases (BitVec1_cases i) with H0 | H1
-  · simp
-    rw [H0]
-    simp
-  · simp
-    rw [H1]
-    simp
+  · rw [H0]; simp
+  · rw [H1]; simp
 
 -- less painful than expected
 lemma ket_prodE {n₁ n₂} (ψ₁ : BitVec n₁ → ℂ) (ψ₂ : BitVec n₂ → ℂ) :
@@ -107,12 +62,10 @@ lemma dot_kron {n₁ n₂} (ψ₁ φ₁ : BitVec n₁ → ℂ) (ψ₂ φ₂ : Bi
   · -- what is this nonsense?
     simp; group; simp
 
-
 lemma PState.star_prod {n₁ n₂ : ℕ} (ψ₁ : PState n₁) (ψ₂ : PState n₂) :
-  starRingEnd (BitVec (n₁ + n₂) → ℂ) (ψ₁ ⊗ₚ ψ₂) = (ψ₁.star ⊗ₚ ψ₂.star) := by
-  unfold PState.kron Ket.star
-  nth_rw 2 [DFunLike.coe]
-  unfold Braket.instFunLikeKet
+  starRingEnd (BitVec (n₁ + n₂) → ℂ) (ψ₁ ⊗ₚ ψ₂)
+    = (starRingEnd (BitVec n₁ → ℂ) ψ₁) ⊗ₚ (starRingEnd (BitVec n₂ → ℂ) ψ₂) := by
+  unfold PState.kron
   ext x
   simp [Pi.conj_apply, ket_prodE]
 
@@ -121,24 +74,23 @@ lemma PState.prod_dot_prod' {n₁ n₂} {ψ₁ φ₁ : PState n₁} {ψ₂ φ₂
 
 lemma PState.prod_dot_prod {n₁ n₂} {ψ₁ φ₁ : PState n₁} {ψ₂ φ₂ : PState n₂} :
   (ψ₁ ⊗ₚ ψ₂).dot (φ₁ ⊗ₚ φ₂) = (ψ₁.dot φ₁) * (ψ₂.dot φ₂) := by
-  unfold Ket.dot
+  unfold PState.dot
   rw [PState.star_prod]
-  rw [PState.prod_dot_prod', Ket.star]
-  rfl
+  exact PState.prod_dot_prod'
 
 lemma prod_orth_left {n₁ n₂} {ψ₁ φ₁ : PState n₁} {ψ₂ φ₂ : PState n₂} (ho : ψ₁.orth φ₁)
   : (ψ₁ ⊗ₚ ψ₂).orth (φ₁ ⊗ₚ φ₂) := by
-  unfold Ket.orth at ⊢ ho
+  unfold PState.orth at ⊢ ho
   rw [PState.prod_dot_prod, ho, zero_mul]
 
 lemma prod_orth_right {n₁ n₂} {ψ₁ φ₁ : PState n₁} {ψ₂ φ₂ : PState n₂} (ho : ψ₂.orth φ₂)
   : (ψ₁ ⊗ₚ ψ₂).orth (φ₁ ⊗ₚ φ₂) := by
-  unfold Ket.orth at ⊢ ho
+  unfold PState.orth at ⊢ ho
   rw [PState.prod_dot_prod, ho, mul_zero]
 
-lemma PState.phase_prod_phase {n₁ n₂} (ψ₁ : PState n₁) (ψ₂ : PState n₂) {p₁ p₂ : phase} :
-  (ψ₁.phase_mul p₁) ⊗ₚ (ψ₂.phase_mul p₂) = (ψ₁ ⊗ₚ ψ₂).phase_mul (p₁ * p₂) := by
-  unfold PState.kron Ket.phase_mul
+lemma PState.smul_kron_smul {n₁ n₂} (ψ₁ : PState n₁) (ψ₂ : PState n₂) (a b : ℂ) :
+  (a • ψ₁) ⊗ₚ (b • ψ₂) = (a * b) • (ψ₁ ⊗ₚ ψ₂) := by
+  unfold PState.kron
   ext x
-  simp_rw [ket_prodE, DFunLike.coe, Pi.smul_apply, smul_mul_smul]
-  congr
+  simp_rw [ket_prodE, Pi.smul_apply, smul_eq_mul]
+  ring

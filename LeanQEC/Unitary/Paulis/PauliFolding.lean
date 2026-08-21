@@ -292,6 +292,7 @@ lemma kron_Paulis_aux' {n₁ n₂} (z z' : pgroup_phases) (m : Fin n₁ → Paul
       rw [ih]
       rw [<- foldPauli_iter]
       simp only [pgp_mul_eq, Phase.phase_mul_eq, heq_eq_eq]
+      try rfl
     -- TODO more fin extensionalities...
     apply funext; intro i
     rw [cast_fin_append]
@@ -437,3 +438,7 @@ lemma map_kron_of_Pauli {n₁ n₂} -- (hn₁ : n₁ > 0) (hn₂ : n₂ > 0)
   rw [kronOfPauli]
   simp_rw [kron_PaulisE]
   simp [factored_kron, PauliGroup.map]
+
+lemma foldPauli_phase_map {n : ℕ} (P : PauliGroup n) :
+    (foldPauli (PauliGroup.phase P, PauliGroup.map P) : PauliGroup n) = P := by
+  unfold PauliGroup.phase PauliGroup.map; aesop;

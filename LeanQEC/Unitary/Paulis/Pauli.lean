@@ -208,3 +208,4 @@ lemma pauli_commute_or_anticommute {n : ℕ}{U₁ U₂ : 𝐔ₙ[n]}
   (hU₁ : U₁ ∈ PauliGroup n) (hU₂ : U₂ ∈ PauliGroup n) :
   U₁ * U₂ = U₂ * U₁ ∨ U₁ * U₂ = - U₂ * U₁ := by
   apply (pauli_commute_or_anticommute' ⟨U₁, hU₁⟩ ⟨U₂, hU₂⟩)
+
