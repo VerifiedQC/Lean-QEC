@@ -366,3 +366,351 @@ def CSS_pair.of_matrices [NeZero k₁] [NeZero k₂] (H₁ : Matrix (Fin k₁) (
     apply CodeSpace.toCodeSpace_spanned_by
   nt₁ := NeZero.pos _
   nt₂ := NeZero.pos _
+
+noncomputable section
+
+variable {n : ℕ}
+
+lemma fold_pgroup_phases_one {n : ℕ} (f : Fin n → pgroup_phases) (h : ∀ i, f i = 1) :
+    fold_pgroup_phases f = 1 := by
+  induction n with
+  | zero => rfl
+  | succ n ih =>
+    rw [fold_pgroup_phases, h 0, ih (Fin.tail f) (fun i => h _), one_mul]
+
+lemma toPauli_mul_of_phase_one {n : ℕ} (a b : BinSympPauli n)
+    (h : ∀ i, (mul_Pauli1 (Z2Z2_Pauli_equiv (a.1 i, a.2 i))
+      (Z2Z2_Pauli_equiv (b.1 i, b.2 i))).1 = 1) :
+    BinSympPauli_toPauli a * BinSympPauli_toPauli b = BinSympPauli_toPauli (a + b) := by
+  set ma : Fin n → Pauli := fun i => Z2Z2_Pauli_equiv (a.1 i, a.2 i) with hma
+  set mb : Fin n → Pauli := fun i => Z2Z2_Pauli_equiv (b.1 i, b.2 i) with hmb
+  have hsa : foldPauli.symm (BinSympPauli_toPauli a : PauliGroup n) = (pgphase_1, ma) := by
+    simp [BinSympPauli_toPauli, hma]
+  have hsb : foldPauli.symm (BinSympPauli_toPauli b : PauliGroup n) = (pgphase_1, mb) := by
+    simp [BinSympPauli_toPauli, hmb]
+  have hmul :
+      foldPauli.symm
+          ((BinSympPauli_toPauli a * BinSympPauli_toPauli b : PauliGroup_group n) : PauliGroup n)
+        = mul_factored_Paulis (pgphase_1, ma) (pgphase_1, mb) := by
+    rw [← hsa, ← hsb]
+    apply foldPauli.injective
+    apply Subtype.ext
+    simpa using
+      (mul_factored_Paulis_correct (foldPauli.symm (BinSympPauli_toPauli a : PauliGroup n))
+        (foldPauli.symm (BinSympPauli_toPauli b : PauliGroup n))).symm
+  have hfact : mul_factored_Paulis (pgphase_1, ma) (pgphase_1, mb)
+      = (pgphase_1, fun i => (mul_Pauli1 (ma i) (mb i)).2) := by
+    unfold mul_factored_Paulis scale_factored_Pauli mul_Pauli1_tuples collect_phases
+      pointwise_mul_Paulis
+    simp only
+    rw [fold_pgroup_phases_one _ h]
+    simp
+  have hpauli : (fun i => (mul_Pauli1 (ma i) (mb i)).2)
+      = fun i => Z2Z2_Pauli_equiv ((a + b).1 i, (a + b).2 i) := by
+    funext i
+    have h2 := congrArg Z2Z2_Pauli_equiv (local_mul_Pauli_toBinSymp (ma i) (mb i))
+    rw [Equiv.apply_symm_apply] at h2
+    rw [h2, hma, hmb]
+    simp [Equiv.symm_apply_apply]
+  apply Subtype.ext
+  have hval := congrArg (fun z => ((foldPauli z : PauliGroup n) : 𝐔ₙ[n])) hmul
+  simp only [Equiv.apply_symm_apply] at hval
+  rw [hval, hfact, hpauli]
+  rfl
+
+def xPauli {n : ℕ} (u : Fin n → ZMod 2) : PauliGroup_group n := BinSympPauli_toPauli (u, 0)
+
+def zPauli {n : ℕ} (v : Fin n → ZMod 2) : PauliGroup_group n := BinSympPauli_toPauli (0, v)
+
+@[simp]
+lemma xPauli_zero : xPauli (0 : Fin n → ZMod 2) = 1 := BinSympPauli_toPauli_zero
+@[simp]
+lemma zPauli_zero : zPauli (0 : Fin n → ZMod 2) = 1 := BinSympPauli_toPauli_zero
+@[simp]
+lemma toBinSymp_xPauli (u : Fin n → ZMod 2) :
+    Pauli_toBinSympPauli (xPauli u) = (u, 0) :=
+  Pauli_toBinSympPauli_BinSympPauli_toPauli _
+@[simp]
+lemma toBinSymp_zPauli (v : Fin n → ZMod 2) :
+    Pauli_toBinSympPauli (zPauli v) = (0, v) :=
+  Pauli_toBinSympPauli_BinSympPauli_toPauli _
+
+lemma xPauli_mul (u u' : Fin n → ZMod 2) : xPauli u * xPauli u' = xPauli (u + u') := by
+  refine (toPauli_mul_of_phase_one (u, 0) (u', 0) ?_).trans ?_
+  · intro i
+    show (mul_Pauli1 (Z2Z2_Pauli_equiv (u i, 0)) (Z2Z2_Pauli_equiv (u' i, 0))).1 = 1
+    generalize u i = x
+    generalize u' i = y
+    fin_cases x <;> fin_cases y <;> simp [Z2Z2_Pauli_equiv, mul_Pauli1]
+  · rfl
+
+lemma zPauli_mul (v v' : Fin n → ZMod 2) : zPauli v * zPauli v' = zPauli (v + v') := by
+  refine (toPauli_mul_of_phase_one (0, v) (0, v') ?_).trans ?_
+  · intro i
+    show (mul_Pauli1 (Z2Z2_Pauli_equiv (0, v i)) (Z2Z2_Pauli_equiv (0, v' i))).1 = 1
+    generalize v i = x
+    generalize v' i = y
+    fin_cases x <;> fin_cases y <;> simp [Z2Z2_Pauli_equiv, mul_Pauli1]
+  · rfl
+
+lemma zPauli_mul_xPauli_comm {u v : Fin n → ZMod 2} (h : v ⬝ᵥ u = 0) :
+    zPauli v * xPauli u = xPauli u * zPauli v := by
+  have hcomm : commute (BinSympPauli_toPauli ((0 : Fin n → ZMod 2), v))
+      (BinSympPauli_toPauli (u, (0 : Fin n → ZMod 2))) := by
+    apply commutes_of_sympProd_zero
+    simp [symplecticProd, h]
+  exact (commute_iff_commute _ _).1 hcomm
+
+lemma negIdPauli_ne_one (n : ℕ) : negIdPauli n ≠ 1 := by
+  intro h
+  have h1 : (1 : PauliGroup_group n) = scalarPauli pgphase_1 := one_eq_scalarPauli_one
+  rw [h1, negIdPauli, scalarPauli, scalarPauli] at h
+  have := foldPauli.injective (Subtype.ext (congrArg Subtype.val h))
+  have hph : pgphase_n1 = pgphase_1 := congrArg Prod.fst this
+  have : ((-1 : ℂ)) = 1 := congrArg (fun z => (z : pgroup_phases).1.z) hph
+  norm_num at this
+
+variable {k₁ k₂ : ℕ}
+
+lemma zmod2_vec_add_self (u : Fin n → ZMod 2) : u + u = 0 := by
+  funext i
+  show u i + u i = 0
+  generalize u i = a
+  fin_cases a <;> rfl
+
+def cssPauliSubgroup (A B : Submodule (ZMod 2) (Fin n → ZMod 2))
+    (horth : ∀ u ∈ A, ∀ v ∈ B, u ⬝ᵥ v = 0) : Subgroup (PauliGroup_group n) where
+  carrier := {P | ∃ u ∈ A, ∃ v ∈ B, P = xPauli u * zPauli v}
+  one_mem' := ⟨0, A.zero_mem, 0, B.zero_mem, by simp⟩
+  mul_mem' := by
+    rintro P Q ⟨u, hu, v, hv, rfl⟩ ⟨u', hu', v', hv', rfl⟩
+    refine ⟨u + u', A.add_mem hu hu', v + v', B.add_mem hv hv', ?_⟩
+    have hswap : zPauli v * xPauli u' = xPauli u' * zPauli v := by
+      refine zPauli_mul_xPauli_comm ?_
+      rw [dotProduct_comm]
+      exact horth u' hu' v hv
+    calc xPauli u * zPauli v * (xPauli u' * zPauli v')
+        = xPauli u * (zPauli v * xPauli u') * zPauli v' := by group
+      _ = xPauli u * (xPauli u' * zPauli v) * zPauli v' := by rw [hswap]
+      _ = (xPauli u * xPauli u') * (zPauli v * zPauli v') := by group
+      _ = xPauli (u + u') * zPauli (v + v') := by rw [xPauli_mul, zPauli_mul]
+  inv_mem' := by
+    rintro P ⟨u, hu, v, hv, rfl⟩
+    refine ⟨u, hu, v, hv, ?_⟩
+    have hswap : zPauli v * xPauli u = xPauli u * zPauli v := by
+      refine zPauli_mul_xPauli_comm ?_
+      rw [dotProduct_comm]
+      exact horth u hu v hv
+    have hsq : (xPauli u * zPauli v) * (xPauli u * zPauli v) = 1 := by
+      calc xPauli u * zPauli v * (xPauli u * zPauli v)
+          = xPauli u * (zPauli v * xPauli u) * zPauli v := by group
+        _ = xPauli u * (xPauli u * zPauli v) * zPauli v := by rw [hswap]
+        _ = (xPauli u * xPauli u) * (zPauli v * zPauli v) := by group
+        _ = xPauli (u + u) * zPauli (v + v) := by rw [xPauli_mul, zPauli_mul]
+        _ = 1 := by rw [zmod2_vec_add_self u, zmod2_vec_add_self v]; simp
+    exact (inv_eq_self_of_mul_self_eq_one hsq).symm ▸ rfl
+
+@[simp]
+lemma mem_cssPauliSubgroup {A B : Submodule (ZMod 2) (Fin n → ZMod 2)}
+    {horth : ∀ u ∈ A, ∀ v ∈ B, u ⬝ᵥ v = 0} (P : PauliGroup_group n) :
+    P ∈ cssPauliSubgroup A B horth ↔ ∃ u ∈ A, ∃ v ∈ B, P = xPauli u * zPauli v := Iff.rfl
+
+lemma negIdPauli_notMem_cssPauliSubgroup (A B : Submodule (ZMod 2) (Fin n → ZMod 2))
+    (horth : ∀ u ∈ A, ∀ v ∈ B, u ⬝ᵥ v = 0) :
+    negIdPauli n ∉ cssPauliSubgroup A B horth := by
+  rintro ⟨u, _, v, _, hP⟩
+  have himg : Pauli_toBinSympPauli (negIdPauli n) = (u, v) := by
+    rw [hP, Pauli_to_BinSymp_correct, toBinSymp_xPauli, toBinSymp_zPauli]
+    simp
+  have hzero : Pauli_toBinSympPauli (negIdPauli n) = 0 := by
+    have : negIdPauli n ∈ PauliGroup.phaseSubgroup n := by
+      rw [PauliGroup.mem_phaseSubgroup_iff_scalar]
+      exact ⟨pgphase_n1, rfl⟩
+    simpa [PauliGroup.mem_phaseSubgroup_iff] using this
+  rw [hzero] at himg
+  have hu : u = 0 := (congrArg Prod.fst himg).symm
+  have hv : v = 0 := (congrArg Prod.snd himg).symm
+  rw [hu, hv] at hP
+  simp at hP
+  exact negIdPauli_ne_one n hP
+
+lemma rowSpace_orth_of_mutually_orth {k₁ k₂ : ℕ} (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+    (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) (h : H₁.mutually_orth_rows H₂) :
+    ∀ u ∈ H₂.rowSpace, ∀ v ∈ H₁.rowSpace, u ⬝ᵥ v = 0 := by
+  intro u hu
+  refine Submodule.span_induction ?_ ?_ ?_ ?_ hu
+  · rintro _ ⟨i, rfl⟩ v hv
+    rw [dotProduct_comm]
+    refine Submodule.span_induction ?_ ?_ ?_ ?_ hv
+    · rintro _ ⟨j, rfl⟩
+      exact h j i
+    · simp
+    · intro a b _ _ ha hb
+      rw [add_dotProduct, ha, hb, add_zero]
+    · intro a b _ hb
+      rw [smul_dotProduct, hb, smul_zero]
+  · intro v _
+    simp
+  · intro a b _ _ ha hb v hv
+    rw [add_dotProduct, ha v hv, hb v hv, add_zero]
+  · intro a b _ hb v hv
+    rw [smul_dotProduct, hb v hv, smul_zero]
+
+lemma CSS_BSM_isCommuting {k₁ k₂ : ℕ} (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+    (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) (h : H₁.mutually_orth_rows H₂) :
+    (CSS_BSM H₁ H₂).isCommuting := by
+  intro r₁ r₂
+  unfold CSS_BSM BinSympMatrix.rowProd symplecticProd
+  refine Fin.addCases (fun x => ?_) (fun x => ?_) r₁ <;>
+    refine Fin.addCases (fun y => ?_) (fun y => ?_) r₂ <;>
+    simp [Fin.append, BinSympMatrix.row]
+  · exact h x y
+  · rw [dotProduct_comm]
+    exact h y x
+
+lemma CSS_BSM_stabClosure_le {k₁ k₂ : ℕ} (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+    (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) (h : H₁.mutually_orth_rows H₂) :
+    (CSS_BSM H₁ H₂).stabClosure (CSS_BSM_isCommuting H₁ H₂ h) ≤
+      cssPauliSubgroup H₂.rowSpace H₁.rowSpace (rowSpace_orth_of_mutually_orth H₁ H₂ h) := by
+  rw [BinSympMatrix.stabClosure, Subgroup.closure_le]
+  rintro P hP
+  simp only [BinSympMatrix.toStabSet, Finset.coe_image, Set.mem_image, Finset.mem_coe,
+    Finset.mem_univ, true_and] at hP
+  obtain ⟨i, rfl⟩ := hP
+  refine Fin.addCases (fun j => ?_) (fun j => ?_) i
+  · refine ⟨0, Submodule.zero_mem _, H₁ j, Matrix.row_mem_rowSpace, ?_⟩
+    have hrow : (CSS_BSM H₁ H₂).row (Fin.castAdd k₂ j) = (0, H₁ j) := by
+      simp [CSS_BSM, BinSympMatrix.row, Fin.append_left]
+      rfl
+    rw [hrow, xPauli_zero, one_mul, zPauli]
+  · refine ⟨H₂ j, Matrix.row_mem_rowSpace, 0, Submodule.zero_mem _, ?_⟩
+    have hrow : (CSS_BSM H₁ H₂).row (Fin.natAdd k₁ j) = (H₂ j, 0) := by
+      simp [CSS_BSM, BinSympMatrix.row, Fin.append_right]
+      rfl
+    rw [hrow, zPauli_zero, mul_one, xPauli]
+
+theorem CSS_BSM_h_minus {k₁ k₂ : ℕ} (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+    (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) (h : H₁.mutually_orth_rows H₂) :
+    negIdPauli n ∉ (CSS_BSM H₁ H₂).stabClosure (CSS_BSM_isCommuting H₁ H₂ h) := fun hmem =>
+  negIdPauli_notMem_cssPauliSubgroup _ _ _ (CSS_BSM_stabClosure_le H₁ H₂ h hmem)
+
+def cssStabCode {k₁ k₂ : ℕ} (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+    (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) (h : H₁.mutually_orth_rows H₂) : StabCode n :=
+  StabCode_of_BinSympMatrix (CSS_BSM H₁ H₂) (CSS_BSM_isCommuting H₁ H₂ h)
+    (CSS_BSM_h_minus H₁ H₂ h)
+
+lemma Matrix.finrank_rowSpace_eq_rank {k : ℕ} (M : Matrix (Fin k) (Fin n) (ZMod 2)) :
+    Module.finrank (ZMod 2) M.rowSpace = M.rank := by
+  rw [Matrix.rowSpace, Matrix.rank_eq_finrank_span_row]
+  rfl
+
+lemma Matrix.rank_add_rank_ker {k₁ k₂ : ℕ} (M₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+    (M₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) (h : M₂.is_ker_for M₁) :
+    M₁.rank + M₂.rank = n := by
+  have hker : Module.finrank (ZMod 2) (LinearMap.ker (Matrix.toLin' M₁)) = M₂.rank := by
+    rw [← h, Matrix.finrank_rowSpace_eq_rank]
+  have hrn := LinearMap.finrank_range_add_finrank_ker (Matrix.mulVecLin M₁)
+  rw [show Matrix.mulVecLin M₁ = Matrix.toLin' M₁ from rfl, hker] at hrn
+  rw [show M₁.rank = Module.finrank (ZMod 2) (LinearMap.range (Matrix.toLin' M₁)) from rfl]
+  simpa using hrn
+lemma finrank_submodule_prod {V W : Type*} [AddCommGroup V] [Module (ZMod 2) V]
+    [AddCommGroup W] [Module (ZMod 2) W] [Module.Finite (ZMod 2) V] [Module.Finite (ZMod 2) W]
+    (p : Submodule (ZMod 2) V) (q : Submodule (ZMod 2) W) :
+    Module.finrank (ZMod 2) (p.prod q)
+      = Module.finrank (ZMod 2) p + Module.finrank (ZMod 2) q := by
+  have e : (p.prod q) ≃ₗ[ZMod 2] (p × q) :=
+    { toFun := fun x => (⟨x.1.1, x.2.1⟩, ⟨x.1.2, x.2.2⟩)
+      invFun := fun x => ⟨(x.1.1, x.2.1), ⟨x.1.2, x.2.2⟩⟩
+      map_add' := by intros; rfl
+      map_smul' := by intros; rfl
+      left_inv := by intro x; rfl
+      right_inv := by intro x; rfl }
+  rw [e.finrank_eq, Module.finrank_prod]
+
+lemma CSS_BSM_rowSpace_eq {k₁ k₂ : ℕ} (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+    (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) :
+    (CSS_BSM H₁ H₂).rowSpace = (H₂.rowSpace).prod (H₁.rowSpace) := by
+  apply le_antisymm
+  · rw [BinSympMatrix.rowSpace, Submodule.span_le]
+    rintro _ ⟨i, rfl⟩
+    refine Fin.addCases (fun j => ?_) (fun j => ?_) i
+    · have hrow : (CSS_BSM H₁ H₂).row (Fin.castAdd k₂ j) = (0, H₁ j) := by
+        simp [CSS_BSM, BinSympMatrix.row, Fin.append_left]
+        rfl
+      rw [hrow]
+      exact ⟨Submodule.zero_mem _, Matrix.row_mem_rowSpace⟩
+    · have hrow : (CSS_BSM H₁ H₂).row (Fin.natAdd k₁ j) = (H₂ j, 0) := by
+        simp [CSS_BSM, BinSympMatrix.row, Fin.append_right]
+        rfl
+      rw [hrow]
+      exact ⟨Matrix.row_mem_rowSpace, Submodule.zero_mem _⟩
+  · rintro ⟨x, z⟩ ⟨hx, hz⟩
+    have hx_pair : ((x, 0) : BinSympPauli n) ∈ (CSS_BSM H₁ H₂).rowSpace := by
+      refine Submodule.span_induction
+        (p := fun y _ => ((y, 0) : BinSympPauli n) ∈ (CSS_BSM H₁ H₂).rowSpace) ?_ ?_ ?_ ?_ hx
+      · rintro _ ⟨j, rfl⟩
+        apply Submodule.subset_span
+        refine ⟨Fin.natAdd k₁ j, ?_⟩
+        simp [CSS_BSM, BinSympMatrix.row, Fin.append_right]
+        rfl
+      · exact Submodule.zero_mem _
+      · intro a b _ _ ha hb
+        simpa using Submodule.add_mem _ ha hb
+      · intro a y _ hy
+        simpa using Submodule.smul_mem _ a hy
+    have hz_pair : ((0, z) : BinSympPauli n) ∈ (CSS_BSM H₁ H₂).rowSpace := by
+      refine Submodule.span_induction
+        (p := fun y _ => ((0, y) : BinSympPauli n) ∈ (CSS_BSM H₁ H₂).rowSpace) ?_ ?_ ?_ ?_ hz
+      · rintro _ ⟨j, rfl⟩
+        apply Submodule.subset_span
+        refine ⟨Fin.castAdd k₂ j, ?_⟩
+        simp [CSS_BSM, BinSympMatrix.row, Fin.append_left]
+        rfl
+      · exact Submodule.zero_mem _
+      · intro a b _ _ ha hb
+        simpa using Submodule.add_mem _ ha hb
+      · intro a y _ hy
+        simpa using Submodule.smul_mem _ a hy
+    simpa [Prod.ext_iff] using Submodule.add_mem _ hx_pair hz_pair
+
+/- Number of independent generators decomposes over the two check matrices -/
+theorem cssStabCode_generators {k₁ k₂ : ℕ} (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+    (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) (h : H₁.mutually_orth_rows H₂) :
+    (cssStabCode H₁ H₂ h).numGenerators = H₂.rank + H₁.rank := by
+  rw [cssStabCode, BinSympMatrix.numGenerators_eq_finrank_rowSpace, CSS_BSM_rowSpace_eq,
+    finrank_submodule_prod, Matrix.finrank_rowSpace_eq_rank, Matrix.finrank_rowSpace_eq_rank]
+
+/- Agreement -/
+theorem cssStabCode_distance {k₁ k₂ : ℕ} (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+    (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) (h : H₁.mutually_orth_rows H₂) (hk : 0 < k₁ + k₂) :
+    (cssStabCode H₁ H₂ h).distance = (CSS_BSM H₁ H₂).distance hk :=
+  BinSympMatrix.distance_eq_distance _ _ _ hk
+
+theorem cssStabCode_param_triple {k₁ k₂ : ℕ} (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
+    (H₂ : Matrix (Fin k₂) (Fin n) (ZMod 2)) (h : H₁.mutually_orth_rows H₂) (hk : 0 < k₁ + k₂)
+    (k d : ℕ) (hgen : k = n - (H₂.rank + H₁.rank))
+    (hd : d ≤ (CSS_BSM H₁ H₂).distance hk) :
+    param_triple (cssStabCode H₁ H₂ h) k d := by
+  refine StabCode.param_triple_of _ k d ?_ ?_
+  · rw [cssStabCode_generators, hgen]
+  · rw [cssStabCode_distance H₁ H₂ h hk]
+    exact hd
+
+lemma CSS_pair.orth (C : CSS_pair n k₁ k₂) : C.H₁.mutually_orth_rows C.H₂ := by
+  intro x y
+  have hy := C.C₂.pcb_prod_mem_dual y C.hpc₂
+  have hx : C.H₁ x ∈ C.C₂ := C.H_dual (C.C₁.pcb_prod_mem_dual x C.hpc₁)
+  unfold CodeSpace.dualCode at hy
+  rw [Submodule.mem_orthogonalBilin_iff] at hy
+  exact hy _ hx
+
+def CSS_pair.toStabCode (C : CSS_pair n k₁ k₂) : StabCode n :=
+  cssStabCode C.H₁ C.H₂ C.orth
+
+theorem CSS_pair.param_triple_of (C : CSS_pair n k₁ k₂) (k d : ℕ)
+    (hgen : k = n - (C.H₂.rank + C.H₁.rank))
+    (hd : d ≤ C.toBSM.distance (Nat.add_pos_left C.nt₁ k₂)) :
+    param_triple C.toStabCode k d :=
+  cssStabCode_param_triple C.H₁ C.H₂ C.orth (Nat.add_pos_left C.nt₁ k₂) k d hgen hd
+
+end
