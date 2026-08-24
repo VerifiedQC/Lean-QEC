@@ -82,4 +82,4 @@ If you use Lean-QEC in your research, please cite the accompanying paper, [End-t
 
  ## License
 
-This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for the full text.
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for the full text and [NOTICE](NOTICE) for attribution.
