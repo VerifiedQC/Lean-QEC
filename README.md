@@ -1,5 +1,10 @@
 # Quantum Error Correction in Lean
 
+[![CI](https://github.com/VerifiedQC/Lean-QEC/actions/workflows/lean_action_ci.yml/badge.svg)](https://github.com/VerifiedQC/Lean-QEC/actions/workflows/lean_action_ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![arXiv](https://img.shields.io/badge/arXiv-2605.16523-b31b1b.svg)](https://arxiv.org/abs/2605.16523)
+[![Lean 4](https://img.shields.io/badge/Lean-4-black.svg)](https://leanprover.github.io/)
+
 This project formalizes and verifies the theory of Quantum Error Correction in Lean in an end-to-end fashion, from basic Quantum theory to abstract properties. Some accomplishments include:
  * Formalizing basic quantum computing concepts such as Qubits, Quantum States, and the Pauli Group.
  * Verifying the link between the Pauli Group and the Binary Symplectic Representation.
