@@ -58,3 +58,23 @@ This theorem gives a lower bound for the distance of the 72-qubit bivariate bicy
  - Formalization of codes with pen-and-paper-proof-based distance specifications like the Toric Code.
  - Including different error channels and proving the correctness of code distance under them.
  - Expansion to qudit codes.
+
+ ## Citation
+
+If you use Lean-QEC in your research, please cite the accompanying paper, [End-to-End Formalization of Quantum Error Correction](https://arxiv.org/abs/2605.16523) ([`CITATION.bib`](CITATION.bib)):
+
+```bibtex
+@article{ehatamm2026endtoend,
+  title         = {End-to-End Formalization of Quantum Error Correction},
+  author        = {Ehatamm, Mattias and Lee, Yi and Wu, Xiaodi and Tao, Runzhou},
+  year          = {2026},
+  eprint        = {2605.16523},
+  archivePrefix = {arXiv},
+  primaryClass  = {quant-ph},
+  journal       = {arXiv preprint arXiv:2605.16523}
+}
+```
+
+ ## License
+
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for the full text.
