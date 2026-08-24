@@ -1,5 +1,10 @@
 # Quantum Error Correction in Lean
 
+[![CI](https://github.com/VerifiedQC/Lean-QEC/actions/workflows/lean_action_ci.yml/badge.svg)](https://github.com/VerifiedQC/Lean-QEC/actions/workflows/lean_action_ci.yml)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![arXiv](https://img.shields.io/badge/arXiv-2605.16523-b31b1b.svg)](https://arxiv.org/abs/2605.16523)
+[![Lean](https://img.shields.io/badge/Lean-v4.30.0--rc2-black.svg)](https://github.com/leanprover/lean4/releases/tag/v4.30.0-rc2)
+
 This project formalizes and verifies the theory of Quantum Error Correction in Lean in an end-to-end fashion, from basic Quantum theory to abstract properties. Some accomplishments include:
  * Formalizing basic quantum computing concepts such as Qubits, Quantum States, and the Pauli Group.
  * Verifying the link between the Pauli Group and the Binary Symplectic Representation.
@@ -58,3 +63,23 @@ This theorem gives a lower bound for the distance of the 72-qubit bivariate bicy
  - Formalization of codes with pen-and-paper-proof-based distance specifications like the Toric Code.
  - Including different error channels and proving the correctness of code distance under them.
  - Expansion to qudit codes.
+
+ ## Citation
+
+If you use Lean-QEC in your research, please cite the accompanying paper, [End-to-End Formalization of Quantum Error Correction](https://arxiv.org/abs/2605.16523) ([`CITATION.bib`](CITATION.bib)):
+
+```bibtex
+@article{ehatamm2026endtoend,
+  title         = {End-to-End Formalization of Quantum Error Correction},
+  author        = {Ehatamm, Mattias and Lee, Yi and Wu, Xiaodi and Tao, Runzhou},
+  year          = {2026},
+  eprint        = {2605.16523},
+  archivePrefix = {arXiv},
+  primaryClass  = {quant-ph},
+  journal       = {arXiv preprint arXiv:2605.16523}
+}
+```
+
+ ## License
+
+This project is licensed under the Apache License 2.0. See the [LICENSE](LICENSE) file for the full text.
