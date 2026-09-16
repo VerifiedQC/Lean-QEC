@@ -205,6 +205,93 @@ lemma loc_constraints_ith_jth_aux_correct
     apply (h_aux (k - 1) (Nat.sub_lt hk zero_lt_one)).2
     exact ⟨l, Nat.le_sub_one_of_lt l.2, hloc⟩
 
+/--
+Bit `i` of the one-hot vector for slot `j` is set exactly when `i` is in range and names that slot.
+-/
+lemma getLsbD_loc_slot {n nlog k : ℕ} (locs : BitVec (k * nlog)) (j i : ℕ) :
+    (loc_slot (n := n) locs j).getLsbD i = true
+      ↔ (i < n ∧ i = (locs.extractLsb' (j * nlog) nlog).toNat) := by
+  unfold loc_slot
+  rw [BitVec.getLsbD_shiftLeft']
+  simp only [show (1 : BitVec n) = BitVec.ofNat n 1 from rfl, BitVec.getLsbD_one,
+    Bool.and_eq_true, decide_eq_true_eq, Bool.not_eq_true', decide_eq_false_iff_not, Nat.not_lt]
+  omega
+
+lemma getLsbD_loc_union_aux {n nlog k : ℕ} (locs : BitVec (k * nlog)) (i : ℕ) :
+    ∀ c : ℕ, (loc_union_aux (n := n) locs c).getLsbD i = true
+      ↔ (i < n ∧ ∃ l ≤ c, i = (locs.extractLsb' (l * nlog) nlog).toNat) := by
+  intro c
+  induction c with
+  | zero =>
+    rw [show (loc_union_aux (n := n) locs 0) = loc_slot locs 0 from rfl, getLsbD_loc_slot]
+    constructor
+    · rintro ⟨h1, h2⟩; exact ⟨h1, 0, Nat.le_refl _, h2⟩
+    · rintro ⟨h1, l, hl, h2⟩; exact ⟨h1, by rwa [Nat.le_zero.mp hl] at h2⟩
+  | succ c ih =>
+    rw [show (loc_union_aux (n := n) locs (c + 1))
+          = loc_slot locs (c + 1) ||| loc_union_aux locs c from rfl,
+        BitVec.getLsbD_or, Bool.or_eq_true, getLsbD_loc_slot, ih]
+    constructor
+    · rintro (⟨h1, h2⟩ | ⟨h1, l, hl, h2⟩)
+      · exact ⟨h1, c + 1, Nat.le_refl _, h2⟩
+      · exact ⟨h1, l, Nat.le_succ_of_le hl, h2⟩
+    · rintro ⟨h1, l, hl, h2⟩
+      rcases Nat.lt_or_ge l (c + 1) with h | h
+      · exact Or.inr ⟨h1, l, Nat.lt_succ_iff.mp h, h2⟩
+      · exact Or.inl ⟨h1, by rwa [Nat.le_antisymm hl h] at h2⟩
+
+/--
+The bit-by-bit `loc_constraints` and the one-hot `loc_constraints_fast` state the same thing.
+
+`n ≤ 2 ^ nlog` is needed because `loc_constraints` compares a slot against `(i : BitVec nlog)`,
+which wraps modulo `2 ^ nlog`; with enough index bits to name every position it does not wrap.
+-/
+lemma loc_constraints_iff_fast {n nlog k : ℕ} (hn : 0 < n) (hk : 0 < k) (hnlog : n ≤ 2 ^ nlog)
+    (locs : BitVec (k * nlog)) (errs : BitVec n) :
+    loc_constraints locs errs ↔ loc_constraints_fast locs errs := by
+  -- the slot comparison does not wrap, so it is plain index equality
+  have hslot : ∀ (l i : ℕ), i < n →
+      ((locs.extractLsb' (l * nlog) nlog = (i : BitVec nlog))
+        ↔ i = (locs.extractLsb' (l * nlog) nlog).toNat) := by
+    intro l i hi
+    rw [BitVec.toNat_eq]
+    simp only [BitVec.natCast_eq_ofNat, BitVec.toNat_ofNat,
+      Nat.mod_eq_of_lt (lt_of_lt_of_le hi hnlog)]
+    exact eq_comm
+  -- bit `i` of the union is set exactly when some slot names `i`
+  have hunion : ∀ i : Fin n,
+      ((loc_union_aux (n := n) locs (k - 1)).getLsbD i.val = true
+        ↔ (∃ l : Fin k, locs.extractLsb' (l * nlog) nlog = (i.val : BitVec nlog))) := by
+    intro i
+    rw [getLsbD_loc_union_aux]
+    constructor
+    · rintro ⟨_, l, hl, hlv⟩
+      exact ⟨⟨l, by omega⟩, (hslot l i.val i.isLt).mpr hlv⟩
+    · rintro ⟨l, hl⟩
+      exact ⟨i.isLt, l.val, by omega, (hslot l.val i.val i.isLt).mp hl⟩
+  -- `loc_constraints_ith` is an equality of `Prop`s; relate it to the `Bool` equation
+  have hbool : ∀ (A B : Bool) (P : Prop), ((B = true) ↔ P) → (((A = true) = P) ↔ (A = B)) := by
+    intro A B P hBP
+    constructor
+    · intro h; cases A <;> cases B <;> simp_all
+    · intro h; subst h; exact propext hBP
+  have hpt : ∀ i : Fin n, loc_constraints_ith locs errs i.val ↔
+      (errs.getLsbD i.val = (loc_union_aux (n := n) locs (k - 1)).getLsbD i.val) := by
+    intro i
+    rw [loc_constraints_ith, loc_constraints_ith_jth_aux_correct _ _ hk,
+      getElem!_pos errs i.val i.isLt, ← BitVec.getLsbD_eq_getElem i.isLt]
+    exact hbool _ _ _ (hunion i)
+  unfold loc_constraints_fast
+  constructor
+  · intro h
+    apply BitVec.eq_of_getLsbD_eq
+    intro i hi
+    exact (hpt ⟨i, hi⟩).mp (loc_constraints_descent locs errs h ⟨i, hi⟩)
+  · intro h
+    apply loc_constraints_ascent (hn := hn)
+    intro i
+    exact (hpt i).mpr (by rw [h])
+
 lemma fin_to_bitvec_clog {n : ℕ} {x : Fin n} : (x : BitVec (Nat.clog 2 n)) = BitVec.ofNat (Nat.clog 2 n) x := by
   simp only [BitVec.natCast_eq_ofNat]
 
@@ -515,7 +602,8 @@ def dot_product_correct {n : ℕ} [NeZero n] (x y : Fin n → (ZMod 2)):
         (zmod2_dot_bool_step (x ⟨idx + 1, hidx⟩) (y ⟨idx + 1, hidx⟩)
           (∑ t ∈ Finset.range (idx + 1),
             if ht : t < n then x ⟨t, ht⟩ * y ⟨t, ht⟩ else 0))
-  unfold BitVec.dot_product dotProduct
+  rw [BitVec.dot_product_eq_aux]
+  unfold dotProduct
   rw [h_aux (n - 1) (Nat.sub_lt (NeZero.pos n) zero_lt_one)]
   congr 1
   rw [Nat.sub_one_add_one (NeZero.ne n)]
@@ -716,7 +804,7 @@ lemma dot_col_zero_correct {r n : ℕ} [NeZero r]
     unfold dot_col_zero
     rw [hd]
     have hdp := dot_product_correct coeffs (fun row => M row c)
-    unfold BitVec.dot_product at hdp
+    rw [BitVec.dot_product_eq_aux] at hdp
     rw [hdp]
     simp [Matrix.vecMul, dotProduct]
 

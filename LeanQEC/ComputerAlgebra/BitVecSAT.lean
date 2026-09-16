@@ -1,3 +1,5 @@
+import Mathlib.Algebra.Order.Group.Nat
+import Mathlib.Data.Nat.Log
 import Mathlib.Data.BitVec
 import LeanQEC.LinearAlgebra.RowspaceKernel
 import Init.Data.BitVec.Basic
@@ -48,6 +50,32 @@ def loc_constraints
   (errs : BitVec n) :=
   loc_constraints_aux locs errs (n-1)
 
+/--
+The one-hot vector picked out by index slot `j` of `locs`: bit `locs[j]` set, everything else clear.
+A slot naming a position at or past `n` shifts the bit out entirely and so contributes nothing,
+which matches `loc_constraints`, where such a slot satisfies no `loc_constraints_ith`.
+-/
+def loc_slot {n nlog k : ℕ} (locs : BitVec (k * nlog)) (j : ℕ) : BitVec n :=
+  (1 : BitVec n) <<< (locs.extractLsb' (j * nlog) nlog)
+
+/-- Union of the one-hot vectors for slots `0 … c`. -/
+def loc_union_aux {n nlog k : ℕ} (locs : BitVec (k * nlog)) (c : ℕ) : BitVec n :=
+  match c with
+  | 0 => loc_slot locs 0
+  | c' + 1 => loc_slot locs c ||| loc_union_aux locs c'
+
+/--
+`errs` is exactly the set of positions named by the `k` index slots of `locs`, as a single bitvector
+equation.
+
+Equivalent to `loc_constraints` (`loc_constraints_iff_fast`), but `k` terms rather than `n * k`:
+`loc_constraints` compares every slot against every position, where this shifts each slot into place
+once. It is also a plain `BitVec` equation, so unlike `loc_constraints_ith` -- which equates a
+`Bool` to a `Prop` and so needs a `Decidable` instance per position -- it costs no typeclass search.
+-/
+def loc_constraints_fast {n nlog k : ℕ} (locs : BitVec (k * nlog)) (errs : BitVec n) : Prop :=
+  errs = loc_union_aux locs (k - 1)
+
 def symmetry_constraints_aux
   {nlog k : ℕ}
   (locs : BitVec (k * nlog))
@@ -68,7 +96,98 @@ def dot_product_aux {n : ℕ} [NeZero n] (x y : BitVec n) (c : ℕ) (hc : c < n)
   | 0 => b
   | c' + 1 => b ^^ dot_product_aux x y c' (lt_of_le_of_lt (Nat.le_succ _) hc)
 
-def BitVec.dot_product {n : ℕ} [NeZero n] (x y : BitVec n) := dot_product_aux x y (n-1) (Nat.sub_one_lt (NeZero.ne _))
+/--
+XOR of bits `j, j+1, …, j+c-1` of `v`. Bits at or past the width count as `false`, which is what
+lets `xorFold` be correct at every width rather than only at powers of two.
+-/
+def BitVec.xorRange {n : ℕ} (v : BitVec n) (j : ℕ) : ℕ → Bool
+  | 0 => false
+  | c + 1 => v.getLsbD j ^^ v.xorRange (j + 1) c
+
+theorem BitVec.xorRange_add {n : ℕ} (v : BitVec n) :
+    ∀ (a j b : ℕ), v.xorRange j (a + b) = (v.xorRange j a ^^ v.xorRange (j + a) b) := by
+  intro a
+  induction a with
+  | zero => intro j b; simp [BitVec.xorRange]
+  | succ a ih =>
+    intro j b
+    have hab : a + 1 + b = (a + b) + 1 := by omega
+    have hj : j + 1 + a = j + (a + 1) := by omega
+    rw [hab]
+    simp only [BitVec.xorRange, ih (j + 1) b, hj]
+    exact (Bool.xor_assoc _ _ _).symm
+
+/-- A range starting at or past the width contributes nothing: every such bit is `false`. -/
+theorem BitVec.xorRange_of_width_le {n : ℕ} (v : BitVec n) :
+    ∀ (c j : ℕ), n ≤ j → v.xorRange j c = false := by
+  intro c
+  induction c with
+  | zero => intro j _; rfl
+  | succ c ih =>
+    intro j hj
+    simp [BitVec.xorRange, BitVec.getLsbD_of_ge v j hj, ih (j + 1) (by omega)]
+
+/--
+Halving XOR fold: bit `j` of `v.xorFold k` is the XOR of bits `j … j + 2^k - 1` of `v`, so once
+`2^k ≥ n` bit `0` is the XOR of every bit of `v`.
+
+Unfolding this costs `k = ⌈log₂ n⌉` steps where the bit-by-bit chain of `dot_product_aux` costs `n`.
+That is the point of it: the `simp` that prepares a distance goal, and `bv_decide`'s own
+normalization, are both proportional to the size of the term they are handed.
+-/
+def BitVec.xorFold {n : ℕ} (v : BitVec n) : ℕ → BitVec n
+  | 0 => v
+  | k + 1 => (v.xorFold k) ^^^ ((v.xorFold k) >>> (2 ^ k))
+
+theorem BitVec.getLsbD_xorFold {n : ℕ} (v : BitVec n) :
+    ∀ (k j : ℕ), (v.xorFold k).getLsbD j = v.xorRange j (2 ^ k) := by
+  intro k
+  induction k with
+  | zero => intro j; simp [BitVec.xorFold, BitVec.xorRange]
+  | succ k ih =>
+    intro j
+    have hpow : 2 ^ (k + 1) = 2 ^ k + 2 ^ k := by ring
+    have hcomm : 2 ^ k + j = j + 2 ^ k := by omega
+    simp only [BitVec.xorFold, BitVec.getLsbD_xor, BitVec.getLsbD_ushiftRight, ih, hcomm, hpow,
+      BitVec.xorRange_add]
+
+theorem dot_product_aux_eq_xorRange {n : ℕ} [NeZero n] (x y : BitVec n) :
+    ∀ (c : ℕ) (hc : c < n), dot_product_aux x y c hc = (x &&& y).xorRange 0 (c + 1) := by
+  intro c
+  induction c with
+  | zero =>
+    intro hc
+    show (x[0] && y[0]) = _
+    simp [BitVec.xorRange, BitVec.getLsbD_eq_getElem hc]
+  | succ c ih =>
+    intro hc
+    have hc' : c < n := Nat.lt_of_succ_lt hc
+    show ((x[c + 1] && y[c + 1]) ^^ dot_product_aux x y c hc') = _
+    rw [ih hc', BitVec.xorRange_add (x &&& y) (c + 1) 0 1]
+    simp only [BitVec.xorRange, Nat.zero_add, BitVec.getLsbD_and,
+      BitVec.getLsbD_eq_getElem hc, BitVec.getElem_and, Bool.xor_false]
+    exact Bool.xor_comm _ _
+
+/--
+Parity of the bitwise AND, computed by the halving fold.
+
+This is definitionally different from, but provably equal to (`BitVec.dot_product_eq_aux`), the
+bit-by-bit XOR chain it replaces.
+-/
+def BitVec.dot_product {n : ℕ} [NeZero n] (x y : BitVec n) : Bool :=
+  ((x &&& y).xorFold (Nat.clog 2 n)).getLsbD 0
+
+theorem BitVec.dot_product_eq_aux {n : ℕ} [NeZero n] (x y : BitVec n) :
+    x.dot_product y = dot_product_aux x y (n - 1) (Nat.sub_one_lt (NeZero.ne _)) := by
+  have hn : n ≤ 2 ^ Nat.clog 2 n := Nat.le_pow_clog (by norm_num) n
+  have hsucc : n - 1 + 1 = n := Nat.sub_one_add_one (NeZero.ne n)
+  rw [dot_product_aux_eq_xorRange x y (n - 1) (Nat.sub_one_lt (NeZero.ne _)), hsucc]
+  show ((x &&& y).xorFold (Nat.clog 2 n)).getLsbD 0 = _
+  rw [BitVec.getLsbD_xorFold]
+  have hsplit : 2 ^ Nat.clog 2 n = n + (2 ^ Nat.clog 2 n - n) := by omega
+  rw [hsplit, BitVec.xorRange_add,
+    BitVec.xorRange_of_width_le (x &&& y) (2 ^ Nat.clog 2 n - n) (0 + n) (by omega)]
+  simp
 
 --updated definition to account for r unknown at runtime
 def BitVec.row {n k : ℕ} (M : BitVec (k * n)) (r : ℕ) : BitVec n := (M >>> (r * n)).extractLsb' 0 n
