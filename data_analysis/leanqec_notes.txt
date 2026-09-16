@@ -49,14 +49,25 @@ From a high level, there are five parts to `bv_decide`.
 4. Solving: Sends the cnf formula, in .cnf file form, to the external solver, waits until it returns a .lrat file.
 5. Translating: Translates the .lrat proof of UNSAT back into Lean form, and checks it using the Lean kernel.
 
-This can be timed for a given run using the custom tactic `bv_decidet` with an additional argument of a .csv file, where the times of each individual step are written. I am not totally certain about the correctness of this tactic, due to the suspiciously low solve times. The results look like (in ms): 
-code:   normalize   aig   cnf   solve    end
-BB70       22028     8    68      10  22186
-BB90       45914     4   118      15  50244
-BB72       14758     2    33       6   1583
-BB144	   69438     3   121      19  273718
+This can be timed for a given run using the custom tactic `bv_decidet` with an additional argument of a .csv file, where the times of each individual step are written.
 
-Likely, the "solve" time is bleeding into the translation time, but what this does demonstrate is that normalization time is still a significant factor before any SAT solver is called.
+The suspiciously low solve times in the first version of this tactic were an artifact of the tactic, not a property of `bv_decide`. The tactic logged six absolute timestamps and the header assigned them to columns positionally, but the third timestamp was taken in `bvUnsatt` *before* `closeWithBVReflection` was called rather than after the solver returned. Every column after `normalize` was therefore shifted by one: the column labelled "solve" actually held the AIG-to-CNF conversion time, and the column labelled "end" held the DIMACS write, the external solve, the LRAT parse/trim, the certificate compilation and the LRAT check all lumped together. `runExternal` had no instrumentation around it at all, so the solve was never measured.
+
+The tactic has been rewritten to record elapsed times per stage rather than absolute timestamps (so a row cannot desynchronize from its header), to inline `runExternal` and `LratCert.toReflectionProof` so their sub-phases are visible, and to always emit one complete row even on the early-exit paths. It now reports eleven stages, which roll up into the five phases above as: normalization = `normalize`; AIG = `reflect + bitblast`; CNF = `cnf + dimacs`; solving = `solve`; checking = `lrat_read + expr_def + cert_def + verify + assign`. `data_analysis/bvd_stage_rollup.py` prints that rollup.
+
+Measured on an otherwise idle laptop, with `set_option Elab.async false` so that declarations in a module do not elaborate concurrently (in ms):
+
+code:   normalization    aig    cnf    solving   checking     total
+BB72          20020.5   45.3   10.0      571.2      998.3   21687.8
+BB70          16460.6   52.6   15.4    12924.8     6131.1   36304.9
+BB90          27628.2   65.6   15.8    22613.7    10495.4   62167.0
+BB144         91072.4  196.2   41.0   229758.1   100458.4  434447.6
+
+So solving is not free at all. Normalization dominates only for the smallest code: it is 92% of the tactic for BB72 (distance 6), ~45% for BB70 and BB90 (distance 8 and 9), and just 21% for BB144, where solving alone is 53% and checking 23%. The old logger reported BB144's solve as 19 ms; it is 229.8 s. The trend is consistent with the earlier observation that formula preparation scales with code size while solve time scales with distance -- extrapolating, solve and check are what will dominate for anything larger than BB144, not normalization.
+
+Checking is also a significant and previously invisible cost, and it is dominated by the LRAT certificate rather than by the CNF. The certificates are large -- 4.8 MB / 35k steps for BB72, 95 MB / 375k for BB70, 174 MB / 529k for BB90, and 1.29 GB / 2.39M steps for BB144 -- and within the checking phase the `verify` stage (compiling and running `verifyBVExpr` via native evaluation) is the biggest single component, at 7.2 s for BB90 and 80.8 s for BB144. Reducing unsatisfiable-core size would therefore pay off twice: once in solve time and again in the size of the proof that has to be checked back in Lean.
+
+The AIG and CNF phases are genuinely negligible (well under 0.1% in every case); the AIGs here are only 6-12k nodes and the CNFs 19-35k clauses. Note also that `total` is the time inside the tactic only -- the `simp` call that prepares the goal, and the kernel work done after the tactic returns, are not included, and the surrounding module build is several times longer than the tactic itself.
 
 Experiments on the cnf files with different solvers and seeds (kissat, cadical) showed a strong correlation between size of minimum unsatisfiable core and time to solve, which suggests that optimizing solve time and unsatisfiable core size are roughly similar. 
 
