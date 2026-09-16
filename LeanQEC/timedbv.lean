@@ -1,26 +1,44 @@
-
 import Lean.Elab.Tactic.BVDecide.Frontend.BVDecide.SatAtBVLogical
 import Lean.Elab.Tactic.BVDecide.Frontend.Normalize
 import Lean.Elab.Tactic.BVDecide.Frontend.LRAT
 import Lean.Meta.Native
-import Init.Simproc
-import Init.Grind.Tactics
-import Init.MetaTypes
-import Init.Data.Nat.Bitwise.Basic
 import Lean.Elab.Tactic.BVDecide.Frontend.BVDecide
 
+/-!
+# `bv_decidet`: an instrumented `bv_decide`
+
+`bv_decidet "out.csv"` behaves exactly like `bv_decide`, but appends one row per invocation to
+`out.csv` giving the wall-clock cost of each internal stage.
+
+The stages, in the order in which `bv_decide` runs them:
+
+* `normalize` -- `Normalize.bvNormalize`: simp set / AC normalization of the Lean goal.
+* `reflect`   -- `reflectBV`: Lean goal + hypotheses to `BVLogicalExpr` (incl. `shareCommon`).
+* `bitblast`  -- `BVLogicalExpr.bitblast`: build the and-inverter graph.
+* `cnf`       -- `relabelNat'` + `AIG.toCNF`: AIG to CNF.
+* `dimacs`    -- `CNF.dimacs` serialization and write of the DIMACS file handed to the solver.
+* `solve`     -- `External.satQuery`: the external SAT solver process, and nothing else.
+* `lrat_read` -- read, parse and trim the LRAT file, then re-serialize it to the certificate.
+* `expr_def`  -- `addAndCompile` of the reflected `BVLogicalExpr` constant.
+* `cert_def`  -- `addAndCompile` of the LRAT certificate string constant.
+* `verify`    -- `nativeEqTrue` on `verifyBVExpr`: compiling and running the LRAT checker.
+* `assign`    -- `proveFalse` and `MVarId.assign`: closing the original goal.
+
+Rolled up into the five coarse phases: normalization is `normalize`, AIG is `reflect + bitblast`,
+CNF is `cnf + dimacs`, solving is `solve`, and checking is everything from `lrat_read` on.
+
+`total` is the wall-clock time of the whole tactic; it exceeds the sum of the stages by the small
+amount of bookkeeping that is deliberately excluded, i.e. computing the AIG/CNF/LRAT sizes that are
+reported in the trailing statistics columns.
+
+Times are in milliseconds with microsecond resolution. Every invocation writes exactly one complete
+row, including the early-exit paths (goal closed by normalization, or a counterexample found), so
+rows can never run into each other.
+-/
 
 namespace Lean.Parser
 namespace Tactic
 
---timed bv_decide tactic: Logs 5 items to a passed csv file:
---start, normalize, aig, cnf, solve, end
---start gives time at beginning of tactic
---normalize gives time after bv_normalize procedure is run: normalizes subexpressions up to associativity and commutativity
---aig converts the formula into an and-inverter-graph
---cnf converts the AIG into cnf form
---solve passes the cnf to the external solver and obtains a .lrat file certifying Sat/UNSAT
---end is the time between obtaining the .lrat and translating its proof into lean form.
 @[tactic_alt Lean.Parser.Tactic.bvDecideMacro]
 syntax (name := bvDecidet) "bv_decidet" (str)? Lean.Parser.Tactic.optConfig : tactic
 
@@ -34,153 +52,242 @@ open Std.Tactic.BVDecide
 open Std.Tactic.BVDecide.Reflect
 open Lean.Meta
 
+/-- The timing stages, in the order in which they are recorded. -/
+def stageNames : Array String :=
+  #["normalize", "reflect", "bitblast", "cnf", "dimacs", "solve", "lrat_read",
+    "expr_def", "cert_def", "verify", "assign"]
 
-/-- Appends an entry to a local CSV file -/
-def logToCSV (fileName : String) (duration : Nat) : IO Unit := do
-  -- Open in append mode ("a")
-  IO.FS.withFile fileName IO.FS.Mode.append fun handle => do
-    -- Format: Step Name, Time (ms)
-    handle.putStr s!"{duration},"
+/--
+The trailing size statistics, in the order in which they are recorded.
+
+`lrat_file_bytes` is the size on disk of the LRAT file the solver produced, before parsing and
+trimming; `lrat_steps` and `cert_bytes` describe the proof after trimming, which is what actually
+gets compiled into the environment and checked.
+-/
+def statNames : Array String :=
+  #["aig_nodes", "cnf_clauses", "lrat_file_bytes", "lrat_steps", "cert_bytes"]
+
+def csvHeader : String :=
+  ",".intercalate (["label", "status"] ++ stageNames.toList ++ ["total"] ++ statNames.toList)
+
+/--
+A running log of per-stage durations. Durations come from `IO.monoNanosNow` and are recorded as
+elapsed times rather than absolute timestamps, so a row cannot be silently misaligned with its
+header.
+-/
+structure StageLog where
+  /-- Time at which the current stage started. -/
+  last : IO.Ref Nat
+  /-- Time at which the tactic started. -/
+  start : Nat
+  /-- Recorded stage durations, formatted in ms. -/
+  times : IO.Ref (Array String)
+  /-- Recorded size statistics. -/
+  stats : IO.Ref (Array String)
+
+def StageLog.new : IO StageLog := do
+  let now ← IO.monoNanosNow
+  return { last := ← IO.mkRef now, start := now, times := ← IO.mkRef #[], stats := ← IO.mkRef #[] }
+
+/-- Render a nanosecond count as milliseconds with microsecond resolution. -/
+def fmtMs (ns : Nat) : String :=
+  let us := ns / 1000
+  let frac := toString (us % 1000)
+  s!"{us / 1000}.{"".pushn '0' (3 - frac.length) ++ frac}"
+
+/-- Close off the current stage, recording how long it took, and start the next one. -/
+def StageLog.tick (log : StageLog) : IO Unit := do
+  let now ← IO.monoNanosNow
+  let prev ← log.last.get
+  log.last.set now
+  log.times.modify (·.push (fmtMs (now - prev)))
+
+/--
+Restart the clock without recording a stage. Used around instrumentation-only work (computing the
+AIG/CNF/LRAT sizes) so that it is not charged to the following stage.
+-/
+def StageLog.skip (log : StageLog) : IO Unit := do
+  log.last.set (← IO.monoNanosNow)
+
+def StageLog.stat (log : StageLog) (value : Nat) : IO Unit :=
+  log.stats.modify (·.push (toString value))
+
+/--
+Write the accumulated row to `file`, padding any stages that were not reached. Writes the header
+first if `file` does not exist yet. The row is emitted with a single write so that concurrently
+built modules cannot interleave within a line.
+-/
+def StageLog.flush (log : StageLog) (file label status : String) : IO Unit := do
+  let now ← IO.monoNanosNow
+  let pad (a : Array String) (n : Nat) : List String :=
+    (a ++ Array.replicate (n - a.size) "").toList
+  let times := pad (← log.times.get) stageNames.size
+  let stats := pad (← log.stats.get) statNames.size
+  let row := ",".intercalate
+    ([label, status] ++ times ++ [fmtMs (now - log.start)] ++ stats)
+  let hasFile ← System.FilePath.pathExists file
+  IO.FS.withFile file IO.FS.Mode.append fun handle => do
+    unless hasFile do handle.putStr (csvHeader ++ "\n")
+    handle.putStr (row ++ "\n")
     handle.flush
 
+/--
+Instrumented copy of `LratCert.toReflectionProof`, split into the three phases that dominate it:
+compiling the reflected expression, compiling the certificate string, and actually running the
+verified LRAT checker on them.
+-/
+def toReflectionProoft (cert : LratCert) (ctx : TacticContext) (reflectionResult : ReflectionResult)
+    (log : StageLog) : MetaM Expr := do
+  mkAuxDecl ctx.exprDef reflectionResult.expr (mkConst ``BVLogicalExpr)
+  log.tick -- expr_def
 
-/--  -/
-def putline (fileName : String) : IO Unit := do
-  -- Open in append mode ("a")
-  IO.FS.withFile fileName IO.FS.Mode.append fun handle => do
-    -- Format: Step Name, Time (ms)
-    handle.putStrLn ""
-    handle.flush
+  mkAuxDecl ctx.certDef (toExpr cert) (mkConst ``String)
+  log.tick -- cert_def
 
+  let reflectedExpr := mkConst ctx.exprDef
+  let certExpr := mkConst ctx.certDef
+  let reflectionTerm := mkApp2 (mkConst ``verifyBVExpr) reflectedExpr certExpr
+  match (← nativeEqTrue `bv_decide reflectionTerm (axiomDeclRange? := (← getRef))) with
+  | .notTrue =>
+    throwError m!"Tactic `bv_decidet` failed: The LRAT certificate could not be verified; \
+      evaluating the following term returned `false`:{indentExpr reflectionTerm}"
+  | .success auxProof =>
+    log.tick -- verify
+    return mkApp3 (mkConst ``unsat_of_verifyBVExpr_eq_true) reflectedExpr certExpr auxProof
+where
+  mkAuxDecl (name : Name) (value type : Expr) : CoreM Unit :=
+    withOptions (fun opt => opt.set `compiler.extract_closed false) do
+      addAndCompile <| .defnDecl {
+        name := name,
+        levelParams := [],
+        type := type,
+        value := value,
+        hints := .abbrev,
+        safety := .safe
+      }
 
+/--
+Instrumented copy of `lratBitblaster`. `runExternal` is inlined here so that DIMACS serialization,
+the solver process itself, and LRAT parsing/trimming can be told apart: in the previous version all
+three, plus the whole LRAT check, were lumped into a single trailing measurement.
+-/
 def lratBitblastert (goal : MVarId) (ctx : TacticContext) (reflectionResult : ReflectionResult)
-    (atomsAssignment : Std.HashMap Nat (Nat × Expr × Bool)) (csv : String) :
+    (atomsAssignment : Std.HashMap Nat (Nat × Expr × Bool)) (log : StageLog) :
     MetaM (Except CounterExample UnsatProver.Result) := do
   let bvExpr := reflectionResult.bvExpr
-  let entry ←
-    withTraceNode `Meta.Tactic.bv (fun _ => return "Bitblasting BVLogicalExpr to AIG") do
-      -- lazyPure to prevent compiler lifting
-      IO.lazyPure (fun _ => bvExpr.bitblast)
+  -- lazyPure to prevent compiler lifting
+  let entry ← IO.lazyPure (fun _ => bvExpr.bitblast)
   let aigSize := entry.aig.decls.size
-  trace[Meta.Tactic.bv] s!"AIG has {aigSize} nodes."
-  let aigtime ← IO.monoMsNow
-  logToCSV csv aigtime
+  log.tick -- bitblast
+  log.stat aigSize
+  log.skip
+
   if ctx.config.graphviz then
     IO.FS.writeFile ("." / "aig.gv") <| AIG.toGraphviz entry
+    log.skip
 
-  let (cnf, map) ←
-    withTraceNode `Meta.Tactic.sat (fun _ => return "Converting AIG to CNF") do
-      -- lazyPure to prevent compiler lifting
-      IO.lazyPure (fun _ =>
-        let (entry, map) := entry.relabelNat'
-        let cnf := AIG.toCNF entry
-        (cnf, map)
-      )
-  let cnftime ← IO.monoMsNow
-  logToCSV csv cnftime
-  let res ←
-    withTraceNode `Meta.Tactic.sat (fun _ => return "Obtaining external proof certificate") do
-      runExternal
-        cnf
-        ctx.solver
-        ctx.lratPath
-        ctx.config.trimProofs
-        ctx.config.timeout
-        ctx.config.binaryProofs
-        ctx.config.solverMode
+  -- lazyPure to prevent compiler lifting
+  let (cnf, map) ← IO.lazyPure (fun _ =>
+    let (entry, map) := entry.relabelNat'
+    let cnf := AIG.toCNF entry
+    (cnf, map))
+  log.tick -- cnf
+  log.stat cnf.clauses.size
+  log.skip
+
+  let res ← IO.FS.withTempFile fun cnfHandle cnfPath => do
+    -- lazyPure to prevent compiler lifting
+    cnfHandle.putStr (← IO.lazyPure (fun _ => cnf.dimacs))
+    cnfHandle.flush
+    log.tick -- dimacs
+    let res ←
+      External.satQuery ctx.solver cnfPath ctx.lratPath ctx.config.timeout
+        ctx.config.binaryProofs ctx.config.solverMode
+    log.tick -- solve
+    pure res
 
   match res with
-  | .ok cert =>
-    trace[Meta.Tactic.sat] "SAT solver found a proof."
-    let proof ← cert.toReflectionProof ctx reflectionResult
-    return .ok ⟨proof, cert⟩
-  | .error assignment =>
-    trace[Meta.Tactic.sat] "SAT solver found a counter example."
+  | .sat assignment =>
     let equations := reconstructCounterExample map assignment aigSize atomsAssignment
     return .error { goal, unusedHypotheses := reflectionResult.unusedHypotheses, equations }
+  | .unsat =>
+    let lratFileBytes := (← ctx.lratPath.metadata).byteSize.toNat
+    log.stat lratFileBytes
+    log.skip
 
-def closeWithBVReflectiont (g : MVarId) (unsatProver : UnsatProver) :
+    let proof ← LratCert.load ctx.lratPath ctx.config.trimProofs
+    let cert := LRAT.lratProofToString proof
+    log.tick -- lrat_read
+    log.stat proof.size
+    log.stat cert.length
+    log.skip
+
+    let reflectionProof ← toReflectionProoft cert ctx reflectionResult log
+    return .ok ⟨reflectionProof, cert⟩
+
+/--
+Instrumented copy of `closeWithBVReflection` composed with `bvUnsat`. Inlining them is what lets
+`reflect` be measured on its own; previously it was folded into the AIG measurement.
+-/
+def bvUnsatt (g : MVarId) (ctx : TacticContext) (log : StageLog) :
     MetaM (Except CounterExample LratCert) := M.run do
   g.withContext do
-    let reflectionResult ←
-      withTraceNode `Meta.Tactic.bv (fun _ => return "Reflecting goal into BVLogicalExpr") do
-        reflectBV g
-    trace[Meta.Tactic.bv] "Reflected bv logical expression: {reflectionResult.bvExpr}"
+    let reflectionResult ← reflectBV g
+    log.tick -- reflect
 
     let flipper := (fun (expr, {width, atomNumber, synthetic}) => (atomNumber, (width, expr, synthetic)))
     let atomsPairs := (← getThe State).atoms.toList.map flipper
     let atomsAssignment := Std.HashMap.ofList atomsPairs
-    match ← unsatProver g reflectionResult atomsAssignment with
+    log.skip
+
+    match ← lratBitblastert g ctx reflectionResult atomsAssignment log with
     | .ok ⟨bvExprUnsat, cert⟩ =>
       let proveFalse ← reflectionResult.proveFalse bvExprUnsat
       g.assign proveFalse
+      log.tick -- assign
       return .ok cert
     | .error counterExample => return .error counterExample
 
-def bvUnsatt (g : MVarId) (ctx : TacticContext) (csv : String) : (MetaM (Except CounterExample LratCert)) := M.run do
-  let unsatProver : UnsatProver := fun g reflectionResult atomsAssignment => do
-    withTraceNode `Meta.Tactic.bv (fun _ => return "Preparing LRAT reflection term") do
-      lratBitblastert g ctx reflectionResult atomsAssignment csv
-  let solvetime ← IO.monoMsNow
-  logToCSV csv solvetime
-  closeWithBVReflection g unsatProver
-
-def bvDecidet' (g : MVarId) (ctx : TacticContext) (csv : String) : MetaM (Except CounterExample Result) := do
-  let starttime ← IO.monoMsNow
-  logToCSV csv starttime
+def bvDecidet' (g : MVarId) (ctx : TacticContext) (log : StageLog) :
+    MetaM (Except CounterExample Result) := do
   let g? ← Normalize.bvNormalize g ctx.config
-  let normalizetime ← IO.monoMsNow
-  logToCSV csv normalizetime
-  let some g := g? |
-    putline csv
-    return .ok ⟨none⟩
-
-  match ← bvUnsatt g ctx csv with
-  | .ok (lratCert) =>
-    let endTime ← IO.monoMsNow
-    logToCSV csv endTime
-    putline csv
-    return .ok ⟨some lratCert⟩
+  log.tick -- normalize
+  let some g := g? | return .ok ⟨none⟩
+  match ← bvUnsatt g ctx log with
+  | .ok lratCert => return .ok ⟨some lratCert⟩
   | .error counterExample => return .error counterExample
 
-def bvDecidet (g : MVarId) (ctx : TacticContext) (csv : String) : MetaM Result := do
-  match ← bvDecidet' g ctx csv with
-  | .ok result => return result
+def bvDecidet (g : MVarId) (ctx : TacticContext) (csv label : String) : MetaM Result := do
+  let log ← StageLog.new
+  let res ←
+    try
+      bvDecidet' g ctx log
+    catch e =>
+      log.flush csv label "error"
+      throw e
+  match res with
+  | .ok result =>
+    log.flush csv label (if result.lratCert.isSome then "unsat" else "normalized")
+    return result
   | .error counterExample =>
+    log.flush csv label "sat"
     counterExample.goal.withContext do
       let error ← explainCounterExampleQuality counterExample
       throwError (← addMessageContextFull error)
 
 declare_config_elab elabBVDecidetConfig Lean.Elab.Tactic.BVDecide.Frontend.BVDecideConfig
 
-#eval (do
-  -- 1. Create a dummy configuration block
-  let cfg : BVDecideConfig := {}
-
-  -- 2. Construct a mocked tactic context targeting a dummy file
-  let ctx ← TacticContext.new "dummy.lrat" cfg
-
-  -- 3. Print out the computed solver FilePath
-  IO.println s!"Default solver path: {ctx.solver}"
-)
-
 @[tactic Lean.Parser.Tactic.bvDecidet]
 def evalBvDecidet : Tactic := fun
-  | `(tactic| bv_decidet $csv:str $cfg:optConfig) => do
-    logInfo m!"{csv}"
+  | `(tactic| bv_decidet $[$csv?:str]? $cfg:optConfig) => do
+    let csv := (csv?.map (·.getString)).getD "bvd_times.csv"
+    let label := (← Term.getDeclName?).map toString |>.getD "<anonymous>"
     let cfg ← elabBVDecidetConfig cfg
     IO.FS.withTempFile fun _ lratFile => do
       let cfg ← BVDecide.Frontend.TacticContext.new lratFile cfg
       liftMetaFinishingTactic fun g => do
-        discard <| bvDecidet g cfg csv.getString
+        discard <| bvDecidet g cfg csv label
   | _ => throwUnsupportedSyntax
 
 end Frontend
 end Lean.Elab.Tactic.BVDecide
-
-/-
-theorem bitvec_example (x y : BitVec 16)
-    (hx : x > 1) (hy : y > 1) :(x.zeroExtend 32) * (y.zeroExtend 32) ≠ 10301 := by
-  -- Run your timed version and log to a custom file
-  bv_decidet "bvd_times.csv" (timeout := 9999) (maxSteps := 9999999)
--/

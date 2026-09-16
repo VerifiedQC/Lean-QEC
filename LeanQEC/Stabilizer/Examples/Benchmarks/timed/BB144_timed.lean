@@ -6,6 +6,9 @@ import LeanQEC.Stabilizer.BB
 import LeanQEC.Stabilizer.BitVecSATToDist
 import LeanQEC.timedbv
 set_option maxRecDepth 9999999
+-- serialize declaration elaboration so that the `bv_decidet` wall-clock numbers are not
+-- distorted by two theorems in this file being elaborated concurrently
+set_option Elab.async false
 --for SAT query logging:
 --set_option sat.solver "./logger.bat"
 def BB144_A :=
@@ -100,7 +103,7 @@ lemma BB144_dist_z : lt_dist_sat BB144_X BB144_Z_ker 11 8 := by
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_decidet "bvd_times.csv" (timeout := 9999) (maxSteps := 9999999)
+  bv_decidet "bvd_times_v2.csv" (timeout := 9999) (maxSteps := 9999999)
 set_option maxHeartbeats 0 in
 lemma BB144_dist_x : lt_dist_sat BB144_Z BB144_X_ker 11 8 := by
   rw [BB144_Z, BB144_X_ker]
