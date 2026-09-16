@@ -109,26 +109,28 @@ lemma BB72_Z_ker_orth : BB72_Z_mat.mutually_orth_rows BB72_Z_ker_mat := by
   native_decide
 set_option maxHeartbeats 0 in
 lemma BB72_dist_z : lt_dist_sat BB72_X BB72_Z_ker 5 7 := by
+  have hclog : Nat.clog 2 72 = 7 := by norm_num
   rw [BB72_X, BB72_Z_ker]
   simp (maxSteps := 9999999) only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
   symmetry_constraints, symmetry_constraints_aux,  Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
   loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
   Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
-  parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
+  parity_constraints_aux, BitVec.dot_product, hclog, BitVec.xorFold, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_check (timeout := 9999) (maxSteps := 9999999)"BB72.lean-BB72_dist_z-120-2.lrat"
+  bv_check (timeout := 9999) (maxSteps := 9999999)"BB72.lean-BB72_dist_z-121-2.lrat"
 set_option maxHeartbeats 0 in
 lemma BB72_dist_x : lt_dist_sat BB72_Z BB72_X_ker 5 7 := by
+  have hclog : Nat.clog 2 72 = 7 := by norm_num
   rw [BB72_Z, BB72_X_ker]
   simp (maxSteps := 9999999) only [lt_dist_sat, Nat.reduceMul, loc_constraints, loc_constraints_aux, loc_constraints_ith,
   symmetry_constraints, symmetry_constraints_aux,  Nat.add_one_sub_one, Nat.lt_add_one, getElem!_pos, loc_constraints_ith_jth_aux,
   loc_constraints_ith_jth, one_mul, Nat.cast_ofNat, BitVec.ofNat_eq_ofNat, zero_mul, eq_iff_iff,
   Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
-  parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
+  parity_constraints_aux, BitVec.dot_product, hclog, BitVec.xorFold, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
   rowspace_constraints_aux, not_and, and_imp]
-  bv_check (timeout := 9999) (maxSteps := 9999999)"BB72.lean-BB72_dist_x-131-2.lrat"
+  bv_check (timeout := 9999) (maxSteps := 9999999)"BB72.lean-BB72_dist_x-133-2.lrat"
 lemma BB72_X_ker_is_ker : BB72_X_ker_mat.is_ker_for BB72_X_mat := by
   apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ BB72_X_rank BB72_X_ker_rank (by norm_num) BB72_X_ker_orth
 lemma BB72_Z_ker_is_ker : BB72_Z_ker_mat.is_ker_for BB72_Z_mat := by
