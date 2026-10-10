@@ -24,6 +24,11 @@ jobs:
         with:
           lfs: true
       - uses: leanprover/lean-action@v1
+      - name: Build example dependencies
+        run: >-
+          lake build LeanQEC.ComputerAlgebra.BitVecSAT
+          LeanQEC.ComputerAlgebra.BitVecCorrectness
+          LeanQEC.Stabilizer.BB LeanQEC.Stabilizer.BitVecSATToDist
       # Invoke Lean directly so a cached example artifact cannot skip LRAT replay.
       - name: Replay distance certificates
         run: lake env lean LeanQEC/Stabilizer/Examples/BB/${{ matrix.example }}.lean
