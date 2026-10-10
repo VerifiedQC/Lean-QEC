@@ -12,3 +12,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: leanprover/lean-action@v1
+
+  distance-certificates:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        example: [BB54, BB70, BB72, BB90, GB54]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          lfs: true
+      - uses: leanprover/lean-action@v1
+      # Invoke Lean directly so a cached example artifact cannot skip LRAT replay.
+      - name: Replay distance certificates
+        run: lake env lean LeanQEC/Stabilizer/Examples/BB/${{ matrix.example }}.lean
