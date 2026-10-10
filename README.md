@@ -52,10 +52,49 @@ theorem BB72_dist_6 : 6 ≤ BB72_css.toBSM.distance (by norm_num)
 This theorem gives a lower bound for the distance of the 72-qubit bivariate bicycle code.
 
  ## Installing Lean-QEC
- - Clone this repository.
- - In a terminal in the top-level directory, run `lake exe cache get` to fetch Mathlib and dependencies.
- - Run `lake build` to build the project.
- - Open the directory in VSCode for infoview access to files.
+
+Install Lean through [elan](https://github.com/leanprover/elan) and install
+[Git LFS](https://git-lfs.com/) for your platform (for example,
+`brew install git-lfs` on macOS with Homebrew). The repository's `lean-toolchain`
+file selects the Lean version.
+
+The `.lrat` proof certificates are stored in Git LFS. Set up LFS before cloning,
+then download the certificates and build from the repository root:
+
+```sh
+git lfs install
+git clone https://github.com/VerifiedQC/Lean-QEC.git
+cd Lean-QEC
+git lfs pull
+lake exe cache get
+lake build
+```
+
+A clone with Git LFS configured normally downloads the certificates automatically;
+`git lfs pull` also handles an existing checkout that still contains pointer files.
+If you already cloned the repository, install Git LFS and run `git lfs install`
+and `git lfs pull` from its root. `lake exe cache get` downloads Mathlib's cache,
+not this repository's LFS certificates. See the
+[Git LFS pull documentation](https://github.com/git-lfs/git-lfs/blob/main/docs/man/git-lfs-pull.adoc)
+for download behavior.
+
+Open the directory in VSCode for infoview access to files. To check the BB72
+example explicitly, run:
+
+```sh
+lake build LeanQEC.Stabilizer.Examples.BB.BB72
+```
+
+The default build does not check every example. Examples using `bv_check` need
+their actual LRAT files even if other lemmas use `bv_decide` to solve locally.
+
+If a `.lrat` file contains text beginning with
+`version https://git-lfs.github.com/spec/v1`, it is an LFS pointer, not a proof
+certificate. Passing such a file to `bv_check` can report
+`SAT solver produced invalid LRAT: offset 0: digit expected`; download the real
+file with `git lfs pull` before retrying. A verification failure with a fully
+downloaded certificate is a separate problem and is not necessarily fixed by
+fetching LFS again.
 
  ## Future Directions
  - Figure out how far the framework currently scales, and where the bottlenecks are.
