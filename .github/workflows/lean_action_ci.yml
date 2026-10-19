@@ -11,6 +11,18 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+      # releases.lean-lang.org intermittently drops TLS handshakes for ~20 s at a time, and
+      # lean-action downloads the toolchain without retrying. Install it here with retries;
+      # lean-action then finds it in ~/.elan and does not download it again.
+      - name: Pre-install Lean toolchain (retry transient download failures)
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none --no-modify-path
+          for i in 1 2 3 4 5; do
+            ~/.elan/bin/elan toolchain install "$(cat lean-toolchain)" && exit 0
+            echo "toolchain download failed (attempt $i), retrying in 30s"; sleep 30
+          done
+          exit 1
       - uses: leanprover/lean-action@v1
 
   distance-certificates:
@@ -23,6 +35,18 @@ jobs:
       - uses: actions/checkout@v4
         with:
           lfs: true
+      # releases.lean-lang.org intermittently drops TLS handshakes for ~20 s at a time, and
+      # lean-action downloads the toolchain without retrying. Install it here with retries;
+      # lean-action then finds it in ~/.elan and does not download it again.
+      - name: Pre-install Lean toolchain (retry transient download failures)
+        run: |
+          curl -sSf https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh \
+            | sh -s -- -y --default-toolchain none --no-modify-path
+          for i in 1 2 3 4 5; do
+            ~/.elan/bin/elan toolchain install "$(cat lean-toolchain)" && exit 0
+            echo "toolchain download failed (attempt $i), retrying in 30s"; sleep 30
+          done
+          exit 1
       - uses: leanprover/lean-action@v1
       - name: Build example dependencies
         run: >-
