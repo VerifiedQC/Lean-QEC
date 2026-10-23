@@ -8,7 +8,6 @@ def qub_one : PState 1 := (Equiv.arrowCongr beq (Equiv.refl _)) ![(0 : ℂ), 1]
 
 @[simp] lemma qub_zero_zero : qub_zero 0#1 = 1 := by
   simp [qub_zero, beq, BitVec.equivFin, Equiv.arrowCongr_apply]
-  rfl
 
 @[simp] lemma qub_zero_one : qub_zero 1#1 = 0 := by
   simp [qub_zero, beq]
@@ -16,7 +15,6 @@ def qub_one : PState 1 := (Equiv.arrowCongr beq (Equiv.refl _)) ![(0 : ℂ), 1]
 
 @[simp] lemma qub_one_zero : qub_one 0#1 = 0 := by
   simp [qub_one, beq, BitVec.equivFin, Equiv.arrowCongr_apply]
-  rfl
 
 @[simp] lemma qub_one_one : qub_one 1#1 = 1 := by
   simp [qub_one, beq]
@@ -40,8 +38,7 @@ lemma ket_prodE {n₁ n₂} (ψ₁ : BitVec n₁ → ℂ) (ψ₂ : BitVec n₂ �
   λ(s : BitVec (n₁ + n₂)) =>
     let (s₁, s₂) := bits_cat.symm s
     ψ₁ s₁ * ψ₂ s₂ := by
-  ext s; simp
-  simp [ket_prod, toMat, normalized_kron, normalize_mat]
+  ext s; rfl
 
 lemma sum_prod_bitvecs {n₁ n₂} (f : _ → ℂ) :
   ∑ (s : BitVec n₁ × BitVec n₂), f s =

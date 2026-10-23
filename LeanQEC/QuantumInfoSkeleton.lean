@@ -16,7 +16,7 @@ namespace Braket
 
 instance instFunLikeKet : FunLike (Ket d) d ℂ where
   coe ψ := ψ.vec
-  coe_injective' _ _ h := by rwa [Ket.mk.injEq]
+  coe_injective _ _ h := by rwa [Ket.mk.injEq]
 
 end Braket
 

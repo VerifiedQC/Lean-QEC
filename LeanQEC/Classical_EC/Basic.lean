@@ -142,7 +142,14 @@ theorem genMatrix_size_eq {k : ℕ} (C : CodeSpace n) (G : Matrix (Fin k) (Fin n
   rw [←this]
   have:= (finrank_span_eq_card hgen.1) --just converting this got me something really weird
   rw [Fintype.card_fin] at this
-  have h : Set.range G = (Finset.image G Finset.univ) := by simp
+  have h : Set.range G = (Finset.image G Finset.univ) := by
+    ext x
+    constructor
+    · rintro ⟨i, rfl⟩
+      exact Finset.mem_coe.mpr (Finset.mem_image_of_mem G (Finset.mem_univ i))
+    · intro hx
+      obtain ⟨i, -, hi⟩ := Finset.mem_image.mp (Finset.mem_coe.mp hx)
+      exact ⟨i, hi⟩
   rw [h] at this
   exact this
 
@@ -154,9 +161,9 @@ lemma dual_finrank_eq {C : CodeSpace n} : Module.finrank (ZMod 2) C.dualCode = n
     ext x
     constructor
     · intro hx n₁ hn₁
-      simpa [B, LinearMap.BilinForm.IsOrtho, Matrix.toBilin'_apply', dotProductBilin] using hx n₁ hn₁
+      simpa [B, Matrix.toBilin'_apply', dotProductBilin] using hx n₁ hn₁
     · intro hx n₁ hn₁
-      simpa [B, LinearMap.BilinForm.IsOrtho, Matrix.toBilin'_apply', dotProductBilin] using hx n₁ hn₁
+      simpa [B, Matrix.toBilin'_apply', dotProductBilin] using hx n₁ hn₁
   have hB_refl : B.IsRefl := by
     intro x y hxy
     simpa [B, Matrix.toBilin'_apply', dotProduct_comm] using hxy

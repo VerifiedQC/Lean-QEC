@@ -21,11 +21,11 @@ theorem CSS_BSM_is_comm {C₁ C₂ : CodeSpace n} (H_dual : (C₁.dualCode : Set
       apply H_dual
       apply C₁.pcb_prod_mem_dual x hpc₁
     unfold CodeSpace.dualCode at hy
-    rw [Submodule.mem_orthogonalBilin_iff] at hy
+    rw [Submodule.mem_orthogonalBilin] at hy
     apply hy _ hx
   refine Fin.addCases (fun x => ?_) (fun x => ?_) r₁ <;>
   refine Fin.addCases (fun y => ?_) (fun y => ?_) r₂ <;>
-  simp [Fin.append, BinSympMatrix.row]
+  simp [BinSympMatrix.row, Fin.append_left _ H₂, Fin.append_right _ H₂, Fin.append_left H₁, Fin.append_right H₁]
   · apply h x y
   rw [dotProduct_comm]
   apply h y x
@@ -92,7 +92,7 @@ private lemma min_with_fallback_union_eq_min {s t : Finset ℕ} {n : ℕ}
           simp
           exact Nat.le_succ_of_le ha_le
       | coe b =>
-          simp
+          rfl
 
 private lemma CSS_BSM_rowSpace_iff
     (H₁ : Matrix (Fin k₁) (Fin n) (ZMod 2))
@@ -119,15 +119,15 @@ private lemma CSS_BSM_rowSpace_iff
       refine Fin.addCases (fun i₁ => ?_) (fun i₂ => ?_) i
       · constructor
         · change (Fin.append (fun (_ : Fin k₁) => (fun _ => 0)) H₂ (Fin.castAdd k₂ i₁)) ∈ H₂.rowSpace
-          rw [Fin.append_left]
+          rw [Fin.append_left _ H₂]
           exact Submodule.zero_mem _
-        · simpa [CSS_BSM, BinSympMatrix.row, Matrix.row] using
+        · simpa [CSS_BSM, BinSympMatrix.row, Matrix.row, Fin.append_left H₁] using
             (Matrix.row_mem_rowSpace (M := H₁) (i := i₁))
       · constructor
-        · simpa [CSS_BSM, BinSympMatrix.row, Matrix.row] using
+        · simpa [CSS_BSM, BinSympMatrix.row, Matrix.row, Fin.append_right _ H₂] using
             (Matrix.row_mem_rowSpace (M := H₂) (i := i₂))
         · change (Fin.append H₁ (fun (_ : Fin k₂) => (fun _ => 0)) (Fin.natAdd k₁ i₂)) ∈ H₁.rowSpace
-          rw [Fin.append_right]
+          rw [Fin.append_right H₁]
           exact Submodule.zero_mem _
     exact hle h
   · rintro ⟨hx, hz⟩
@@ -137,7 +137,7 @@ private lemma CSS_BSM_rowSpace_iff
       · rintro _ ⟨i, rfl⟩
         apply Submodule.subset_span
         refine ⟨Fin.natAdd k₁ i, ?_⟩
-        ext j <;> simp [CSS_BSM, BinSympMatrix.row]
+        ext j <;> simp [CSS_BSM, BinSympMatrix.row, Fin.append_left _ H₂, Fin.append_right _ H₂, Fin.append_left H₁, Fin.append_right H₁]
       · exact Submodule.zero_mem ((CSS_BSM H₁ H₂).rowSpace)
       · intro a b _ _ ha hb
         simpa using Submodule.add_mem ((CSS_BSM H₁ H₂).rowSpace) ha hb
@@ -149,7 +149,7 @@ private lemma CSS_BSM_rowSpace_iff
       · rintro _ ⟨i, rfl⟩
         apply Submodule.subset_span
         refine ⟨Fin.castAdd k₂ i, ?_⟩
-        ext j <;> simp [CSS_BSM, BinSympMatrix.row]
+        ext j <;> simp [CSS_BSM, BinSympMatrix.row, Fin.append_left _ H₂, Fin.append_right _ H₂, Fin.append_left H₁, Fin.append_right H₁]
       · exact Submodule.zero_mem ((CSS_BSM H₁ H₂).rowSpace)
       · intro a b _ _ ha hb
         simpa using Submodule.add_mem ((CSS_BSM H₁ H₂).rowSpace) ha hb
@@ -214,12 +214,12 @@ theorem CSS.toBSM_dist_eq (C : CSS_pair n k₁ k₂) :
         rw [mem_ker_iff_dotProd_rows_eq_zero]
         intro i
         have := hcomm (Fin.castAdd k₂ i)
-        simpa [CSS_pair.toBSM, CSS_BSM, BinSympMatrix.row, symplecticProd, Matrix.row] using this
+        simpa [CSS_pair.toBSM, CSS_BSM, BinSympMatrix.row, symplecticProd, Matrix.row, Fin.append_left _ C.H₂, Fin.append_right _ C.H₂, Fin.append_left C.H₁, Fin.append_right C.H₁] using this
       have hz_ker : bsp.2 ∈ LinearMap.ker C.H₂.toLin' := by
         rw [mem_ker_iff_dotProd_rows_eq_zero]
         intro i
         have := hcomm (Fin.natAdd k₁ i)
-        simpa [CSS_pair.toBSM, CSS_BSM, BinSympMatrix.row, symplecticProd, Matrix.row] using this
+        simpa [CSS_pair.toBSM, CSS_BSM, BinSympMatrix.row, symplecticProd, Matrix.row, Fin.append_left _ C.H₂, Fin.append_right _ C.H₂, Fin.append_left C.H₁, Fin.append_right C.H₁] using this
       have hnot_or : bsp.1 ∉ C.H₂.rowSpace ∨ bsp.2 ∉ C.H₁.rowSpace := by
         by_contra h
         simp only [not_or, not_not] at h
@@ -253,9 +253,9 @@ theorem CSS.toBSM_dist_eq (C : CSS_pair n k₁ k₂) :
             constructor
             · intro i
               refine Fin.addCases (fun i₁ => ?_) (fun i₂ => ?_) i
-              · simp [CSS_pair.toBSM, CSS_BSM, BinSympMatrix.row, symplecticProd]
+              · simp [CSS_pair.toBSM, CSS_BSM, BinSympMatrix.row, symplecticProd, Fin.append_left _ C.H₂, Fin.append_right _ C.H₂, Fin.append_left C.H₁, Fin.append_right C.H₁]
               · have := (mem_ker_iff_dotProd_rows_eq_zero C.H₂ z).1 hz_ker i₂
-                simpa [CSS_pair.toBSM, CSS_BSM, BinSympMatrix.row, symplecticProd] using this
+                simpa [CSS_pair.toBSM, CSS_BSM, BinSympMatrix.row, symplecticProd, Fin.append_left _ C.H₂, Fin.append_right _ C.H₂, Fin.append_left C.H₁, Fin.append_right C.H₁] using this
             · intro hrow
               exact hz_not ((CSS_BSM_rowSpace_iff C.H₁ C.H₂ 0 z).1 hrow).2
           simpa [BinSympMatrix.undetectable_set] using hbsp
@@ -274,8 +274,8 @@ theorem CSS.toBSM_dist_eq (C : CSS_pair n k₁ k₂) :
             · intro i
               refine Fin.addCases (fun i₁ => ?_) (fun i₂ => ?_) i
               · have := (mem_ker_iff_dotProd_rows_eq_zero C.H₁ x).1 hx_ker i₁
-                simpa [CSS_pair.toBSM, CSS_BSM, BinSympMatrix.row, symplecticProd] using this
-              · simp [CSS_pair.toBSM, CSS_BSM, BinSympMatrix.row, symplecticProd]
+                simpa [CSS_pair.toBSM, CSS_BSM, BinSympMatrix.row, symplecticProd, Fin.append_left _ C.H₂, Fin.append_right _ C.H₂, Fin.append_left C.H₁, Fin.append_right C.H₁] using this
+              · simp [CSS_pair.toBSM, CSS_BSM, BinSympMatrix.row, symplecticProd, Fin.append_left _ C.H₂, Fin.append_right _ C.H₂, Fin.append_left C.H₁, Fin.append_right C.H₁]
             · intro hrow
               exact hx_not ((CSS_BSM_rowSpace_iff C.H₁ C.H₂ x 0).1 hrow).1
           simpa [BinSympMatrix.undetectable_set] using hbsp
@@ -332,18 +332,18 @@ lemma toCodeSpace_subset_dual_of_orth_gen {n k₁ k₂ : ℕ} (M₁ : Matrix (Fi
     refine Submodule.span_le.2 ?_
     rintro y ⟨i, rfl⟩
     show M₁ i ∈ M₂.rowSpace.orthogonalBilin (dotProductBilin _ _)
-    rw [Submodule.mem_orthogonalBilin_iff]
+    rw [Submodule.mem_orthogonalBilin]
     intro z hz
     refine Submodule.span_induction ?_ ?_ ?_ ?_ hz
     · rintro _ ⟨j, rfl⟩
-      rw [LinearMap.IsOrtho, dotProductBilin_apply_apply, dotProduct_comm]
+      rw [dotProductBilin_apply_apply, dotProduct_comm]
       exact h_orth i j
-    · simp [LinearMap.IsOrtho]
+    · simp
     · intro a b _ _ ha hb
-      rw [LinearMap.IsOrtho, dotProductBilin_apply_apply] at ha hb ⊢
+      rw [dotProductBilin_apply_apply] at ha hb ⊢
       rw [add_dotProduct, ha, hb, zero_add]
     · intro a b _ hb
-      rw [LinearMap.IsOrtho, dotProductBilin_apply_apply] at hb ⊢
+      rw [dotProductBilin_apply_apply] at hb ⊢
       rw [smul_dotProduct, hb, smul_zero]
   exact hsubset hx
 
@@ -563,7 +563,7 @@ lemma CSS_BSM_isCommuting {k₁ k₂ : ℕ} (H₁ : Matrix (Fin k₁) (Fin n) (Z
   unfold CSS_BSM BinSympMatrix.rowProd symplecticProd
   refine Fin.addCases (fun x => ?_) (fun x => ?_) r₁ <;>
     refine Fin.addCases (fun y => ?_) (fun y => ?_) r₂ <;>
-    simp [Fin.append, BinSympMatrix.row]
+    simp [BinSympMatrix.row, Fin.append_left _ H₂, Fin.append_right _ H₂, Fin.append_left H₁, Fin.append_right H₁]
   · exact h x y
   · rw [dotProduct_comm]
     exact h y x
@@ -580,12 +580,12 @@ lemma CSS_BSM_stabClosure_le {k₁ k₂ : ℕ} (H₁ : Matrix (Fin k₁) (Fin n)
   refine Fin.addCases (fun j => ?_) (fun j => ?_) i
   · refine ⟨0, Submodule.zero_mem _, H₁ j, Matrix.row_mem_rowSpace, ?_⟩
     have hrow : (CSS_BSM H₁ H₂).row (Fin.castAdd k₂ j) = (0, H₁ j) := by
-      simp [CSS_BSM, BinSympMatrix.row, Fin.append_left]
+      simp [CSS_BSM, BinSympMatrix.row, Fin.append_left _ H₂, Fin.append_left H₁]
       rfl
     rw [hrow, xPauli_zero, one_mul, zPauli]
   · refine ⟨H₂ j, Matrix.row_mem_rowSpace, 0, Submodule.zero_mem _, ?_⟩
     have hrow : (CSS_BSM H₁ H₂).row (Fin.natAdd k₁ j) = (H₂ j, 0) := by
-      simp [CSS_BSM, BinSympMatrix.row, Fin.append_right]
+      simp [CSS_BSM, BinSympMatrix.row, Fin.append_right _ H₂, Fin.append_right H₁]
       rfl
     rw [hrow, zPauli_zero, mul_one, xPauli]
 
@@ -635,12 +635,12 @@ lemma CSS_BSM_rowSpace_eq {k₁ k₂ : ℕ} (H₁ : Matrix (Fin k₁) (Fin n) (Z
     rintro _ ⟨i, rfl⟩
     refine Fin.addCases (fun j => ?_) (fun j => ?_) i
     · have hrow : (CSS_BSM H₁ H₂).row (Fin.castAdd k₂ j) = (0, H₁ j) := by
-        simp [CSS_BSM, BinSympMatrix.row, Fin.append_left]
+        simp [CSS_BSM, BinSympMatrix.row, Fin.append_left _ H₂, Fin.append_left H₁]
         rfl
       rw [hrow]
       exact ⟨Submodule.zero_mem _, Matrix.row_mem_rowSpace⟩
     · have hrow : (CSS_BSM H₁ H₂).row (Fin.natAdd k₁ j) = (H₂ j, 0) := by
-        simp [CSS_BSM, BinSympMatrix.row, Fin.append_right]
+        simp [CSS_BSM, BinSympMatrix.row, Fin.append_right _ H₂, Fin.append_right H₁]
         rfl
       rw [hrow]
       exact ⟨Matrix.row_mem_rowSpace, Submodule.zero_mem _⟩
@@ -651,7 +651,7 @@ lemma CSS_BSM_rowSpace_eq {k₁ k₂ : ℕ} (H₁ : Matrix (Fin k₁) (Fin n) (Z
       · rintro _ ⟨j, rfl⟩
         apply Submodule.subset_span
         refine ⟨Fin.natAdd k₁ j, ?_⟩
-        simp [CSS_BSM, BinSympMatrix.row, Fin.append_right]
+        simp [CSS_BSM, BinSympMatrix.row, Fin.append_right _ H₂, Fin.append_right H₁]
         rfl
       · exact Submodule.zero_mem _
       · intro a b _ _ ha hb
@@ -664,7 +664,7 @@ lemma CSS_BSM_rowSpace_eq {k₁ k₂ : ℕ} (H₁ : Matrix (Fin k₁) (Fin n) (Z
       · rintro _ ⟨j, rfl⟩
         apply Submodule.subset_span
         refine ⟨Fin.castAdd k₂ j, ?_⟩
-        simp [CSS_BSM, BinSympMatrix.row, Fin.append_left]
+        simp [CSS_BSM, BinSympMatrix.row, Fin.append_left _ H₂, Fin.append_left H₁]
         rfl
       · exact Submodule.zero_mem _
       · intro a b _ _ ha hb
@@ -701,7 +701,7 @@ lemma CSS_pair.orth (C : CSS_pair n k₁ k₂) : C.H₁.mutually_orth_rows C.H�
   have hy := C.C₂.pcb_prod_mem_dual y C.hpc₂
   have hx : C.H₁ x ∈ C.C₂ := C.H_dual (C.C₁.pcb_prod_mem_dual x C.hpc₁)
   unfold CodeSpace.dualCode at hy
-  rw [Submodule.mem_orthogonalBilin_iff] at hy
+  rw [Submodule.mem_orthogonalBilin] at hy
   exact hy _ hx
 
 def CSS_pair.toStabCode (C : CSS_pair n k₁ k₂) : StabCode n :=

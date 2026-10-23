@@ -6,7 +6,7 @@ noncomputable instance Submodule_set_fintype (C : Submodule (ZMod 2) (Fin n → 
 
  lemma zmod2_val_eq_one_of_ne_zero (a : ZMod 2) (ha : a ≠ 0) : a.1 = 1 := by
   have hlt : a.1 < 2 := a.2
-  have hne : a.1 ≠ 0 := by simpa using ha
+  have hne : a.1 ≠ 0 := fun h => ha (Fin.ext h)
   omega
 
 lemma zmod2_val_eq_zero_of_ne_one (a : ZMod 2) (ha : a ≠ 1) : a.1 = 0 := by
@@ -113,7 +113,7 @@ lemma exists_ker_dotProduct_eq_one_of_not_mem_rowSpace {n k : ℕ} (M : Matrix (
   ·
     -- Since $f x \neq 0$, we have $f x = 1$.
     have hfx_one : f x = 1 := by
-      exact Or.resolve_left ( Fin.exists_fin_two.mp ( by aesop ) ) hfx;
+      exact Or.resolve_left ( Fin.exists_fin_two.mp ⟨f x, rfl⟩ ) hfx;
     convert hfx_one using 1;
     convert dual_eq_dotProduct f x |> Eq.symm
 
@@ -171,7 +171,7 @@ lemma Matrix.mem_rowSpace_ZMod2 {n₁ n₂ : ℕ}
   refine' ⟨ _, fun ⟨ S, hS₁, hS₂ ⟩ => _ ⟩ <;> simp_all +decide [ SetLike.mem_coe, Submodule.mem_span ];
   · have h_sum : ∀ (y : Fin n₂ → ZMod 2), y ∈ Submodule.span (ZMod 2) (Set.range M) → ∃ S : Finset (Fin n₂ → ZMod 2), S ⊆ Finset.image M Finset.univ ∧ ∑ s ∈ S, s = y := by
       intro y hy; induction hy using Submodule.span_induction <;> simp_all +decide [ Finset.subset_iff ] ;
-      · rename_i h; obtain ⟨ y, rfl ⟩ := h; exact ⟨ { M y }, by aesop ⟩ ;
+      · rename_i h; obtain ⟨ y, rfl ⟩ := h; exact ⟨ { M y }, by simpa using Finset.mem_image_of_mem M (Finset.mem_univ y) ⟩ ;
       · exact ⟨ ∅, by norm_num ⟩;
       · rename_i hx hy; obtain ⟨ S₁, hS₁, hS₁' ⟩ := hx; obtain ⟨ S₂, hS₂, hS₂' ⟩ := hy; use S₁ \ S₂ ∪ S₂ \ S₁; simp_all +decide [ Finset.sum_sdiff, Finset.subset_iff ] ;
         rw [ ← hS₁', ← hS₂', Finset.sum_union ];
@@ -193,7 +193,7 @@ lemma Matrix.mem_rowSpace_ZMod2 {n₁ n₂ : ℕ}
           change k i = (1 : ZMod 2) * k i;
           ring;
     exact h_sum x;
-  · exact hS₂ ▸ Submodule.sum_mem _ fun s hs => Submodule.subset_span <| by have := hS₁ hs; aesop;
+  · exact hS₂ ▸ Submodule.sum_mem _ fun s hs => Submodule.subset_span <| by obtain ⟨i, -, hi⟩ := Finset.mem_image.mp (hS₁ hs); exact Set.mem_range.mpr ⟨i, hi⟩;
 
 lemma exists_row_of_exists_mem_rowspace_non_orth {n k : ℕ}
   {M : Matrix (Fin k) (Fin n) (ZMod 2)}
@@ -205,8 +205,7 @@ lemma exists_row_of_exists_mem_rowspace_non_orth {n k : ℕ}
   obtain ⟨S, hS_sub, hS_sum⟩ := hy₁
   obtain ⟨s, hs_mem, hs_dot⟩ := exists_dotProduct_one_of_sum hS_sum hy₂
   have hs_row := hS_sub hs_mem
-  simp only [Finset.mem_image, Finset.mem_univ, true_and] at hs_row
-  obtain ⟨i, hi⟩ := hs_row
+  obtain ⟨i, -, hi⟩ := Finset.mem_image.mp hs_row
   refine ⟨i, ?_⟩
   rwa [hi]
 
@@ -228,18 +227,8 @@ lemma Matrix.is_ker_for_of_rank_sum_mutually_orth
     have h_dim_ker : Module.finrank (ZMod 2) (LinearMap.ker (Matrix.toLin' M₁)) = n - Matrix.rank M₁ := by
       have := LinearMap.finrank_range_add_finrank_ker ( Matrix.mulVecLin M₁ );
       exact eq_tsub_of_add_eq ( by norm_num at *; linarith! );
-    have h_finrank_M₂ : Module.finrank (ZMod 2) (Submodule.span (ZMod 2) (Set.range M₂)) = Matrix.rank M₂ := by
-      rw [ ← Matrix.rank_transpose, Matrix.rank ];
-      congr;
-      · simp +decide [ funext_iff, Matrix.mulVec, Submodule.mem_span_range_iff_exists_fun ];
-        simp +decide [ Matrix.vecMul, dotProduct ];
-      · ext; simp [Matrix.mulVecLin];
-        simp +decide [ Submodule.mem_span_range_iff_exists_fun, Matrix.vecMul, funext_iff ];
-        simp +decide [ dotProduct, mul_comm ];
-      · ext; simp [Matrix.mulVecLin];
-        rw [ Submodule.mem_span_range_iff_exists_fun ];
-        simp +decide [ funext_iff, Matrix.vecMul, dotProduct ];
-      · infer_instance;
+    have h_finrank_M₂ : Module.finrank (ZMod 2) (Submodule.span (ZMod 2) (Set.range M₂)) = Matrix.rank M₂ :=
+      (Matrix.rank_eq_finrank_span_row M₂).symm
     have h_subspace : Submodule.span (ZMod 2) (Set.range M₂) ≤ LinearMap.ker (Matrix.toLin' M₁) := by
       rw [ Submodule.span_le ];
       rintro _ ⟨ i, rfl ⟩ ; specialize ho; simp_all +decide [ Matrix.mulVec, dotProduct ] ;
@@ -260,7 +249,7 @@ lemma Matrix.rank_le_of_submatrix_independent
       rw [ @LinearMap.finrank_range_of_inj ];
       · norm_num;
       · intro x y hxy; simp_all +decide [ funext_iff, Matrix.mulVec ] ;
-        rw [ Fintype.linearIndependent_iff ] at h_ind;
+        replace h_ind := Fintype.linearIndependent_iff.mp h_ind;
         specialize h_ind ( x - y ) ; simp_all +decide [ sub_eq_zero, dotProduct, Finset.sum_sub_distrib, sub_smul ];
         exact h_ind ( by ext i; simpa [ Matrix.mulVec, dotProduct, mul_comm ] using hxy i );
     rw [ ← h_submatrix_rank ];

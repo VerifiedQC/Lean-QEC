@@ -17,8 +17,6 @@ theorem reindex_unitary {a b : Type*} [Fintype a] [Fintype b] [DecidableEq a] [D
   have h_mem := U.2
   rw [mem_unitaryGroup_iff] at h_mem ⊢
   simp
-  rw [star_eq_conjTranspose, conjTranspose_submatrix]
-  simp [←star_eq_conjTranspose, h_mem]
 
 def unitary_fin_equiv {a b : Type*} [Fintype a] [Fintype b] [DecidableEq a] [DecidableEq b]
  (h: a ≃ b) :(𝐔[a] ≃ 𝐔[b]) where

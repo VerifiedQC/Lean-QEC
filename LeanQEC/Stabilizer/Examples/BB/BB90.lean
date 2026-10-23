@@ -49,8 +49,8 @@ lemma BB90_X_rank : 41 ≤ BB90_X_mat.rank := by
       BitVec.ofNat_eq_ofNat, Nat.reduceAdd, BitVec.reduceGetElem, Bool.and_true, one_mul,
       Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
       bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
-      Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_check "BB90.lean-BB90_X_rank-53-2.lrat"
+      Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq, Nat.succ_eq_add_one]
+  bv_decide
 set_option maxHeartbeats 0 in
 lemma BB90_Z_rank : 41 ≤ BB90_Z_mat.rank := by
   apply Matrix.rank_le_of_submatrix_independent _ BB90indrowsz BB90StrictMono_indrowsx
@@ -61,8 +61,8 @@ lemma BB90_Z_rank : 41 ≤ BB90_Z_mat.rank := by
       BitVec.ofNat_eq_ofNat, Nat.reduceAdd, BitVec.reduceGetElem, Bool.and_true, one_mul,
       Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
       bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
-      Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
-  bv_check "BB90.lean-BB90_Z_rank-65-2.lrat"
+      Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq, Nat.succ_eq_add_one]
+  bv_decide
 set_option maxHeartbeats 0 in
 lemma BB90_X_ker_rank : 49 ≤ BB90_X_ker_mat.rank := by
   apply Matrix.rank_le_of_submatrix_independent _ id (strictMono_id)
@@ -74,7 +74,7 @@ lemma BB90_X_ker_rank : 49 ≤ BB90_X_ker_mat.rank := by
       BitVec.ofNat_eq_ofNat, Nat.reduceAdd, BitVec.reduceGetElem, Bool.and_true, one_mul,
       Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
       bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
-      Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
+      Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq, Nat.succ_eq_add_one]
   bv_normalize
 set_option maxHeartbeats 0 in
 lemma BB90_Z_ker_rank : 49 ≤ BB90_Z_ker_mat.rank := by
@@ -87,7 +87,7 @@ lemma BB90_Z_ker_rank : 49 ≤ BB90_Z_ker_mat.rank := by
       BitVec.ofNat_eq_ofNat, Nat.reduceAdd, BitVec.reduceGetElem, Bool.and_true, one_mul,
       Nat.reduceLT, zero_mul, zero_add, Bool.and_false, Bool.false_bne, Bool.bne_false,
       bne_self_eq_false, add_zero, Bool.not_and, Bool.not_or, Bool.not_not, Bool.and_eq_true,
-      Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq]
+      Bool.not_eq_eq_eq_not, Bool.not_true, bne_iff_ne, ne_eq, Nat.succ_eq_add_one]
   bv_normalize
 set_option exponentiation.threshold 10000
 set_option maxHeartbeats 0
@@ -116,8 +116,8 @@ lemma BB90_dist_z : lt_dist_sat BB90_X BB90_Z_ker 9 7 := by
   Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
-  rowspace_constraints_aux, not_and, and_imp]
-  bv_check (timeout := 9999) (maxSteps := 9999999)"BB90.lean-BB90_dist_z-120-2.lrat"
+  rowspace_constraints_aux, not_and, and_imp, BitVec.natCast_eq_ofNat]
+  bv_decide (timeout := 9999) (maxSteps := 9999999)
 set_option maxHeartbeats 0 in
 lemma BB90_dist_x : lt_dist_sat BB90_Z BB90_X_ker 9 7 := by
   rw [BB90_Z, BB90_X_ker]
@@ -127,8 +127,8 @@ lemma BB90_dist_x : lt_dist_sat BB90_Z BB90_X_ker 9 7 := by
   Nat.reduceLT, Nat.one_lt_ofNat, Nat.cast_one, Nat.ofNat_pos, Nat.cast_zero, parity_constraints,
   parity_constraints_aux, BitVec.dot_product, dot_product_aux, BitVec.row,
   Bool.not_eq_eq_eq_not, Bool.not_true, bne_eq_false_iff_eq, decide_eq_true_eq, rowspace_constraints,
-  rowspace_constraints_aux, not_and, and_imp]
-  bv_check (timeout := 9999) (maxSteps := 9999999)"BB90.lean-BB90_dist_x-131-2.lrat"
+  rowspace_constraints_aux, not_and, and_imp, BitVec.natCast_eq_ofNat]
+  bv_decide (timeout := 9999) (maxSteps := 9999999)
 lemma BB90_X_ker_is_ker : BB90_X_ker_mat.is_ker_for BB90_X_mat := by
   apply Matrix.is_ker_for_of_rank_sum_mutually_orth _ _ BB90_X_rank BB90_X_ker_rank (by norm_num) BB90_X_ker_orth
 lemma BB90_Z_ker_is_ker : BB90_Z_ker_mat.is_ker_for BB90_Z_mat := by

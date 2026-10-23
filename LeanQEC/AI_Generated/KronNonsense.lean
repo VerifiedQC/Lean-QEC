@@ -37,7 +37,7 @@ lemma kron_injective_up_to_scalar {T₁ U₁ T₂ U₂}
         -- By the properties of the Kronecker product, we have $M₁ a b * M₂ i j = M₁' a b * M₂' i j$ for all $a, b, i, j$.
         have h_eq : ∀ a b i j, M₁ a b * M₂ i j = M₁' a b * M₂' i j := by
           exact fun a b i j => by simpa [ Matrix.kronecker_apply ] using congr_fun ( congr_fun eq_krons ( a, i ) ) ( b, j ) ;
-        exact fun a b => by rw [ div_mul_eq_mul_div, eq_div_iff hij ] ; linear_combination' h_eq a b i j;
+        exact fun a b => by rw [ div_mul_eq_mul_div, eq_div_iff hij ] ; linear_combination h_eq a b i j;
       exact ⟨ M₂' i j / M₂ i j, by ext a b; simpa using h_div a b ⟩;
     -- Let $b = a^{-1}$.
     use Units.mk0 a (by
