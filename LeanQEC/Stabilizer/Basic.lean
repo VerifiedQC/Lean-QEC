@@ -148,6 +148,7 @@ lemma foldPauli_scalar_sq {n : ℕ} (z : pgroup_phases) :
     induction' ‹ℕ› with n ih <;> simp_all +decide [ Fin.tail, fold_pgroup_phases ];
     · grind +suggestions;
     · convert ih using 1
+      rfl
 
 --theorem that says pauli X, Z errors on stabilized vectors result
 --in either U stabilizing or U_neg stabilizing?
@@ -381,7 +382,7 @@ def Z2Z2_Pauli_equiv : ((ZMod 2) × (ZMod 2)) ≃ Pauli where
   if h3 : P = Pauli_Z then (0, 1) else (1, 1)
   left_inv := by
     intro x
-    fin_cases x <;> simp [ZMod]
+    fin_cases x <;> simp [ZMod] <;> rfl
   right_inv := by
     intro x
     rcases Pauli_cases x with h | h | h | h <;> simp [h]
@@ -505,7 +506,7 @@ theorem Pauli_to_BinSymp_correct {n : ℕ} (P₁ P₂ : PauliGroup_group n) :
     simpa [FP₁, FP₂] using (mul_factored_Paulis_correct FP₁ FP₂).symm
   ext i
   · have hi : (foldPauli.symm (P₁ * P₂)).2 i = (mul_Pauli1 (FP₁.2 i) (FP₂.2 i)).2 := by
-      simpa [FP₁, FP₂, mul_factored_Paulis, scale_factored_Pauli, mul_Pauli1_tuples] using
+      simpa [FP₁, FP₂, mul_factored_Paulis, scale_factored_Pauli, mul_Pauli1_tuples] using!
         congrArg (fun fp => fp.2 i) hmul
     rw [show (Pauli_toBinSympPauli (P₁ * P₂)).1 i =
         (Z2Z2_Pauli_equiv.symm ((foldPauli.symm (P₁ * P₂)).2 i)).1 by
@@ -514,7 +515,7 @@ theorem Pauli_to_BinSymp_correct {n : ℕ} (P₁ P₂ : PauliGroup_group n) :
     simpa [Pauli_toBinSympPauli, PauliGroup.map, FP₁, FP₂] using
       congrArg Prod.fst (local_mul_Pauli_toBinSymp (FP₁.2 i) (FP₂.2 i))
   · have hi : (foldPauli.symm (P₁ * P₂)).2 i = (mul_Pauli1 (FP₁.2 i) (FP₂.2 i)).2 := by
-      simpa [FP₁, FP₂, mul_factored_Paulis, scale_factored_Pauli, mul_Pauli1_tuples] using
+      simpa [FP₁, FP₂, mul_factored_Paulis, scale_factored_Pauli, mul_Pauli1_tuples] using!
         congrArg (fun fp => fp.2 i) hmul
     rw [show (Pauli_toBinSympPauli (P₁ * P₂)).2 i =
         (Z2Z2_Pauli_equiv.symm ((foldPauli.symm (P₁ * P₂)).2 i)).2 by
@@ -583,6 +584,7 @@ lemma BinSympPauli_toPauli_commute_iff_symplecticProd_zero {n : ℕ} (bp₁ bp�
   -- The commutativity of Pauli group elements is equivalent to the symplectic product being zero.
   unfold commute; simp [anticommute_eq_symplecticBool];
   cases h : symplecticProd bp₁ bp₂ ; simp_all +decide [ Bool.ofNat ]
+  exact ZMod.val_eq_zero _
 
 theorem commutes_of_sympProd_zero {n : ℕ} {bp₁ bp₂ : BinSympPauli n}
     (h_prod : symplecticProd bp₁ bp₂ = 0) : commute (BinSympPauli_toPauli bp₁) (BinSympPauli_toPauli bp₂) := by
@@ -1269,15 +1271,16 @@ lemma StabCode.stabSymplecticSpace_le_normalizerSpace {n : ℕ} (C : StabCode n)
   exact (by
   intro t ht;
   refine' Submodule.span_induction _ _ _ _ ht;
-  · simp_all +decide [ BinSympPauli.form, LinearMap.IsOrtho ];
-    intro a b x hx hx' hx'' hx'''; specialize h_comm x hx hx' hx''; simp_all +decide [ LinearMap.BilinForm.IsOrtho, symplecticProd_comm ] ;
-  · simp +decide [ LinearMap.BilinForm.IsOrtho ];
-  · simp +contextual [ LinearMap.BilinForm.IsOrtho ];
-  · simp +contextual [ LinearMap.BilinForm.IsOrtho, symplecticProd ])
+  · simp_all +decide [ BinSympPauli.form ];
+    intro a b x hx hx' hx'' hx'''; specialize h_comm x hx hx' hx''; simp_all +decide [ symplecticProd_comm ] ;
+  · simp +decide;
+  · simp +contextual;
+  · simp +contextual [ symplecticProd ])
 
 lemma StabCode.finrank_normalizerSpace {n : ℕ} (C : StabCode n) :
     Module.finrank (ZMod 2) C.normalizerSpace = 2 * n - C.numGenerators := by
   convert LinearMap.BilinForm.finrank_orthogonal ( BinSympPauli.form_nondegenerate n ) C.stabSymplecticSpace using 1;
+  · rfl
   rw [ BinSympPauli.finrank ];
   rfl
 
@@ -1301,10 +1304,10 @@ lemma StabCode.normalizerGroup_eq_comap {n : ℕ} (C : StabCode n) :
   constructor
   · intro hE y hy
     obtain ⟨s, hs, rfl⟩ := (C.mem_stabilizerSpace_iff y).1 hy
-    simpa [BinSympPauli.form_apply, LinearMap.BilinForm.IsOrtho] using hE s hs
+    simpa [BinSympPauli.form_apply] using hE s hs
   · intro hE s hs
     have := hE (Pauli_toBinSympPauli s) ((C.mem_stabilizerSpace_iff _).2 ⟨s, hs, rfl⟩)
-    simpa [BinSympPauli.form_apply, LinearMap.BilinForm.IsOrtho] using this
+    simpa [BinSympPauli.form_apply] using this
 
 /-- There are 4^(n-generators) logical operators -/
 theorem StabCode.card_logicalGroup {n : ℕ} (C : StabCode n) :
@@ -1374,7 +1377,7 @@ lemma PauliGroup.mem_phaseSubgroup_iff_scalar {n : ℕ} (P : PauliGroup_group n)
 
 lemma one_eq_scalarPauli_one {n : ℕ} :
     (1 : PauliGroup_group n) = scalarPauli pgphase_1 := by
-  convert Pauli1_unfold
+  convert Pauli1_unfold <;> rfl
 
 /-
 Any phase other than `+1` and `-1` squares to `-1`.

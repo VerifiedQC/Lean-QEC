@@ -45,7 +45,7 @@ def normalized_kron {n₁ m₁ n₂ m₂}
   (U₂ : Matrix (BitVec m₂) (BitVec n₂) ℂ) :=
   normalize_mat (Matrix.kronecker U₁ U₂)
 
-lemma normalize_mul {n₁ m₁ n₂ m₂ n₃ m₃}
+lemma normalize_mat_mul {n₁ m₁ n₂ m₂ n₃ m₃}
   (U : Matrix (BitVec n₁ × BitVec m₁) (BitVec n₂ × BitVec m₂) ℂ)
   (U' : Matrix (BitVec n₂ × BitVec m₂) (BitVec n₃ × BitVec m₃) ℂ) :
   normalize_mat (U * U') =
@@ -58,11 +58,9 @@ def toMat {t} : (t → ℂ) ≃ (Matrix t (BitVec 0) ℂ) where
   toFun := fun (v n _) => v n
   invFun := fun (m i) => m i 0
   left_inv := by
-    rw [Function.LeftInverse]
     intro m; funext i
     rfl
   right_inv := by
-    rw [Function.RightInverse]
     intro m
     apply Matrix.ext; intro i j; simp
     have H : j = 0#0 := by
@@ -74,9 +72,8 @@ def toMat {t} : (t → ℂ) ≃ (Matrix t (BitVec 0) ℂ) where
 lemma mulvec_toMat {t u} {fin_u : Fintype u} (U : Matrix t u ℂ) (v : u → ℂ) :
   toMat (U *ᵥ v) = U * (toMat v) := by
     -- By definition of matrix multiplication and the definitions of `toMat` and `tm_inv`, we can show that the equality holds elementwise.
-    ext n; simp [Matrix.mulVec, toMat];
-    -- By definition of matrix multiplication, we have:
-    simp [Matrix.mul_apply, dotProduct]
+    ext n j
+    rfl
 
 def ket_prod {n₁ n₂}
     (v1 : BitVec n₁ → ℂ)
@@ -85,22 +82,18 @@ def ket_prod {n₁ n₂}
 
 lemma ket_prod_linear_left {n m} (v1 v2 : BitVec n → ℂ) (w : BitVec m → ℂ) (a b : ℂ) :
   ket_prod (a • v1 + b • v2) w = a • ket_prod v1 w + b • ket_prod v2 w := by
-    simp [ket_prod, -Pi.add_apply];
-    simp [normalized_kron];
-    ext; simp [Matrix.kroneckerMap];
-    unfold toMat at * ;
-    simp_all only [BitVec.ofNat_eq_ofNat, Equiv.coe_fn_mk, Pi.add_apply, Pi.smul_apply, smul_eq_mul,
-      Equiv.coe_fn_symm_mk, submatrix_apply, of_apply]
+    have key : ∀ (v : BitVec n → ℂ) x, ket_prod v w x = v (bits_cat.symm x).1 * w (bits_cat.symm x).2 :=
+      fun _ _ => rfl
+    ext x
+    simp only [key, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
     ring
 
   lemma ket_prod_linear_right {n m} (v1 v2 : BitVec n → ℂ) (w : BitVec m → ℂ) (a b : ℂ) :
   ket_prod w (a • v1 + b • v2) = a • ket_prod w v1 + b • ket_prod w v2 := by
-    simp [ket_prod, -Pi.add_apply];
-    simp [normalized_kron];
-    ext; simp [Matrix.kroneckerMap];
-    unfold toMat at * ;
-    simp_all only [BitVec.ofNat_eq_ofNat, Equiv.coe_fn_mk, Pi.add_apply, Pi.smul_apply, smul_eq_mul,
-      Equiv.coe_fn_symm_mk, submatrix_apply, of_apply]
+    have key : ∀ (v : BitVec n → ℂ) x, ket_prod w v x = w (bits_cat.symm x).1 * v (bits_cat.symm x).2 :=
+      fun _ _ => rfl
+    ext x
+    simp only [key, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
     ring
 
 lemma kron_prod {n₁ m₁ n₂ m₂}
@@ -118,7 +111,7 @@ lemma kron_prod {n₁ m₁ n₂ m₂}
   have H' : kroneckerMap (fun x1 x2 ↦ x1 * x2) (toMat v₁) (toMat v₂) =
     kronecker (toMat v₁) (toMat v₂) := by rfl
   rw [H']
-  rw [normalize_mul]
+  rw [normalize_mat_mul]
   rw [toMat.symm_apply_eq, mulvec_toMat, ket_prod, toMat.apply_symm_apply]
   rfl
 

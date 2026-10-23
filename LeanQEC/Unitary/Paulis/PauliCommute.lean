@@ -165,7 +165,6 @@ lemma anticommuteₘ_correct {n} (m m' : Fin n -> Pauli) :
       clear H'
       rw [commute₁_right]
     · have IH := (IHL (Fin.tail m) (Fin.tail m') Htail)
-      simp at IH
       rw [IH]
       simp only [neg_is_uphase]
       simp only [uphase_of_kron, uphase_of_kron_right, uphase_of_uphase]
@@ -173,7 +172,6 @@ lemma anticommuteₘ_correct {n} (m m' : Fin n -> Pauli) :
       apply uphase_ext; try rfl
       apply phase_comm
     · have IH := (IHR (Fin.tail m) (Fin.tail m') Htail)
-      simp at IH
       rw [IH]
       rw [commute₁_correct_false]
       swap; simp_all only [Bool.not_eq_true]
@@ -183,11 +181,9 @@ lemma anticommuteₘ_correct {n} (m m' : Fin n -> Pauli) :
       rw [neg_pgphaseE]
       simp [neg_pphase, phase_n1, neg_phaseE, neg_phase]
     · have IH := (IHR (Fin.tail m) (Fin.tail m') Htail)
-      simp at IH
       rw [IH]
       rw [commute₁_correct_true]; try assumption
     · have IH := (IHL (Fin.tail m) (Fin.tail m') Htail)
-      simp at IH
       rw [IH]
       rw [commute₁_correct_false]
       swap; simp_all only [Bool.not_eq_true]

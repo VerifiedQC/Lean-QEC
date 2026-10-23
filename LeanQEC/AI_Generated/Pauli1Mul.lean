@@ -77,104 +77,67 @@ lemma pX_sq : pX * pX = 1 := by
   apply Subtype.ext
   simp only [pX, unitary_fin_equiv]
   ext i j; fin_cases i <;> fin_cases j <;>
-  simp [Qubit.X, beq, BitVec.equivFin] <;> rfl
+  simp [Qubit.X, beq, BitVec.equivFin, Matrix.mul_apply] <;> rfl
 
 lemma pY_sq : pY * pY = 1 := by
   apply Subtype.ext
   simp only [pY, unitary_fin_equiv]
   ext i j; fin_cases i <;> fin_cases j <;>
-  simp [Qubit.Y, beq, BitVec.equivFin] <;> rfl
+  simp [Qubit.Y, beq, BitVec.equivFin, Matrix.mul_apply] <;> rfl
 
 lemma pZ_sq : pZ * pZ = 1 := by
   apply Subtype.ext
   simp only [pZ, unitary_fin_equiv]
   ext i j; fin_cases i <;> fin_cases j <;>
-  simp [Qubit.Z, beq, BitVec.equivFin] <;> rfl
+  simp [Qubit.Z, beq, BitVec.equivFin, Matrix.mul_apply] <;> rfl
 
 lemma pX_mul_pY : pX * pY = U_phase pZ phase_i := by
-  unfold pX pY pZ U_phase;
-  ext i j ; fin_cases i <;> fin_cases j <;> simp +decide [ unitary_fin_equiv, X, Y, Z ];
-  · simp +decide [ beq ];
-  · simp +decide [ beq ];
-  · simp +decide [ beq ];
-  · simp +decide [ beq ]
+  have hb0 : beq.symm 0#1 = 0 := rfl
+  have hb1 : beq.symm 1#1 = 1 := rfl
+  apply Subtype.ext
+  simp only [pX, pY, pZ, U_phase, unitary_fin_equiv]
+  ext i j; fin_cases i <;> fin_cases j <;>
+  simp [Qubit.X, Qubit.Y, Qubit.Z, Matrix.mul_apply, hb0, hb1]
 
 lemma pY_mul_pZ : pY * pZ = U_phase pX phase_i := by
-  unfold pY pZ U_phase;
-  ext i j;
-  fin_cases i <;> fin_cases j <;> simp +decide [ Y, Z, pX ];
-  · simp +decide [ unitary_fin_equiv, X, Y, Z ];
-    simp +decide [ beq ];
-  · simp +decide [ unitary_fin_equiv, X, Y, Z ];
-    simp +decide [ beq ];
-  · simp +decide [ unitary_fin_equiv, X, Y, Z ];
-    simp +decide [ beq ];
-  · simp +decide [ unitary_fin_equiv, X, Y, Z ];
-    simp +decide [ beq ]
+  have hb0 : beq.symm 0#1 = 0 := rfl
+  have hb1 : beq.symm 1#1 = 1 := rfl
+  apply Subtype.ext
+  simp only [pX, pY, pZ, U_phase, unitary_fin_equiv]
+  ext i j; fin_cases i <;> fin_cases j <;>
+  simp [Qubit.X, Qubit.Y, Qubit.Z, Matrix.mul_apply, hb0, hb1]
 
 lemma pZ_mul_pX : pZ * pX = U_phase pY phase_i := by
-  unfold pZ pX U_phase;
-  unfold phase_i pY;
-  ext i j ; fin_cases i <;> fin_cases j <;> norm_num [ Matrix.mul_apply, Z, Y, X, unitary_fin_equiv ];
-  · simp +decide [ beq ];
-  · simp +decide [ beq ];
-  · simp +decide [ beq ];
-  · simp +decide [ beq ]
+  have hb0 : beq.symm 0#1 = 0 := rfl
+  have hb1 : beq.symm 1#1 = 1 := rfl
+  apply Subtype.ext
+  simp only [pX, pY, pZ, U_phase, unitary_fin_equiv]
+  ext i j; fin_cases i <;> fin_cases j <;>
+  simp [Qubit.X, Qubit.Y, Qubit.Z, Matrix.mul_apply, hb0, hb1]
 
 lemma pY_mul_pX : pY * pX = U_phase pZ phase_ni := by
-  convert congr_arg Star.star ( pX_mul_pY ) using 1;
-  · unfold pY pX;
-    unfold unitary_fin_equiv;
-    ext; simp +decide [ Matrix.mul_apply, Matrix.reindex_apply ] ;
-    rename_i i j; fin_cases i <;> fin_cases j <;> norm_num [ Y, X ] ;
-    · simp +decide [ beq ];
-    · simp +decide [ beq ];
-    · simp +decide [ beq ];
-    · simp +decide [ beq ];
-  · unfold U_phase;
-    ext i j ; simp +decide [ phase_i, phase_ni ];
-    fin_cases i <;> fin_cases j <;> norm_num [ pZ ];
-    · unfold unitary_fin_equiv; simp +decide [ Z ] ;
-      simp +decide [ beq ];
-    · unfold unitary_fin_equiv; simp +decide [ Z ] ;
-      simp +decide [ beq ];
-    · unfold unitary_fin_equiv; norm_num [ Z ] ;
-      simp +decide [ beq ];
-    · unfold unitary_fin_equiv; simp +decide [ Z ] ;
-      simp +decide [ beq ]
+  have hb0 : beq.symm 0#1 = 0 := rfl
+  have hb1 : beq.symm 1#1 = 1 := rfl
+  apply Subtype.ext
+  simp only [pX, pY, pZ, U_phase, unitary_fin_equiv]
+  ext i j; fin_cases i <;> fin_cases j <;>
+  simp [Qubit.X, Qubit.Y, Qubit.Z, Matrix.mul_apply, hb0, hb1]
 
 lemma pZ_mul_pY : pZ * pY = U_phase pX phase_ni := by
-  unfold pZ pY U_phase;
-  ext i j; fin_cases i <;> fin_cases j <;> norm_num [ pX, pY, pZ, phase_ni ] ;
-  · unfold unitary_fin_equiv; norm_num [ Z, Y, X ] ;
-    simp +decide [ beq ];
-  · simp +decide [ unitary_fin_equiv, Z, Y, X ];
-    simp +decide [ beq ];
-  · unfold unitary_fin_equiv; simp +decide [ Z, Y, X ] ;
-    simp +decide [ beq ];
-  · unfold unitary_fin_equiv; norm_num [ Z, Y, X ] ;
-    simp +decide [ beq ]
+  have hb0 : beq.symm 0#1 = 0 := rfl
+  have hb1 : beq.symm 1#1 = 1 := rfl
+  apply Subtype.ext
+  simp only [pX, pY, pZ, U_phase, unitary_fin_equiv]
+  ext i j; fin_cases i <;> fin_cases j <;>
+  simp [Qubit.X, Qubit.Y, Qubit.Z, Matrix.mul_apply, hb0, hb1]
 
 lemma pX_mul_pZ : pX * pZ = U_phase pY phase_ni := by
-  ext i j; fin_cases i <;> fin_cases j <;> simp +decide [ *, Matrix.mul_apply ] ;
-  · unfold U_phase; simp +decide [ Z ] ;
-    unfold pX pY pZ; simp +decide [ BitVec.equivFin ] ;
-    unfold unitary_fin_equiv; simp +decide [ X, Y, Z ] ;
-    simp +decide [ beq ];
-    simp +decide [ BitVec.equivFin ];
-  · unfold pX pZ U_phase; simp +decide ;
-    unfold unitary_fin_equiv; simp +decide [ X, Z, pY ] ;
-    unfold unitary_fin_equiv; simp +decide [ Y ] ;
-    simp +decide [ beq ];
-    simp +decide [ BitVec.equivFin ];
-  · simp +decide [ pX, pZ, U_phase ];
-    simp +decide [ unitary_fin_equiv, X, Z, pY ];
-    simp +decide [ beq, Y ];
-    simp +decide [ BitVec.equivFin ];
-  · simp +decide [ pX, pY, pZ, U_phase ];
-    simp +decide [ unitary_fin_equiv, X, Y, Z ];
-    simp +decide [ beq ];
-    simp +decide [ BitVec.equivFin ]
+  have hb0 : beq.symm 0#1 = 0 := rfl
+  have hb1 : beq.symm 1#1 = 1 := rfl
+  apply Subtype.ext
+  simp only [pX, pY, pZ, U_phase, unitary_fin_equiv]
+  ext i j; fin_cases i <;> fin_cases j <;>
+  simp [Qubit.X, Qubit.Y, Qubit.Z, Matrix.mul_apply, hb0, hb1]
 
 end AristotleLemmas
 
@@ -187,29 +150,29 @@ lemma mul_Pauli1_correct (P Q : Pauli) :
   · simp [mul_Pauli1]
     change Pauli_X.val * Pauli_X.val = U_phase Pauli_I.val phase_id
     rw [U_phase_id]
-    simpa using pX_sq
-  · simpa [mul_Pauli1] using pX_mul_pY
-  · simpa [mul_Pauli1] using pX_mul_pZ
+    simpa using! pX_sq
+  · simpa [mul_Pauli1] using! pX_mul_pY
+  · simpa [mul_Pauli1] using! pX_mul_pZ
   · simp [mul_Pauli1]
     change Pauli_X.val * Pauli_I.val = U_phase Pauli_X.val phase_id
     rw [U_phase_id]
     simp [Pauli_I]
-  · simpa [mul_Pauli1] using pY_mul_pX
+  · simpa [mul_Pauli1] using! pY_mul_pX
   · simp [mul_Pauli1]
     change Pauli_Y.val * Pauli_Y.val = U_phase Pauli_I.val phase_id
     rw [U_phase_id]
-    simpa using pY_sq
-  · simpa [mul_Pauli1] using pY_mul_pZ
+    simpa using! pY_sq
+  · simpa [mul_Pauli1] using! pY_mul_pZ
   · simp [mul_Pauli1]
     change Pauli_Y.val * Pauli_I.val = U_phase Pauli_Y.val phase_id
     rw [U_phase_id]
     simp [Pauli_I]
-  · simpa [mul_Pauli1] using pZ_mul_pX
-  · simpa [mul_Pauli1] using pZ_mul_pY
+  · simpa [mul_Pauli1] using! pZ_mul_pX
+  · simpa [mul_Pauli1] using! pZ_mul_pY
   · simp [mul_Pauli1]
     change Pauli_Z.val * Pauli_Z.val = U_phase Pauli_I.val phase_id
     rw [U_phase_id]
-    simpa using pZ_sq
+    simpa using! pZ_sq
   · simp [mul_Pauli1]
     change Pauli_Z.val * Pauli_I.val = U_phase Pauli_Z.val phase_id
     rw [U_phase_id]

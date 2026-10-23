@@ -99,7 +99,8 @@ lemma vec_to_BitVec'_correct {i n : ℕ} {r : (Fin i) → (Fin n)} (j : Fin i) :
         simp [hlow]
         have hrec := congrArg (fun bv : BitVec (Nat.clog 2 n) => bv[bit])
           (ih (r := fun i : Fin (i + 1) => r ⟨i, by simp⟩) j)
-        simpa only [BitVec.getElem_extractLsb' hbit] using hrec
+        simp [BitVec.getElem_extractLsb' hbit, hlow] at hrec
+        exact hrec
 
 
 
@@ -253,8 +254,8 @@ lemma loc_constraints_of_index {n k : ℕ} (x : Fin n → (ZMod 2)) (hx : hammin
     refine ⟨⟨j, lt_of_lt_of_le hjlt hx⟩, ?_⟩
     rw [vec_to_BitVec'_correct, fin_to_bitvec_clog, BitVec.ofNat_clog_eq_iff]
     simp [index_vec, S]
-    rw [if_pos hjlt]
-    simpa [S] using hj
+    rw [dite_eq_left hjlt]
+    exact hj
 
 lemma fin_toBitVec_clog_le_iff {n : ℕ} {x y : Fin n} :
     (x : BitVec (Nat.clog 2 n)) ≤ (y : BitVec (Nat.clog 2 n)) ↔ x ≤ y := by
@@ -645,7 +646,6 @@ lemma nonzero_correct {r : ℕ} (x : Fin r → (ZMod 2))
     -- By definition of `nonzero`, we have that `nonzero (vec_to_BitVec x) = true` if and only if there exists some `i` such that `x i ≠ 0`.
     simp [nonzero];
     by_cases hr : r = 0 <;> simp_all +decide [ funext_iff, nonzero_aux ];
-    · subst hr; exact fun i => Fin.elim0 i;
     · constructor;
       · intro h_nonzero
         by_contra h_contra
@@ -794,7 +794,7 @@ lemma all_dot_zero_correct {r n : ℕ} [NeZero r] (M : Matrix (Fin r) (Fin n) (Z
 
 lemma linear_indep_of_forall_vecmul_nz {r n : ℕ} (M : Matrix (Fin r) (Fin n) (ZMod 2))
   : LinearIndependent (ZMod 2) M ↔ ∀ coeffs, coeffs ≠ 0 → M.vecMul coeffs ≠ 0 := by
-    rw [ Fintype.linearIndependent_iff ];
+    rw [ Fintype.linearIndependent_iff (R := ZMod 2) (v := M) ];
     simp +decide [ funext_iff, Matrix.vecMul ];
     constructor;
     · exact fun h coeffs x hx => not_forall.mp fun h' => hx <| h coeffs h' x;
@@ -1044,4 +1044,4 @@ lemma inds_strict_mono_correct {k r : ℕ} [NeZero r] (inds : Fin r → Fin k) :
       unfold inds_strict_mono at haux
       have hd := inds_strict_mono_aux_descent inds r (Nat.lt_succ_self r) k haux
       have hstep := hd.2 i.val i.2
-      simpa [Fin.castSucc, Fin.succ] using hstep
+      exact hstep
