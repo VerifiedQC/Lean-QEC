@@ -1,4 +1,3 @@
-import LeanQEC.States.BitVec
 import Mathlib.LinearAlgebra.BilinearForm.Orthogonal
 import LeanQEC.LinearAlgebra.RowspaceKernel
 
@@ -146,17 +145,15 @@ theorem genMatrix_size_eq {k : ℕ} (C : CodeSpace n) (G : Matrix (Fin k) (Fin n
   rw [h] at this
   exact this
 
---horrible terrible aristotle proof that keeps breaking my build
 lemma dual_finrank_eq {C : CodeSpace n} : Module.finrank (ZMod 2) C.dualCode = n - (Module.finrank (ZMod 2) C) := by
   let B : LinearMap.BilinForm (ZMod 2) (Fin n → ZMod 2) :=
     Matrix.toBilin' (1 : Matrix (Fin n) (Fin n) (ZMod 2))
   have hdual : C.dualCode = B.orthogonal C := by
-    ext x
-    constructor
-    · intro hx n₁ hn₁
-      simpa [B, LinearMap.BilinForm.IsOrtho, Matrix.toBilin'_apply', dotProductBilin] using hx n₁ hn₁
-    · intro hx n₁ hn₁
-      simpa [B, LinearMap.BilinForm.IsOrtho, Matrix.toBilin'_apply', dotProductBilin] using hx n₁ hn₁
+    have hB : B = dotProductBilin (ZMod 2) (ZMod 2) := by
+      refine LinearMap.ext₂ fun x y => ?_
+      simp [B, Matrix.toBilin'_apply', dotProductBilin]
+    rw [hB]
+    rfl
   have hB_refl : B.IsRefl := by
     intro x y hxy
     simpa [B, Matrix.toBilin'_apply', dotProduct_comm] using hxy
