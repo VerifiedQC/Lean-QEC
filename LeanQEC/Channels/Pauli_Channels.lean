@@ -1,112 +1,98 @@
-import LeanQEC.Tensors
--- Define multi-qubit pauli channels to model errors
+import QuantumInfo.Channels.CPTP
+import QuantumInfo.ClassicalInfo.Distribution
+import LeanQEC.Unitary.Basic
+import LeanQEC.ForPhysLib.MatrixMap
 
--- First define single-qubit bit-flip channel
-open Qubit
+open Matrix Kronecker Qubit
+
+noncomputable section
+
+variable {d κ : Type*} [Fintype d] [DecidableEq d] [Fintype κ]
+
+/- We can construct a valid channel out of a classical distribution on unitaries (Kraus completeness condition) -/
+theorem sum_sqrt_smul_unitary_kraus (p : ProbDistribution κ) (U : κ → 𝐔[d]) :
+    ∑ k, ((Real.sqrt (p k) : ℂ) • (U k : Matrix d d ℂ))ᴴ * ((Real.sqrt (p k) : ℂ) • (U k : Matrix d d ℂ))
+      = 1 := by
+  have hU : ∀ k, (U k : Matrix d d ℂ)ᴴ * (U k : Matrix d d ℂ) = 1 := fun k => by
+    rw [← Matrix.star_eq_conjTranspose]; exact Unitary.star_mul_self_of_mem (U k).2
+  simp only [conjTranspose_smul, Matrix.smul_mul, Matrix.mul_smul, hU, smul_smul]
+  have hs : ∀ k, (Real.sqrt (p k) : ℂ) * star (Real.sqrt (p k) : ℂ) = ((p k : ℝ) : ℂ) := fun k => by
+    rw [Complex.star_def, Complex.conj_ofReal, ← Complex.ofReal_mul,
+      Real.mul_self_sqrt (p k).zero_le_coe]
+  simp only [hs, ← Finset.sum_smul]
+  rw [← Complex.ofReal_sum, p.normalized, Complex.ofReal_one, one_smul]
+
+/- The aforementioned channel -/
+def mixedUnitaryChannel (p : ProbDistribution κ) (U : κ → 𝐔[d]) : CPTPMap d d :=
+  CPTPMap.of_kraus_CPTPMap (fun k => (Real.sqrt (p k) : ℂ) • (U k : Matrix d d ℂ))
+    (sum_sqrt_smul_unitary_kraus p U)
+
+theorem mixedUnitaryChannel_map_apply (p : ProbDistribution κ) (U : κ → 𝐔[d])
+    (X : Matrix d d ℂ) :
+    (mixedUnitaryChannel p U).map X =
+      ∑ k, ((p k : ℝ) : ℂ) • ((U k : Matrix d d ℂ) * X * (U k : Matrix d d ℂ)ᴴ) := by
+  change (MatrixMap.of_kraus (fun k => (Real.sqrt (p k) : ℂ) • (U k : Matrix d d ℂ))
+    (fun k => (Real.sqrt (p k) : ℂ) • (U k : Matrix d d ℂ))) X = _
+  simp only [MatrixMap.of_kraus, LinearMap.coe_sum, Finset.sum_apply, LinearMap.coe_mk,
+    AddHom.coe_mk]
+  refine Finset.sum_congr rfl fun k _ => ?_
+  have hs : star (Real.sqrt (p k) : ℂ) * (Real.sqrt (p k) : ℂ) = ((p k : ℝ) : ℂ) := by
+    rw [Complex.star_def, Complex.conj_ofReal, ← Complex.ofReal_mul,
+      Real.mul_self_sqrt (p k).zero_le_coe]
+  simp only [conjTranspose_smul, Matrix.smul_mul, Matrix.mul_smul, smul_smul, hs]
+
+def Prob.toDistribution₂ (p : Prob) : ProbDistribution (Fin 2) :=
+  ProbDistribution.mk' ![1 - (p : ℝ), p]
+    (by intro i; fin_cases i <;> simp [p.coe_le_one, p.zero_le_coe])
+    (by simp)
+
+def unitaryErrorChannel (U : 𝐔[d]) (p : Prob) : CPTPMap d d :=
+  mixedUnitaryChannel p.toDistribution₂ ![1, U]
+
+def bitFlipChannel (p : Prob) : CPTPMap Qubit Qubit := unitaryErrorChannel Qubit.X p
+
+def dephasingChannel (p : Prob) : CPTPMap Qubit Qubit := unitaryErrorChannel Qubit.Z p
+
+def pauliChannel (p : ProbDistribution (Fin 4)) : CPTPMap Qubit Qubit :=
+  mixedUnitaryChannel p ![1, Qubit.X, Qubit.Y, Qubit.Z]
+
+def Prob.depolarizingDistribution (p : Prob) : ProbDistribution (Fin 4) :=
+  ProbDistribution.mk' ![1 - (p : ℝ), p / 3, p / 3, p / 3]
+    (by have := p.zero_le_coe; intro i; fin_cases i <;> simp [p.coe_le_one] <;> positivity)
+    (by simp [Fin.sum_univ_four]; ring)
+
+def depolarizingChannel (p : Prob) : CPTPMap Qubit Qubit :=
+  pauliChannel p.depolarizingDistribution
+
+/- Useful for constructing errors that apply to subsystems independently -/
+def iidChannel (n : ℕ) (Λ : CPTPMap d d) : CPTPMap (Fin n → d) (Fin n → d) :=
+  CPTPMap.piProd (fun _ : Fin n => Λ)
+
+abbrev iidBitFlip (n : ℕ) (p : Prob) := iidChannel n (bitFlipChannel p)
+
+abbrev iidDepolarizing (n : ℕ) (p : Prob) := iidChannel n (depolarizingChannel p)
+
+namespace CPTPMap
 
 variable {dI₁ dI₂ dO₁ dO₂ : Type*} [Fintype dI₁] [Fintype dI₂] [Fintype dO₁] [Fintype dO₂]
 variable [DecidableEq dI₁] [DecidableEq dI₂] [DecidableEq dO₁] [DecidableEq dO₂]
 
-variable (U : 𝐔[Qubit])
+omit [Fintype dI₁] [Fintype dI₂] [DecidableEq dO₁] [DecidableEq dO₂] in
+theorem kraus_prod_complete {κ₁ κ₂ : Type*} [Fintype κ₁] [Fintype κ₂]
+    (M₁ : κ₁ → Matrix dO₁ dI₁ ℂ) (M₂ : κ₂ → Matrix dO₂ dI₂ ℂ)
+    (hM₁ : ∑ k, (M₁ k)ᴴ * M₁ k = 1) (hM₂ : ∑ k, (M₂ k)ᴴ * M₂ k = 1) :
+    ∑ k : κ₁ × κ₂, (M₁ k.1 ⊗ₖ M₂ k.2)ᴴ * (M₁ k.1 ⊗ₖ M₂ k.2) = 1 := by
+  simp only [conjTranspose_kronecker, ← mul_kronecker_mul, Fintype.sum_prod_type,
+    ← kronecker_sum, ← sum_kronecker, hM₁, hM₂, one_kronecker_one]
 
-noncomputable section
+/- Characterization of tensors of channels -/
+theorem of_kraus_prod {κ₁ κ₂ : Type*} [Fintype κ₁] [Fintype κ₂]
+    (M₁ : κ₁ → Matrix dO₁ dI₁ ℂ) (M₂ : κ₂ → Matrix dO₂ dI₂ ℂ)
+    (hM₁ : ∑ k, (M₁ k)ᴴ * M₁ k = 1) (hM₂ : ∑ k, (M₂ k)ᴴ * M₂ k = 1) :
+    of_kraus_CPTPMap M₁ hM₁ ⊗ᶜᵖ of_kraus_CPTPMap M₂ hM₂ =
+      of_kraus_CPTPMap (fun k : κ₁ × κ₂ => M₁ k.1 ⊗ₖ M₂ k.2)
+        (kraus_prod_complete M₁ M₂ hM₁ hM₂) := by
+  apply CPTPMap.ext
+  exact MatrixMap.of_kraus_kron M₁ M₁ M₂ M₂
 
-
-def kraus_unitary (p : ℝ) (i : Qubit): Matrix Qubit Qubit ℂ :=
-  match i with
-  | 0 => √(1-p) • 1
-  | 1 => √p • U
-
-@[simp] lemma kraus_unitary_0 : kraus_unitary U p 0 = √(1 - p) • 1 := by rfl
-
-@[simp] lemma kraus_unitary_1 : kraus_unitary U p 1 = √p • U := by rfl
-
-def kraus_bit_flip := kraus_unitary X
-
-@[simp] lemma kraus_bit_flip_0 : kraus_bit_flip p 0 = √(1 - p) • 1 := by
-  rfl
-
-@[simp] lemma kraus_bit_flip_1 : kraus_bit_flip p 1 = √p • X := by
-  rfl
-
-def kraus_dephasing := kraus_unitary Z
-
-@[simp] lemma kraus_dephasing_0 : kraus_dephasing p 0 = √(1 - p) • 1 := by
-  rfl
-
-@[simp] lemma kraus_dephasing_1 : kraus_dephasing p 1 = √p • Z := by
-  rfl
-
-lemma unitary_ct : (U: Matrix Qubit Qubit ℂ).conjTranspose * (U: Matrix Qubit Qubit ℂ) = 1 := by
-  rw [←Matrix.star_eq_conjTranspose]
-  simp only [SetLike.coe_mem, unitary.star_mul_self_of_mem]
-
-def unitary_p_channel (p : ℝ) (hp1 : 0 ≤ p) (hp2 : 0 ≤ 1 - p) := CPTPMap.of_kraus_CPTPMap (kraus_unitary U p) (
-  by
-    simp [unitary_ct, smul_smul, ←add_smul, Real.mul_self_sqrt hp1, Real.mul_self_sqrt hp2]
-)
-
-def bit_flip_channel (p : ℝ) (hp1 : 0 ≤ p) (hp2 : 0 ≤ 1 - p) := unitary_p_channel Z p hp1 hp2
-
-def kraus_pauli (p1 p2 p3 p4 : ℝ) (i : Fin 4): Matrix Qubit Qubit ℂ :=
-  match i with
-  | 0 => √p1 • 1
-  | 1 => √p2 • X
-  | 2 => √p3 • Y
-  | 3 => √p4 • Z
-
-def pauli_channel (p1 p2 p3 p4 : ℝ) (hp1: 0 ≤ p1) (hp2: 0 ≤ p2) (hp3: 0 ≤ p3) (hp4: 0 ≤ p4)
-(hp : p1 + p2 + p3 + p4 = 1)
- := CPTPMap.of_kraus_CPTPMap (kraus_pauli p1 p2 p3 p4)
- ( by
-  simp [Fin.sum_univ_four, kraus_pauli, unitary_ct, smul_smul, Real.mul_self_sqrt hp1,
-    Real.mul_self_sqrt hp2, Real.mul_self_sqrt hp3, Real.mul_self_sqrt hp4, ←add_smul, hp]
- )
-
-
-
-
-
-def kraus_depolarizing (p : ℝ) (i : Fin 4): Matrix Qubit Qubit ℂ := kraus_pauli (1-p) (p/3) (p/3) (p/3) i
-
-def depolarizing_channel (p : ℝ) (hp1: 0 ≤ p) (hp2 : 0 ≤ 1-p) :=
-pauli_channel (1-p) (p/3) (p/3) (p/3) hp2 (by linarith) (by linarith) (by linarith)
-
---reason about the kraus operators of channel products
-
-variable {k : Type*} [Fintype k] [DecidableEq k]
-
-variable {m m' n n' : Type*} (A : Matrix m m' ℂ) (B : Matrix n n' ℂ)
-
-
-def kraus_prod {κ₁ κ₂ : Type*} [Fintype κ₁] [DecidableEq κ₁] [Fintype κ₂] [DecidableEq κ₂] (M₁ : κ₁ → Matrix dO₁ dI₁ ℂ)
-(M₂ : κ₂ → Matrix dO₂ dI₂ ℂ) (hM₁ : ∑ k, (M₁ k).conjTranspose * M₁ k = 1) (hM₂ : ∑ k, (M₂ k).conjTranspose * M₂ k = 1) :
-CPTPMap (dI₁ × dI₂) (dO₁ × dO₂) ℂ := CPTPMap.of_kraus_CPTPMap (fun (i : κ₁ × κ₂) => Matrix.kronecker (M₁ i.1) (M₂ i.2)) ( by
-  simp [-Matrix.kronecker, kronecker_conjTranspose]
-  simp [←Matrix.mul_kronecker_mul, Fintype.sum_prod_type, ←Matrix.sum_kronecker_right, ←Matrix.sum_kronecker_left, hM₁, hM₂]
-)
-
-def CPTPMap.toLinearMap_ext {dIn dOut 𝕜} [Fintype dIn] [Fintype dOut] [RCLike 𝕜] [DecidableEq dIn] {Λ₁ Λ₂ : CPTPMap dIn dOut 𝕜} (h : Λ₁.toLinearMap = Λ₂.toLinearMap) : Λ₁ = Λ₂ := by
-  rw [CPTPMap.mk.injEq]
-  exact PTPMap.ext h
-
-def prod_kraus_is_kraus_prod {κ₁ κ₂ : Type*} [Fintype κ₁] [DecidableEq κ₁] [Fintype κ₂] [DecidableEq κ₂] (M₁ : κ₁ → Matrix dO₁ dI₁ ℂ)
-(M₂ : κ₂ → Matrix dO₂ dI₂ ℂ) (hM₁ : ∑ k, (M₁ k).conjTranspose * M₁ k = 1) (hM₂ : ∑ k, (M₂ k).conjTranspose * M₂ k = 1) :
-(CPTPMap.of_kraus_CPTPMap M₁ hM₁) ⊗ₖ (CPTPMap.of_kraus_CPTPMap M₂ hM₂) = kraus_prod M₁ M₂ hM₁ hM₂ := by
-  apply CPTPMap.toLinearMap_ext
-  apply MatrixMap_tensor_ext
-  intros A B
-  simp [CPTPMap.prod, sum_conj_tensor_sum_conj_eq_sum_tensor_conj M₁ M₁ M₂ M₂,
-  kraus_prod, CPTPMap.of_kraus_CPTPMap]
-
---def two_qubit_bit_flip (p : ℝ) (hp1 : 0 ≤ p) (hp2 : 0 ≤ 1-p) := (bit_flip_channel p hp1 hp2) ⊗ₖ (bit_flip_channel p hp1 hp2)
-
-
-/-
-Unused sketch.  The maintained distance examples do not import the channel
-development, and the intended API for arbitrary probability-unitary Kraus
-families is not settled yet.
-def of_kraus_prob_unitary {n : ℕ} (pfun : Fin n → ℝ) (hpfun1 : ∀ i, 0 ≤ pfun i) (hpfun2 : ∀ i, 0 ≤ 1 - pfun i)
-: CPTPMap Qubit Qubit ℂ := by
-  ...
--/
+end CPTPMap

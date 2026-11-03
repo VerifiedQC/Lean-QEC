@@ -384,22 +384,22 @@ lemma toPauli_mul_of_phase_one {n : ℕ} (a b : BinSympPauli n)
     BinSympPauli_toPauli a * BinSympPauli_toPauli b = BinSympPauli_toPauli (a + b) := by
   set ma : Fin n → Pauli := fun i => Z2Z2_Pauli_equiv (a.1 i, a.2 i) with hma
   set mb : Fin n → Pauli := fun i => Z2Z2_Pauli_equiv (b.1 i, b.2 i) with hmb
-  have hsa : foldPauli.symm (BinSympPauli_toPauli a : PauliGroup n) = (pgphase_1, ma) := by
+  have hsa : foldPauli.symm (BinSympPauli_toPauli a : PauliGroup n) = (1, ma) := by
     simp [BinSympPauli_toPauli, hma]
-  have hsb : foldPauli.symm (BinSympPauli_toPauli b : PauliGroup n) = (pgphase_1, mb) := by
+  have hsb : foldPauli.symm (BinSympPauli_toPauli b : PauliGroup n) = (1, mb) := by
     simp [BinSympPauli_toPauli, hmb]
   have hmul :
       foldPauli.symm
           ((BinSympPauli_toPauli a * BinSympPauli_toPauli b : PauliGroup_group n) : PauliGroup n)
-        = mul_factored_Paulis (pgphase_1, ma) (pgphase_1, mb) := by
+        = mul_factored_Paulis (1, ma) (1, mb) := by
     rw [← hsa, ← hsb]
     apply foldPauli.injective
     apply Subtype.ext
     simpa using
       (mul_factored_Paulis_correct (foldPauli.symm (BinSympPauli_toPauli a : PauliGroup n))
         (foldPauli.symm (BinSympPauli_toPauli b : PauliGroup n))).symm
-  have hfact : mul_factored_Paulis (pgphase_1, ma) (pgphase_1, mb)
-      = (pgphase_1, fun i => (mul_Pauli1 (ma i) (mb i)).2) := by
+  have hfact : mul_factored_Paulis (1, ma) (1, mb)
+      = (1, fun i => (mul_Pauli1 (ma i) (mb i)).2) := by
     unfold mul_factored_Paulis scale_factored_Pauli mul_Pauli1_tuples collect_phases
       pointwise_mul_Paulis
     simp only
@@ -463,12 +463,11 @@ lemma zPauli_mul_xPauli_comm {u v : Fin n → ZMod 2} (h : v ⬝ᵥ u = 0) :
 
 lemma negIdPauli_ne_one (n : ℕ) : negIdPauli n ≠ 1 := by
   intro h
-  have h1 : (1 : PauliGroup_group n) = scalarPauli pgphase_1 := one_eq_scalarPauli_one
+  have h1 : (1 : PauliGroup_group n) = scalarPauli 1 := one_eq_scalarPauli_one
   rw [h1, negIdPauli, scalarPauli, scalarPauli] at h
   have := foldPauli.injective (Subtype.ext (congrArg Subtype.val h))
-  have hph : pgphase_n1 = pgphase_1 := congrArg Prod.fst this
-  have : ((-1 : ℂ)) = 1 := congrArg (fun z => (z : pgroup_phases).1.z) hph
-  norm_num at this
+  have hph : pgphase_n1 = 1 := congrArg Prod.fst this
+  exact absurd hph (by decide)
 
 variable {k₁ k₂ : ℕ}
 
