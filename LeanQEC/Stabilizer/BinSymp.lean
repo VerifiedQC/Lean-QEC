@@ -60,11 +60,11 @@ def Z2Z2_Pauli_equiv : ((ZMod 2) × (ZMod 2)) ≃ Pauli where
 lemma ZMod2_or_eq_zero_iff (a b : ZMod 2) :
     ZMod2_or a b = 0 ↔ a = 0 ∧ b = 0 := by
   revert a b
-  native_decide
+  decide
 
 lemma Z2Z2_Pauli_equiv_ne_I_iff (a b : ZMod 2) :
     Z2Z2_Pauli_equiv (a, b) ≠ Pauli_I ↔ ZMod2_or a b ≠ 0 := by
-  fin_cases a <;> fin_cases b <;> simp [ Z2Z2_Pauli_equiv, ZMod2_or ] <;> native_decide
+  fin_cases a <;> fin_cases b <;> simp [ Z2Z2_Pauli_equiv, ZMod2_or ] <;> decide
 
 def BinSympPauli_toPauli {n : ℕ} (bs : BinSympPauli n) : ↥(PauliGroup_group n) :=
   let pm := fun n => Z2Z2_Pauli_equiv (bs.1 n, bs.2 n)
@@ -85,7 +85,7 @@ lemma local_mul_Pauli_toBinSymp (P Q : Pauli) :
       Z2Z2_Pauli_equiv.symm P + Z2Z2_Pauli_equiv.symm Q := by
   rcases Pauli_cases P with rfl | rfl | rfl | rfl <;>
     rcases Pauli_cases Q with rfl | rfl | rfl | rfl <;>
-    simp [mul_Pauli1, Z2Z2_Pauli_equiv] <;> native_decide
+    simp [mul_Pauli1, Z2Z2_Pauli_equiv] <;> decide
 
 lemma local_anticommute_eq_sympProd (P Q : Pauli) :
     (!commute₁ P Q) =
@@ -94,7 +94,7 @@ lemma local_anticommute_eq_sympProd (P Q : Pauli) :
           ((Z2Z2_Pauli_equiv.symm P).2 * (Z2Z2_Pauli_equiv.symm Q).1)).val := by
   rcases Pauli_cases P with rfl | rfl | rfl | rfl <;>
     rcases Pauli_cases Q with rfl | rfl | rfl | rfl <;>
-    simp [commute₁, Z2Z2_Pauli_equiv, Bool.ofNat] ; native_decide
+    simp [commute₁, Z2Z2_Pauli_equiv, Bool.ofNat] ; decide
 
 lemma local_anticommute_xor_tail (a b c d t : ZMod 2) :
     (!commute₁ (Z2Z2_Pauli_equiv (a, b)) (Z2Z2_Pauli_equiv (c, d)) ^^ Bool.ofNat t.val) =
