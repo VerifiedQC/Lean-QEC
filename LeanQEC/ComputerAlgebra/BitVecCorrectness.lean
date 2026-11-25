@@ -485,7 +485,7 @@ lemma flatten_BitVecMatrix_id {r n : ℕ} (M : BitVec (r * n)) : flatten_matrix 
 lemma zmod2_dot_bool_step (a b s : ZMod 2) :
     (((a.val == 1) && (b.val == 1)) ^^ (s == 1)) =
       (s + a * b == 1) := by
-  fin_cases a <;> fin_cases b <;> fin_cases s <;> native_decide
+  fin_cases a <;> fin_cases b <;> fin_cases s <;> decide
 
 def dot_product_correct {n : ℕ} [NeZero n] (x y : Fin n → (ZMod 2)):
   (vec_to_BitVec x).dot_product (vec_to_BitVec y) =  ( x ⬝ᵥ y == 1) := by
@@ -501,7 +501,7 @@ def dot_product_correct {n : ℕ} [NeZero n] (x y : Fin n → (ZMod 2)):
       simp [hidx]
       simp [vec_to_BitVec, hidx]
       have hbool (a b : ZMod 2) : ((a.val == 1) && (b.val == 1)) = (a * b == 1) := by
-        fin_cases a <;> fin_cases b <;> native_decide
+        fin_cases a <;> fin_cases b <;> decide
       exact hbool (x ⟨0, hidx⟩) (y ⟨0, hidx⟩)
     · have hidx' : idx < n := Nat.lt_of_succ_lt hidx
       change (((vec_to_BitVec x)[idx + 1] && (vec_to_BitVec y)[idx + 1]) ^^
